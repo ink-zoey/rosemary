@@ -2,6 +2,7 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.Serialization;
+using RectpackSharp;
 
 namespace ElkLanguageAtlas;
 
@@ -11,15 +12,26 @@ internal static class Program
     private const string output_dir = "output";
 
     [Serializable]
-    private readonly record struct ElkSymbol(string Name, int X, int Y, int Width, int Height, float RealHeight) : ISerializable
+    private readonly record struct ElkSymbol(string Name, ElkSymbol.Rectangle Destination, ElkSymbol.Rectangle Source, float RealHeight) : ISerializable
     {
+        // Dummy type to serialize rectangles properly.
+        [Serializable]
+        public readonly record struct Rectangle(int X, int Y, int Width, int Height) : ISerializable
+        {
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue(nameof(X), X);
+                info.AddValue(nameof(Y), Y);
+                info.AddValue(nameof(Width), Width);
+                info.AddValue(nameof(Height), Height);;
+            }
+        };
+
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Name), Name);
-            info.AddValue(nameof(X), X);
-            info.AddValue(nameof(Y), Y);
-            info.AddValue(nameof(Width), Width);
-            info.AddValue(nameof(Height), Height);
+            info.AddValue(nameof(Destination), Destination);
+            info.AddValue(nameof(Source), Source);
             info.AddValue(nameof(RealHeight), RealHeight);
         }
     };
@@ -37,7 +49,9 @@ internal static class Program
 
     private static void GenerateAtlas(string dir, string[] paths)
     {
-        var symbols = GetSymbols(out var atlasWidth, out var atlasHeight);
+        var (symbols, rectangles) = GetSymbols();
+
+        RectanglePacker.Pack(rectangles, out var bounds);
 
         CreateAtlas();
         CreateJson();
@@ -49,48 +63,39 @@ internal static class Program
 
         return;
 
-        Image<Rgba32>[] GetSymbols(out int greatestWidth, out int totalHeight)
+        (Image<Rgba32>[], PackingRectangle[]) GetSymbols()
         {
-            var output = new Image<Rgba32>[paths.Length];
-
-            totalHeight = 0;
-            greatestWidth = 0;
+            var images = new Image<Rgba32>[paths.Length];
+            var rectangles = new PackingRectangle[paths.Length];
 
             for (var i = 0; i < paths.Length; i++)
             {
-                output[i] = Image.Load<Rgba32>(paths[i]);
-                totalHeight += output[i].Height;
-                if (output[i].Width > greatestWidth)
-                {
-                    greatestWidth = output[i].Width;
-                }
+                images[i] = Image.Load<Rgba32>(paths[i]);
+                rectangles[i] = new PackingRectangle(0, 0, (uint)images[i].Width, (uint)images[i].Height, i);
             }
 
-            return output;
+            return (images, rectangles);
         }
 
         void CreateAtlas()
         {
-            using var outputImage = new Image<Rgba32>(atlasWidth, atlasHeight);
-
-            var currentY = 0;
+            using var outputImage = new Image<Rgba32>((int)bounds.Width, (int)bounds.Height);
 
             for (var i = 0; i < symbols.Length; i++)
             {
                 var symbol = symbols[i];
+                var rectangle = rectangles[i];
 
                 for (var x = 0; x < symbol.Width; x++)
                 for (var y = 0; y < symbol.Height; y++)
                 {
                     var pixel = symbol[x, y];
 
-                    var atlasX = x;
-                    var atlasY = currentY + y;
+                    var atlasX = (int)rectangle.X + x;
+                    var atlasY = (int)rectangle.Y + y;
 
                     outputImage[atlasX, atlasY] = pixel;
                 }
-
-                currentY += symbol.Height;
             }
 
             var outputPath = Path.Combine(dir, output_dir, "atlas.png");
@@ -108,14 +113,12 @@ internal static class Program
 
                 var name = segments[0];
 
-                var x = ParseInt(segments[1]);
-                var y = ParseInt(segments[2]);
-                var width = symbols[i].Width;
-                var height = symbols[i].Width;
+                var destination = new ElkSymbol.Rectangle(ParseInt(segments[1]), ParseInt(segments[2]), symbols[i].Width, symbols[i].Height);
+                var source = new ElkSymbol.Rectangle((int)rectangles[i].X, (int)rectangles[i].Y, (int)rectangles[i].Width, (int)rectangles[i].Height);
 
                 var realHeight = float.Parse(segments[3]);
 
-                data[i] = new ElkSymbol(name, x, y, width, height, realHeight);
+                data[i] = new ElkSymbol(name, destination, source, realHeight);
 
                 Console.WriteLine(data[i]);
             }
