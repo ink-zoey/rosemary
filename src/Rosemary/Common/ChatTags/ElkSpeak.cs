@@ -1,22 +1,34 @@
 ﻿using Daybreak.Common.Features.ChatTags;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Terraria;
+using Terraria.GameContent;
 using Terraria.UI.Chat;
 
 namespace Rosemary.Common;
 
 public sealed class ElkTagHandler : ILoadableTagHandler<ElkTagHandler>
 {
-    private sealed class ElkSnippet : TextSnippet
+    private sealed class ElkSnippet(string text, Color color) : TextSnippet(text, color)
     {
-        public ElkSnippet(string text, Color color) : base(text, color)
+        public override bool UniqueDraw(
+            bool justCheckingSize,
+            out Vector2 size,
+            SpriteBatch sb,
+            Vector2 position = new(),
+            Color color = new(),
+            float scale = 1
+        )
         {
+            size = new Vector2(40, Text.Length * 20);
 
-        }
+            var dims = new Rectangle((int)position.X, (int)position.Y, (int)size.X, (int)size.Y);
 
-        public override bool UniqueDraw(bool justCheckingSize, out Vector2 size, SpriteBatch spriteBatch, Vector2 position = new Vector2(), Color color = new Color(), float scale = 1)
-        {
-            return base.UniqueDraw(justCheckingSize, out size, spriteBatch, position, color, scale);
+            color = color.MultiplyRGB(Color);
+
+            sb.Draw(TextureAssets.MagicPixel.Value, dims, color);
+
+            return true;
         }
     }
 
