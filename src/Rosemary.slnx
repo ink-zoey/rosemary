@@ -8,4 +8,8 @@
         <Project Path="daybreak-mod/src/generators/DaybreakHookGenerator/DaybreakHookGenerator.csproj" />
     </Folder>
     <Project Path="Rosemary/Rosemary.csproj" />
+    <Folder Name="/generators/">
+        <Project Path="generators/ElkLanguageAtlas/ElkLanguageAtlas.csproj" />
+        <Project Path="generators/ElkLanguageReferences/ElkLanguageReferences.csproj" />
+    </Folder>
 </Solution>

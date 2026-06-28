@@ -1,0 +1,26 @@
+[
+  {
+    "Name": "Name",
+    "Xhi": 0,
+    "Y": 0,
+    "Width": 40,
+    "Height": 40,
+    "RealHeight": 20.0
+  },
+  {
+    "Name": "Name2",
+    "Xhi": 0,
+    "Y": 0,
+    "Width": 40,
+    "Height": 40,
+    "RealHeight": 20.0
+  },
+  {
+    "Name": "Name3",
+    "Xhi": 0,
+    "Y": -5,
+    "Width": 40,
+    "Height": 40,
+    "RealHeight": 20.0
+  }
+]
