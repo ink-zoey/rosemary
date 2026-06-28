@@ -1,0 +1,5 @@
+displayName = rosemary
+author = Zoey
+version = 1.0.0
+side = Both
+modReferences = Daybreak
