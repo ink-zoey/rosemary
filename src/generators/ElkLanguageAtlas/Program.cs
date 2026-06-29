@@ -4,37 +4,58 @@ using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.Serialization;
 using RectpackSharp;
 
-namespace ElkLanguageAtlas;
+namespace Rosemary.Core.SourceGen;
 
 internal static class Program
 {
+    private const string atlas_image_name = "ElkAtlas.png";
+    private const string atlas_descriptor_name = "ElkAtlas.json";
+
     private const string input_dir = "input";
     private const string output_dir = "output";
 
     [Serializable]
-    private readonly record struct ElkSymbol(string Name, ElkSymbol.Rectangle Destination, ElkSymbol.Rectangle Source, float RealHeight) : ISerializable
+    private readonly record struct ElkSymbol(string Name, int X, int Y, ElkSymbol.Rectangle Source, float Height) : ISerializable
     {
         // Dummy type to serialize rectangles properly.
         [Serializable]
         public readonly record struct Rectangle(int X, int Y, int Width, int Height) : ISerializable
         {
+            public Rectangle(SerializationInfo info, StreamingContext context)
+                : this(
+                    info.GetInt32(nameof(X)),
+                    info.GetInt32(nameof(Y)),
+                    info.GetInt32(nameof(Width)),
+                    info.GetInt32(nameof(Height)))
+            { }
+
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue(nameof(X), X);
                 info.AddValue(nameof(Y), Y);
                 info.AddValue(nameof(Width), Width);
-                info.AddValue(nameof(Height), Height);;
+                info.AddValue(nameof(Height), Height);
             }
         };
+
+        public ElkSymbol(SerializationInfo info, StreamingContext context)
+            : this(
+                info.GetString(nameof(Name))!,
+                info.GetInt32(nameof(X)),
+                info.GetInt32(nameof(Y)),
+                (Rectangle)info.GetValue(nameof(Source), typeof(Rectangle))!,
+                info.GetSingle(nameof(Height)))
+        { }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Name), Name);
-            info.AddValue(nameof(Destination), Destination);
+            info.AddValue(nameof(X), X);
+            info.AddValue(nameof(Y), Y);
             info.AddValue(nameof(Source), Source);
-            info.AddValue(nameof(RealHeight), RealHeight);
+            info.AddValue(nameof(Height), Height);
         }
-    };
+    }
 
     public static void Main()
     {
@@ -66,15 +87,15 @@ internal static class Program
         (Image<Rgba32>[], PackingRectangle[]) GetSymbols()
         {
             var images = new Image<Rgba32>[paths.Length];
-            var rectangles = new PackingRectangle[paths.Length];
+            var rects = new PackingRectangle[paths.Length];
 
             for (var i = 0; i < paths.Length; i++)
             {
                 images[i] = Image.Load<Rgba32>(paths[i]);
-                rectangles[i] = new PackingRectangle(0, 0, (uint)images[i].Width, (uint)images[i].Height, i);
+                rects[i] = new PackingRectangle(0, 0, (uint)images[i].Width, (uint)images[i].Height, i);
             }
 
-            return (images, rectangles);
+            return (images, rects);
         }
 
         void CreateAtlas()
@@ -84,10 +105,10 @@ internal static class Program
             for (var i = 0; i < symbols.Length; i++)
             {
                 var symbol = symbols[i];
-                var rectangle = rectangles[i];
+                var rectangle = rectangles.First(r => r.Id == i);
 
-                for (var x = 0; x < symbol.Width; x++)
-                for (var y = 0; y < symbol.Height; y++)
+                for (var x = 0; x < rectangle.Width; x++)
+                for (var y = 0; y < rectangle.Height; y++)
                 {
                     var pixel = symbol[x, y];
 
@@ -96,9 +117,11 @@ internal static class Program
 
                     outputImage[atlasX, atlasY] = pixel;
                 }
+
+                Console.WriteLine($"{rectangle.X}, {rectangle.Y}");
             }
 
-            var outputPath = Path.Combine(dir, output_dir, "atlas.png");
+            var outputPath = Path.Combine(dir, output_dir, atlas_image_name);
 
             outputImage.SaveAsPng(outputPath);
         }
@@ -113,17 +136,18 @@ internal static class Program
 
                 var name = segments[0];
 
-                var destination = new ElkSymbol.Rectangle(ParseInt(segments[1]), ParseInt(segments[2]), symbols[i].Width, symbols[i].Height);
-                var source = new ElkSymbol.Rectangle((int)rectangles[i].X, (int)rectangles[i].Y, (int)rectangles[i].Width, (int)rectangles[i].Height);
+                var rectangle = rectangles.First(r => r.Id == i);
+
+                var source = new ElkSymbol.Rectangle((int)rectangle.X, (int)rectangle.Y, (int)rectangle.Width, (int)rectangle.Height);
 
                 var realHeight = float.Parse(segments[3]);
 
-                data[i] = new ElkSymbol(name, destination, source, realHeight);
+                data[i] = new ElkSymbol(name, ParseInt(segments[1]), ParseInt(segments[2]), source, realHeight);
 
                 Console.WriteLine(data[i]);
             }
 
-            var outputPath = Path.Combine(dir, output_dir, "atlas.json");
+            var outputPath = Path.Combine(dir, output_dir, atlas_descriptor_name);
 
             File.WriteAllText(outputPath, JsonConvert.SerializeObject(data, Formatting.Indented));
 

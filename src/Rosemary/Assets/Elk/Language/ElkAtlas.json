@@ -1,0 +1,50 @@
+[
+  {
+    "Name": "CloseBracket",
+    "X": -2,
+    "Y": -7,
+    "Source": {
+      "X": 80,
+      "Y": 0,
+      "Width": 84,
+      "Height": 28
+    },
+    "Height": 21.0
+  },
+  {
+    "Name": "FullStop",
+    "X": 0,
+    "Y": -6,
+    "Source": {
+      "X": 0,
+      "Y": 0,
+      "Width": 80,
+      "Height": 124
+    },
+    "Height": 120.0
+  },
+  {
+    "Name": "RightRack",
+    "X": -32,
+    "Y": -3,
+    "Source": {
+      "X": 80,
+      "Y": 28,
+      "Width": 33,
+      "Height": 70
+    },
+    "Height": 67.0
+  },
+  {
+    "Name": "StarCraddle",
+    "X": 18,
+    "Y": -3,
+    "Source": {
+      "X": 113,
+      "Y": 28,
+      "Width": 37,
+      "Height": 50
+    },
+    "Height": 48.0
+  }
+]

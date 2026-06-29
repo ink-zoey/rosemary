@@ -18,4 +18,8 @@
         <ProjectReference Include="..\generators\ElkLanguageReferences\ElkLanguageReferences.csproj" PrivateAssets="All" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
+    <ItemGroup>
+        <AdditionalFiles Include="**\*.json" />
+    </ItemGroup>
+
 </Project>
