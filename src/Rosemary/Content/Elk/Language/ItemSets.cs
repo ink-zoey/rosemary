@@ -1,5 +1,7 @@
 ﻿using Daybreak.Common.Features.Hooks;
+using Daybreak.Common.Rendering;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
@@ -75,10 +77,10 @@ public static class ElkLangItemSets
                     return;
                 }
 
-                var elkSize = phrase.Measure(elk_name_tooltip_scale);
+                var phraseSize = phrase.Measure(elk_name_tooltip_scale);
 
-                size.X += elkSize.X + 4f;
-                size.Y = MathF.Max(size.Y, elkSize.Y);
+                size.X += phraseSize.X + 4f;
+                size.Y = MathF.Max(size.Y, phraseSize.Y);
             }
         );
     }
@@ -86,7 +88,7 @@ public static class ElkLangItemSets
     [GlobalItemHooks.ModifyTooltips]
     private static void ModifyTooltips_UsesElkName(Item item, List<TooltipLine> tooltips)
     {
-        if (usesElkName[Main.HoverItem.type] is null)
+        if (usesElkName[item.type] is null)
         {
             return;
         }
@@ -100,16 +102,16 @@ public static class ElkLangItemSets
     [GlobalItemHooks.PreDrawTooltip]
     private static bool PreDrawTooltip_UsesElkName(Item item, ReadOnlyCollection<TooltipLine> lines, ref int x, ref int y)
     {
-        if (usesElkName[Main.HoverItem.type] is not { } phrase)
+        if (usesElkName[item.type] is not { } phrase)
         {
             return true;
         }
 
-        var elkSize = phrase.Measure(elk_name_tooltip_scale);
+        var size = phrase.Measure(elk_name_tooltip_scale);
 
         usesElkNameTopLeft = new Vector2(x, y);
 
-        x += (int)(elkSize.X + 4f);
+        x += (int)(size.X + 4f);
 
         return true;
     }
@@ -117,38 +119,71 @@ public static class ElkLangItemSets
     [GlobalItemHooks.PostDrawTooltip]
     private static void PostDrawTooltip_UsesElkName(Item item, ReadOnlyCollection<DrawableTooltipLine> lines)
     {
-        if (usesElkName[Main.HoverItem.type] is not { } phrase)
+        if (usesElkName[item.type] is not { } phrase)
         {
             return;
         }
 
         var sb = Main.spriteBatch;
 
+        var rarityShader = Assets.Elk.Language.RarityGradient.CreateRarityGradientShader();
+
+        var size = phrase.Measure(elk_name_tooltip_scale);
+
         var position = usesElkNameTopLeft;
         position.X -= 6f;
 
         var multiplier = (float)Main.mouseTextColor / byte.MaxValue;
 
-        var color = ItemRarity.GetColor(item.rare);
+        var rarityColor = GetRarityColor();
 
-        if (item.expert || item.rare == ItemRarityID.Expert)
+        sb.DrawPhraseOutline(phrase, position, Color.Black, elk_name_tooltip_scale, Vector2.Zero, spread: 1.5f, directions: 8);
+
+        sb.End(out var ss);
+
+        const float padding = 20f;
+
+        rarityShader.Parameters.GradientTop = usesElkNameTopLeft.Y - padding;
+        rarityShader.Parameters.GradientHeight = size.Y + padding;
+
+        rarityShader.Parameters.GradientColor = rarityColor.ToVector4();
+
+        rarityShader.Apply();
+
+        sb.Begin(ss with { CustomEffect = rarityShader.Shader });
         {
-            color = Main.DiscoColor;
+            var color = Color.White * multiplier;
+
+            sb.DrawPhrase(phrase, position, color, elk_name_tooltip_scale, Vector2.Zero);
         }
-        if (item.master || item.rare == ItemRarityID.Master)
+        sb.Restart(in ss);
+
+        return;
+
+        Color GetRarityColor()
         {
-            color = new Color(255, (byte)(Main.masterColor * 200), 0);
+            var color = ItemRarity.GetColor(item.rare);
+
+            if (item.expert || item.rare == ItemRarityID.Expert)
+            {
+                color = Main.DiscoColor;
+            }
+
+            if (item.master || item.rare == ItemRarityID.Master)
+            {
+                color = new Color(255, (byte)(Main.masterColor * 200), 0);
+            }
+
+            // For whatever reason the mouseTextColor multiplier is baked into
+            // ItemRarity.GetColor, but only for the standard white rarity.
+            if (ItemRarity._rarities.ContainsKey(item.rare))
+            {
+                color *= multiplier;
+            }
+
+            color.A = byte.MaxValue;
+
+            return color;
         }
-
-        // For whatever reason the mouseTextColor multiplier is baked into
-        // ItemRarity.GetColor, but only for the standard white rarity.
-        if (ItemRarity._rarities.ContainsKey(item.rare))
-        {
-            color *= multiplier;
-        }
-
-        color.A = byte.MaxValue;
-
-        sb.DrawPhraseWithOutline(phrase, position, color, Color.Black, elk_name_tooltip_scale, Vector2.Zero, spread: 1.5f, directions: 8);
     }
 }

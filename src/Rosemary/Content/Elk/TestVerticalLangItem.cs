@@ -27,4 +27,9 @@ public sealed class TestVerticalLangItem : ModItem
                        .RootsB       .UseHeight(33f) .UseOffset(new Vector2(2f, 4f))
                        .FullStopAlt;
     }
+
+    public override void SetDefaults()
+    {
+        Item.rare = ItemRarityID.LightPurple;
+    }
 }

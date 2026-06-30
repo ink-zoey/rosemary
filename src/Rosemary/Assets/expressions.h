@@ -1,0 +1,12 @@
+﻿#ifndef _EXPRESSIONS_H_
+#define _EXPRESSIONS_H_
+
+#include "syntax.h"
+
+#define _SHADER_MACROS global::Rosemary.Common.ShaderMacros
+
+#define TEXTURE_SIZE(name, register) CS_VAR(float2, name, _SHADER_MACROS.TextureSize(register))
+
+#define VIEWPORT_SIZE(name) CS_VAR(float2, name, _SHADER_MACROS.ViewportSize())
+
+#endif // _EXPRESSIONS_H_
