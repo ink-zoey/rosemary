@@ -1,0 +1,8 @@
+AuthorTags.Zoey.DisplayName: Zoey
+
+Items: {
+	TestVerticalLangItem: {
+		DisplayName: Test Vertical Lang Item
+		Tooltip: ""
+	}
+}

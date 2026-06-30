@@ -26,11 +26,22 @@ public static class ElkLanguage
 
     extension(ElkPhrase phrase)
     {
-        public ElkPhrase Offset(Vector2 offset)
+        public ElkPhrase UseOffset(Vector2 offset)
         {
             var symbol = phrase[^1];
 
             symbol.Position += offset;
+
+            phrase[^1] = symbol;
+
+            return phrase;
+        }
+
+        public ElkPhrase UseHeight(float height = 0)
+        {
+            var symbol = phrase[^1];
+
+            symbol.Height = height;
 
             phrase[^1] = symbol;
 
@@ -46,10 +57,14 @@ public static class ElkLanguage
 
         foreach (var symbol in phrase)
         {
+            var source = symbol.Source;
+
+            source.Y += 1;
+
             sb.Draw(
                 texture,
-                position + symbol.Position,
-                symbol.Source,
+                position + (symbol.Position * scale),
+                source,
                 color,
                 0f,
                 Vector2.Zero,
@@ -58,7 +73,7 @@ public static class ElkLanguage
                 0f
             );
 
-            position.Y += symbol.Height;
+            position.Y += symbol.Height * scale;
         }
     }
 
@@ -84,5 +99,5 @@ public static class ElkLanguage
 [UsedImplicitly]
 public static partial class ElkSymbols
 {
-    public const float TOTAL_WIDTH = 80;
+    public const float TOTAL_WIDTH = 40;
 }

@@ -128,7 +128,7 @@ public sealed class ElkAtlasReferenceGenerator : IIncrementalGenerator
                                   new global::Microsoft.Xna.Framework.Vector2({{symbol.X}}, {{symbol.Y}}),
                                   new global::Microsoft.Xna.Framework.Rectangle({{symbol.Source.X}}, {{symbol.Source.Y}}, {{symbol.Source.Width}}, {{symbol.Source.Height}}),
                                   {{symbol.Height}}
-                              )
+                              );
                           }
                       }
                       

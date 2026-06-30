@@ -112,6 +112,8 @@ internal static class Program
                 {
                     var pixel = symbol[x, y];
 
+                    pixel = Premultiply(pixel);
+
                     var atlasX = (int)rectangle.X + x;
                     var atlasY = (int)rectangle.Y + y;
 
@@ -124,6 +126,24 @@ internal static class Program
             var outputPath = Path.Combine(dir, output_dir, atlas_image_name);
 
             outputImage.SaveAsPng(outputPath);
+
+            return;
+
+            static Rgba32 Premultiply(Rgba32 color)
+            {
+                var alpha = (float)color.A / byte.MaxValue;
+
+                if (alpha <= 0)
+                {
+                    return color;
+                }
+
+                color.R = (byte)(color.R * alpha);
+                color.G = (byte)(color.G * alpha);
+                color.B = (byte)(color.B * alpha);
+
+                return color;
+            }
         }
 
         void CreateJson()

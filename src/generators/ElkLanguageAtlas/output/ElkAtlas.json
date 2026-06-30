@@ -1,50 +1,374 @@
 [
   {
-    "Name": "CloseBracket",
-    "X": -2,
-    "Y": -7,
+    "Name": "BranchLeftA",
+    "X": -1,
+    "Y": -2,
     "Source": {
-      "X": 80,
-      "Y": 0,
-      "Width": 84,
-      "Height": 28
+      "X": 193,
+      "Y": 183,
+      "Width": 25,
+      "Height": 16
     },
-    "Height": 21.0
+    "Height": 14.0
   },
   {
-    "Name": "FullStop",
-    "X": 0,
-    "Y": -6,
+    "Name": "BranchLeftB",
+    "X": -6,
+    "Y": -4,
     "Source": {
-      "X": 0,
-      "Y": 0,
-      "Width": 80,
-      "Height": 124
+      "X": 167,
+      "Y": 124,
+      "Width": 29,
+      "Height": 10
     },
-    "Height": 120.0
+    "Height": 6.0
   },
   {
-    "Name": "RightRack",
-    "X": -32,
-    "Y": -3,
+    "Name": "BranchLeftC",
+    "X": 5,
+    "Y": -2,
     "Source": {
-      "X": 80,
-      "Y": 28,
-      "Width": 33,
-      "Height": 70
+      "X": 196,
+      "Y": 110,
+      "Width": 18,
+      "Height": 21
     },
-    "Height": 67.0
+    "Height": 18.0
   },
   {
-    "Name": "StarCraddle",
+    "Name": "BranchRightA",
+    "X": 18,
+    "Y": -5,
+    "Source": {
+      "X": 167,
+      "Y": 110,
+      "Width": 29,
+      "Height": 14
+    },
+    "Height": 7.0
+  },
+  {
+    "Name": "BranchRightB",
     "X": 18,
     "Y": -3,
     "Source": {
-      "X": 113,
-      "Y": 28,
-      "Width": 37,
-      "Height": 50
+      "X": 36,
+      "Y": 191,
+      "Width": 22,
+      "Height": 15
     },
-    "Height": 48.0
+    "Height": 13.0
+  },
+  {
+    "Name": "BranchRightC",
+    "X": 17,
+    "Y": -4,
+    "Source": {
+      "X": 81,
+      "Y": 194,
+      "Width": 23,
+      "Height": 13
+    },
+    "Height": 8.0
+  },
+  {
+    "Name": "CloseBracketA",
+    "X": 10,
+    "Y": -2,
+    "Source": {
+      "X": 81,
+      "Y": 184,
+      "Width": 23,
+      "Height": 10
+    },
+    "Height": 9.0
+  },
+  {
+    "Name": "CloseBracketLarge",
+    "X": -3,
+    "Y": -8,
+    "Source": {
+      "X": 165,
+      "Y": 136,
+      "Width": 43,
+      "Height": 16
+    },
+    "Height": 7.0
+  },
+  {
+    "Name": "CrownA",
+    "X": 13,
+    "Y": -30,
+    "Source": {
+      "X": 112,
+      "Y": 131,
+      "Width": 13,
+      "Height": 43
+    },
+    "Height": 10.0
+  },
+  {
+    "Name": "CrownBLeft",
+    "X": -15,
+    "Y": -37,
+    "Source": {
+      "X": 58,
+      "Y": 146,
+      "Width": 38,
+      "Height": 38
+    },
+    "Height": 5.0
+  },
+  {
+    "Name": "CrownBRight",
+    "X": 15,
+    "Y": -30,
+    "Source": {
+      "X": 0,
+      "Y": 146,
+      "Width": 36,
+      "Height": 56
+    },
+    "Height": 15.0
+  },
+  {
+    "Name": "CurlA",
+    "X": 11,
+    "Y": -2,
+    "Source": {
+      "X": 96,
+      "Y": 146,
+      "Width": 15,
+      "Height": 23
+    },
+    "Height": 20.0
+  },
+  {
+    "Name": "DiamondA",
+    "X": 14,
+    "Y": -3,
+    "Source": {
+      "X": 112,
+      "Y": 174,
+      "Width": 13,
+      "Height": 23
+    },
+    "Height": 20.0
+  },
+  {
+    "Name": "DotSmall",
+    "X": 17,
+    "Y": -1,
+    "Source": {
+      "X": 104,
+      "Y": 184,
+      "Width": 6,
+      "Height": 6
+    },
+    "Height": 5.0
+  },
+  {
+    "Name": "EyeRightFlare",
+    "X": 30,
+    "Y": -5,
+    "Source": {
+      "X": 0,
+      "Y": 0,
+      "Width": 142,
+      "Height": 65
+    },
+    "Height": 0.0
+  },
+  {
+    "Name": "EyeUp",
+    "X": 7,
+    "Y": -69,
+    "Source": {
+      "X": 0,
+      "Y": 65,
+      "Width": 112,
+      "Height": 81
+    },
+    "Height": 0.0
+  },
+  {
+    "Name": "FullStop",
+    "X": 2,
+    "Y": -6,
+    "Source": {
+      "X": 142,
+      "Y": 0,
+      "Width": 40,
+      "Height": 60
+    },
+    "Height": 54.0
+  },
+  {
+    "Name": "FullStopAlt",
+    "X": 2,
+    "Y": -6,
+    "Source": {
+      "X": 125,
+      "Y": 136,
+      "Width": 40,
+      "Height": 60
+    },
+    "Height": 54.0
+  },
+  {
+    "Name": "IBeam",
+    "X": 13,
+    "Y": -5,
+    "Source": {
+      "X": 182,
+      "Y": 27,
+      "Width": 19,
+      "Height": 33
+    },
+    "Height": 30.0
+  },
+  {
+    "Name": "LargeLeftSpike",
+    "X": -36,
+    "Y": -1,
+    "Source": {
+      "X": 165,
+      "Y": 152,
+      "Width": 44,
+      "Height": 31
+    },
+    "Height": 9.0
+  },
+  {
+    "Name": "LeafA",
+    "X": 14,
+    "Y": -2,
+    "Source": {
+      "X": 96,
+      "Y": 169,
+      "Width": 12,
+      "Height": 14
+    },
+    "Height": 12.0
+  },
+  {
+    "Name": "LeftExcuse",
+    "X": -12,
+    "Y": -5,
+    "Source": {
+      "X": 165,
+      "Y": 183,
+      "Width": 28,
+      "Height": 20
+    },
+    "Height": 14.0
+  },
+  {
+    "Name": "Og",
+    "X": 0,
+    "Y": -5,
+    "Source": {
+      "X": 125,
+      "Y": 65,
+      "Width": 42,
+      "Height": 71
+    },
+    "Height": 65.0
+  },
+  {
+    "Name": "OpenBracketA",
+    "X": 9,
+    "Y": -1,
+    "Source": {
+      "X": 58,
+      "Y": 184,
+      "Width": 23,
+      "Height": 11
+    },
+    "Height": 7.0
+  },
+  {
+    "Name": "OpenBracketLarge",
+    "X": 0,
+    "Y": -4,
+    "Source": {
+      "X": 167,
+      "Y": 65,
+      "Width": 44,
+      "Height": 15
+    },
+    "Height": 6.0
+  },
+  {
+    "Name": "PlanetA",
+    "X": 8,
+    "Y": -5,
+    "Source": {
+      "X": 182,
+      "Y": 0,
+      "Width": 29,
+      "Height": 27
+    },
+    "Height": 20.0
+  },
+  {
+    "Name": "RackA",
+    "X": -40,
+    "Y": -5,
+    "Source": {
+      "X": 36,
+      "Y": 146,
+      "Width": 22,
+      "Height": 45
+    },
+    "Height": 32.0
+  },
+  {
+    "Name": "RootsA",
+    "X": 5,
+    "Y": -3,
+    "Source": {
+      "X": 167,
+      "Y": 80,
+      "Width": 28,
+      "Height": 30
+    },
+    "Height": 27.0
+  },
+  {
+    "Name": "RootsB",
+    "X": 7,
+    "Y": -3,
+    "Source": {
+      "X": 195,
+      "Y": 80,
+      "Width": 23,
+      "Height": 27
+    },
+    "Height": 26.0
+  },
+  {
+    "Name": "Space",
+    "X": 0,
+    "Y": 0,
+    "Source": {
+      "X": 142,
+      "Y": 60,
+      "Width": 1,
+      "Height": 1
+    },
+    "Height": 0.0
+  },
+  {
+    "Name": "SpearA",
+    "X": 15,
+    "Y": -4,
+    "Source": {
+      "X": 112,
+      "Y": 65,
+      "Width": 13,
+      "Height": 66
+    },
+    "Height": 64.0
   }
 ]
