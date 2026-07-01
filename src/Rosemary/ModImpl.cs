@@ -23,6 +23,7 @@ partial class ModImpl : IHasCustomAuthorMessage
 
 // HotReload+ launch profile logic.
 #if DEBUG
+// ReSharper disable once ClassNeverInstantiated.Local
 file class Program
 {
     public static void Main(string[] args)
