@@ -1,5 +1,6 @@
-displayName = rosemary
+﻿displayName = rosemary
 author = Zoey
 version = 1.0.0
 side = Both
 modReferences = Daybreak
+buildIgnore = lib\*, .idea\*, .vs\*, *.tmp, Properties\*, *.csproj, *.user, obj\*, bin\*, *.config, .editorconfig, TemplateEngineHost\*, *\ElkAtlas.json
