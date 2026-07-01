@@ -5,18 +5,15 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using ReLogic.Graphics;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
-using System.Text;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.UI;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
-using static Daybreak.Common.Features.Hooks.ModifyItemDrawBasics;
 
 namespace Rosemary.Content;
 
@@ -60,12 +57,18 @@ public static class ElkLangItemSets
             MouseTextInner_UsesElkName_Reset
         );
         IL_Main.MouseTextInner += MouseTextInner_UsesElkName;
+
+        IL_PopupText.DrawItemTextPopups += DrawItemTextPopups_UsesElkName;
     }
 
 #region UsesElkName
     private const float elk_name_tooltip_scale = 1f;
 
     private static Item? nonTooltipHoverItem;
+
+    private static void DrawItemTextPopups_UsesElkName(ILContext il)
+    {
+    }
 
     private static void MouseTextInner_UsesElkName(ILContext il)
     {
@@ -222,8 +225,18 @@ public static class ElkLangItemSets
 
                 sb.End(out var ss);
 
-                hotbarShader.Parameters.GradientTop = 20;
-                hotbarShader.Parameters.GradientHeight = MathF.Min(150f, size.Y - 20);
+                var transform = ss.TransformMatrix;
+
+                var topLeft = new Vector2(0, 20);
+
+                var bottomLeft = topLeft;
+                bottomLeft.Y += MathF.Min(150f, size.Y - 20);
+
+                topLeft = topLeft.Transform(transform);
+                bottomLeft = bottomLeft.Transform(transform);
+
+                hotbarShader.Parameters.GradientTop = topLeft.Y;
+                hotbarShader.Parameters.GradientHeight = bottomLeft.Y - topLeft.Y;
 
                 hotbarShader.Apply();
 
@@ -359,7 +372,7 @@ public static class ElkLangItemSets
         sb.DrawPhraseWithRarityAndStack(phrase, item, position);
     }
 
-    private static void DrawPhraseWithRarityAndStack(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position)
+    private static void DrawPhraseWithRarityAndStack(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position, bool showPrefix = true)
     {
         var rarityShader = Assets.Elk.Language.RarityGradient.CreateRarityGradientShader();
 
@@ -379,8 +392,19 @@ public static class ElkLangItemSets
 
         const float padding = 20f;
 
-        rarityShader.Parameters.GradientTop = position.Y - padding;
-        rarityShader.Parameters.GradientHeight = size.Y + padding;
+        var transform = ss.TransformMatrix;
+
+        var topLeft = position;
+        topLeft.Y -= padding;
+
+        var bottomLeft = topLeft;
+        bottomLeft.Y += size.Y + padding;
+
+        topLeft = topLeft.Transform(transform);
+        bottomLeft = bottomLeft.Transform(transform);
+
+        rarityShader.Parameters.GradientTop = topLeft.Y;
+        rarityShader.Parameters.GradientHeight = bottomLeft.Y - topLeft.Y;
 
         rarityShader.Parameters.GradientColor = rarityColor.ToVector4();
 
@@ -393,6 +417,11 @@ public static class ElkLangItemSets
         sb.Restart(in ss);
 
         DrawStack();
+
+        if (showPrefix)
+        {
+            DrawPrefix();
+        }
 
         return;
 
@@ -452,6 +481,38 @@ public static class ElkLangItemSets
                 0f,
                 stackOrigin,
                 new Vector2(stackScale),
+                maxWidth: 999f
+            );
+        }
+
+        void DrawPrefix()
+        {
+            const float prefix_scale = 0.9f * elk_name_tooltip_scale;
+
+            var font = FontAssets.MouseText.Value;
+
+            var prefixText = Lang.prefix[item.prefix].Value;
+
+            var lastCharacterHeight = phrase[^1].Height - phrase[^1].Position.Y;
+
+            var prefixPosition = new Vector2(position.X + 10f, position.Y + size.Y - (lastCharacterHeight * 0.5f));
+
+            var prefixRotation = -MathHelper.PiOver2;
+
+            var prefixSize = font.MeasureString(prefixText);
+
+            var prefixOrigin = prefixSize * new Vector2(0.5f, 1f);
+
+            ChatManager.DrawColorCodedStringWithShadow(
+                sb,
+                font,
+                prefixText,
+                prefixPosition,
+                color,
+                Color.Black,
+                prefixRotation,
+                prefixOrigin,
+                new Vector2(prefix_scale),
                 maxWidth: 999f
             );
         }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -10,7 +11,7 @@ public sealed class TestVerticalLangItem : ModItem
 
     public override void SetStaticDefaults()
     {
-        ItemID.Sets.UsesElkName[Type] =
+        ItemID.Sets.UsesElkName[Type] = ItemID.Sets.UsesElkName[ItemID.TerraBlade] =
             ElkLanguage.NewPhrase
                        .CrownBLeft   .UseHeight(-12f)
                        .CrownBRight  .UseHeight(27f) .UseOffset(new Vector2(4f, -4f))
@@ -30,6 +31,23 @@ public sealed class TestVerticalLangItem : ModItem
 
     public override void SetDefaults()
     {
-        Item.rare = ItemRarityID.LightPurple;
+        Item.width = 40;
+        Item.height = 40;
+
+        Item.useStyle = ItemUseStyleID.Swing;
+        Item.useTime = 20;
+        Item.useAnimation = 20;
+        Item.autoReuse = true;
+
+        Item.DamageType = DamageClass.Melee;
+        Item.damage = 50;
+
+        Item.value = Item.buyPrice(gold: 1);
+        Item.UseSound = SoundID.Item1;
+
+        // fuck me i guess
+        Item.AllowReforgeForStackableItem = true;
+
+        Item.rare = ItemRarityID.Purple;
     }
 }
