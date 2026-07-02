@@ -59,12 +59,6 @@ public static class ElkLanguage
         {
             var source = symbol.Source;
 
-            source.X += 1;
-            source.Y += 1;
-
-            source.Width -= 1;
-            source.Height -= 1;
-
             sb.Draw(
                 texture,
                 position + (symbol.Position * scale),

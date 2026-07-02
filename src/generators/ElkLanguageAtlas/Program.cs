@@ -70,6 +70,8 @@ internal static class Program
 
     private static void GenerateAtlas(string dir, string[] paths)
     {
+        const int padding = 2;
+
         var (symbols, rectangles) = GetSymbols();
 
         RectanglePacker.Pack(rectangles, out var bounds);
@@ -92,7 +94,7 @@ internal static class Program
             for (var i = 0; i < paths.Length; i++)
             {
                 images[i] = Image.Load<Rgba32>(paths[i]);
-                rects[i] = new PackingRectangle(0, 0, (uint)images[i].Width, (uint)images[i].Height, i);
+                rects[i] = new PackingRectangle(0, 0, (uint)images[i].Width + (padding * 2), (uint)images[i].Height + (padding * 2), i);
             }
 
             return (images, rects);
@@ -107,15 +109,15 @@ internal static class Program
                 var symbol = symbols[i];
                 var rectangle = rectangles.First(r => r.Id == i);
 
-                for (var x = 0; x < rectangle.Width; x++)
-                for (var y = 0; y < rectangle.Height; y++)
+                for (var x = 0; x < rectangle.Width - (padding * 2); x++)
+                for (var y = 0; y < rectangle.Height - (padding * 2); y++)
                 {
                     var pixel = symbol[x, y];
 
                     pixel = Premultiply(pixel);
 
-                    var atlasX = (int)rectangle.X + x;
-                    var atlasY = (int)rectangle.Y + y;
+                    var atlasX = (int)rectangle.X + padding + x;
+                    var atlasY = (int)rectangle.Y + padding + y;
 
                     outputImage[atlasX, atlasY] = pixel;
                 }
@@ -158,7 +160,7 @@ internal static class Program
 
                 var rectangle = rectangles.First(r => r.Id == i);
 
-                var source = new ElkSymbol.Rectangle((int)rectangle.X, (int)rectangle.Y, (int)rectangle.Width, (int)rectangle.Height);
+                var source = new ElkSymbol.Rectangle((int)rectangle.X + padding, (int)rectangle.Y + padding, (int)rectangle.Width - (padding * 2), (int)rectangle.Height - (padding * 2));
 
                 var realHeight = float.Parse(segments[3]);
 
