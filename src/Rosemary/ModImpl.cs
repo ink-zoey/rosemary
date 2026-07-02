@@ -21,8 +21,7 @@ partial class ModImpl : IHasCustomAuthorMessage
     }
 }
 
-// HotReload+ launch profile logic.
-#if DEBUG
+#if PROJECT_BUILD && DEBUG
 // ReSharper disable once ClassNeverInstantiated.Local
 file class Program
 {
@@ -41,7 +40,7 @@ file class Program
             return;
         }
 
-        Console.WriteLine(file);
+        Console.WriteLine($"ProjectBuild forwarding to: {file}");
         Console.WriteLine();
 
         Environment.CurrentDirectory = Path.GetDirectoryName(file)!;

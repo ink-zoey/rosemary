@@ -1,0 +1,11 @@
+<Project>
+
+    <ItemGroup>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)ElkLanguageReferences\ElkLanguageReferences.csproj" PrivateAssets="All" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+</ItemGroup>
+
+    <ItemGroup>
+        <AdditionalFiles Include="**\*.json" />
+    </ItemGroup>
+
+</Project>

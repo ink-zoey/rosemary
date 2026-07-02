@@ -6,7 +6,7 @@ using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Core;
 
-#if DEBUG
+#if PROJECT_BUILD && DEBUG
 [assembly: MetadataUpdateHandler(typeof(HotReloading))]
 
 namespace Rosemary.Common;
