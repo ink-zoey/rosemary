@@ -1,12 +1,15 @@
-﻿using Daybreak.Common.Features.Hooks;
+﻿using Daybreak.Common.CIL;
+using Daybreak.Common.Features.Hooks;
 using Daybreak.Common.Rendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using Newtonsoft.Json.Linq;
 using ReLogic.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Reflection;
 using Terraria;
 using Terraria.GameContent;
@@ -14,6 +17,8 @@ using Terraria.GameContent.UI;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
+using static System.Net.Mime.MediaTypeNames;
+using static Terraria.ModLoader.PlayerDrawLayer;
 
 namespace Rosemary.Content;
 
@@ -58,16 +63,222 @@ public static class ElkLangItemSets
         );
         IL_Main.MouseTextInner += MouseTextInner_UsesElkName;
 
+        On_PopupText.NewText_PopupTextContext_Item_Vector2_int_bool_bool += NewText_UsesElkName_UpdatePopupTextItems;
+        On_PopupText.ResetText += ResetText_UsesElkName;
+
+        On_PopupText.GetTextHitbox += GetTextHitbox_UsesElkName;
+        IL_PopupText.Update += _ => { };
+
+        IL_PopupText.NewText_PopupTextContext_Item_Vector2_int_bool_bool += NewText_UsesElkName;
+
         IL_PopupText.DrawItemTextPopups += DrawItemTextPopups_UsesElkName;
     }
 
 #region UsesElkName
     private const float elk_name_tooltip_scale = 1f;
+    private const float elk_name_popup_scale = 1f;
 
     private static Item? nonTooltipHoverItem;
 
+    private static Item?[] popupTextItems = new Item?[PopupText.popupText.Length];
+
     private static void DrawItemTextPopups_UsesElkName(ILContext il)
     {
+        var c = new ILCursor(il);
+
+        var popupTextIndex = -1;
+        var scaleMultiplierIndex = -1;
+        var magicAlphaMultiplierIndex = -1;
+
+        var colorIndex = -1;
+
+        ILLabel? contLoopTarget = null;
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdloc(out popupTextIndex),
+            i => i.MatchLdfld<PopupText>(nameof(PopupText.active)),
+            i => i.MatchBrfalse(out contLoopTarget)
+        );
+
+        Debug.Assert(contLoopTarget is not null);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdfld<PopupText>(nameof(PopupText.scale)),
+            i => i.MatchLdloc(out _),
+            i => i.MatchDiv(),
+            i => i.MatchStloc(out scaleMultiplierIndex)
+        );
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdcR4(1f),
+            i => i.MatchLdloc(out _),
+            i => i.MatchCallvirt<string>($"get_{nameof(string.Length)}")
+        );
+
+        c.GotoNext(
+            i => i.MatchSwitch(out _)
+        );
+
+        c.GotoPrev(
+            MoveType.After,
+            i => i.MatchDiv(),
+            i => i.MatchStloc(out _)
+        );
+
+        c.FindNext(
+            out _,
+            i => i.MatchBr(out _),
+            i => i.MatchLdloc(out colorIndex),
+
+            i => i.MatchLdfld<PopupText>(nameof(PopupText.alpha)),
+            i => i.MatchLdloc(out magicAlphaMultiplierIndex)
+        );
+
+        c.EmitLdloc(popupTextIndex);
+        c.EmitLdloc(colorIndex);
+        c.EmitLdloc(scaleMultiplierIndex);
+        c.EmitLdloc(magicAlphaMultiplierIndex);
+        c.EmitDelegate(
+            static (PopupText popupText, Color origColor, float scaleMultiplier, float magic) =>
+            {
+                var index = PopupText.popupText.IndexOf(popupText);
+
+                var item = popupTextItems[index];
+
+                if (item is null || usesElkName[item.type] is not { } phrase)
+                {
+                    return false;
+                }
+
+                var sb = Main.spriteBatch;
+
+                var size = phrase.Measure(1f);
+
+                var multiplier = (float)Main.mouseTextColor / byte.MaxValue;
+
+                var gradient = popupText.color * scaleMultiplier * popupText.alpha * magic;
+                var white = Color.White * multiplier;
+                white.A = byte.MaxValue;
+
+                white *= popupText.alpha * magic;
+
+                var fade = 1 - (float)Utils.EaseOutCirc(Utils.Remap(popupText.framesSinceSpawn, 0f, 40, 0f, 1f));
+
+                gradient = Color.Lerp(gradient, Color.White, fade);
+
+                white = Color.Lerp(white, Color.White, fade);
+
+                var outlineGradient = origColor;
+                var black = Color.Black;
+
+                {
+                    var outlineAlpha = popupText.color.A * scaleMultiplier * popupText.alpha;
+
+                    outlineGradient.A = (byte)MathHelper.Lerp(60f, 127f, Utils.GetLerpValue(0f, 255f, outlineAlpha, clamped: true));
+
+                    var outlineGradientAlt = new Color(0, 0, 0, (int)outlineAlpha);
+
+                    outlineGradient = Color.Lerp(outlineGradient, outlineGradientAlt, 0.25f);
+                    black *= outlineAlpha / byte.MaxValue;
+                }
+
+                // The gradient looks particularly ugly with the colors given in this case.
+                if (popupText.context == PopupTextContext.ItemReforge_Best)
+                {
+                    white = gradient;
+                    black = outlineGradient;
+                }
+
+                var scale = elk_name_popup_scale * popupText.scale;
+
+                var position = popupText.position - Main.screenPosition + (size * elk_name_popup_scale * 0.5f);
+
+                // TODO: Maybe account for rotation? PopupText doesn't use it however so it should be fine.
+                sb.DrawItemNamePhrase(phrase, item, position, gradient, white, outlineGradient, black, scale, size * 0.5f);
+
+                return true;
+            }
+        );
+
+        c.EmitBrtrue(contLoopTarget);
+    }
+
+    private static void NewText_UsesElkName(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var itemIndex = -1; // arg
+
+        c.GotoNext(
+            i => i.MatchLdarg(out itemIndex),
+            i => i.MatchCallvirt<Item>($"get_{nameof(Item.Name)}")
+        );
+
+        while (c.TryGotoNext(
+                   MoveType.After,
+                   i => i.MatchCallvirt<DynamicSpriteFont>(nameof(DynamicSpriteFont.MeasureString))
+               ))
+        {
+            c.EmitLdarg(itemIndex);
+
+            c.EmitDelegate(
+                static (Vector2 size, Item item) =>
+                {
+                    if (usesElkName[item.type] is not { } phrase)
+                    {
+                        return size;
+                    }
+
+                    return phrase.MeasureWithStack(elk_name_popup_scale, item.stack);
+                }
+            );
+        }
+    }
+
+    private static Vector2 GetTextHitbox_UsesElkName(On_PopupText.orig_GetTextHitbox orig, PopupText self)
+    {
+        var index = PopupText.popupText.IndexOf(self);
+
+        var item = popupTextItems[index];
+
+        if (item is null || usesElkName[item.type] is not { } phrase)
+        {
+            return orig(self);
+        }
+
+        return phrase.MeasureWithStack(elk_name_popup_scale, item.stack) * self.scale;
+    }
+
+    private static void ResetText_UsesElkName(On_PopupText.orig_ResetText orig, PopupText text)
+    {
+        orig(text);
+
+        var index = PopupText.popupText.IndexOf(text);
+
+        popupTextItems[index] = null;
+    }
+
+    private static int NewText_UsesElkName_UpdatePopupTextItems(On_PopupText.orig_NewText_PopupTextContext_Item_Vector2_int_bool_bool orig, PopupTextContext context, Item newItem, Vector2 position, int stack, bool noStack, bool longText)
+    {
+        var index = orig(context, newItem, position, stack, noStack, longText);
+
+        if (index <= -1)
+        {
+            return index;
+        }
+
+        // Should probably never happen.
+        if (popupTextItems.Length != PopupText.popupText.Length)
+        {
+            Array.Resize(ref popupTextItems, PopupText.popupText.Length);
+        }
+
+        popupTextItems[index] = newItem.Clone();
+
+        return index;
     }
 
     private static void MouseTextInner_UsesElkName(ILContext il)
@@ -94,7 +305,7 @@ public static class ElkLangItemSets
                     return originalSize;
                 }
 
-                return phrase.MeasurePhraseWithStack(elk_name_tooltip_scale, item.stack);
+                return phrase.MeasureWithStack(elk_name_tooltip_scale, item.stack);
             }
         );
 
@@ -131,7 +342,7 @@ public static class ElkLangItemSets
                     return false;
                 }
 
-                Main.spriteBatch.DrawPhraseWithRarityAndStack(phrase, item, new Vector2(x + 6f, y + 8f));
+                Main.spriteBatch.DrawItemNamePhrase(phrase, item, new Vector2(x + 6f, y + 8f));
 
                 return true;
             }
@@ -317,7 +528,7 @@ public static class ElkLangItemSets
                     return;
                 }
 
-                var phraseSize = phrase.MeasurePhraseWithStack(elk_name_tooltip_scale, Main.HoverItem.stack);
+                var phraseSize = phrase.MeasureWithStack(elk_name_tooltip_scale, Main.HoverItem.stack);
 
                 size.X += phraseSize.X + 4f;
                 size.Y = MathF.Max(size.Y, phraseSize.Y);
@@ -347,7 +558,7 @@ public static class ElkLangItemSets
             return true;
         }
 
-        var size = phrase.MeasurePhraseWithStack(elk_name_tooltip_scale, item.stack);
+        var size = phrase.MeasureWithStack(elk_name_tooltip_scale, item.stack);
 
         usesElkNameTopLeft = new Vector2(x, y);
 
@@ -369,59 +580,20 @@ public static class ElkLangItemSets
         var position = usesElkNameTopLeft;
         position.X -= 6f;
 
-        sb.DrawPhraseWithRarityAndStack(phrase, item, position);
+        sb.DrawItemNamePhrase(phrase, item, position);
     }
 
-    private static void DrawPhraseWithRarityAndStack(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position, bool showPrefix = true)
+    private static void DrawItemNamePhrase(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position, bool showPrefix = true)
     {
-        var rarityShader = Assets.Elk.Language.RarityGradient.CreateRarityGradientShader();
-
-        var size = phrase.Measure(elk_name_tooltip_scale);
-
         var multiplier = (float)Main.mouseTextColor / byte.MaxValue;
 
-        var rarityColor = GetRarityColor();
+        var gradient = GetRarityColor();
 
-        var color = Color.White * multiplier;
+        var white = Color.White * multiplier;
 
-        color.A = byte.MaxValue;
+        white.A = byte.MaxValue;
 
-        sb.DrawPhraseOutline(phrase, position, Color.Black, elk_name_tooltip_scale, Vector2.Zero, spread: 1.5f, directions: 8);
-
-        sb.End(out var ss);
-
-        const float padding = 20f;
-
-        var transform = ss.TransformMatrix;
-
-        var topLeft = position;
-        topLeft.Y -= padding;
-
-        var bottomLeft = topLeft;
-        bottomLeft.Y += size.Y + padding;
-
-        topLeft = topLeft.Transform(transform);
-        bottomLeft = bottomLeft.Transform(transform);
-
-        rarityShader.Parameters.GradientTop = topLeft.Y;
-        rarityShader.Parameters.GradientHeight = bottomLeft.Y - topLeft.Y;
-
-        rarityShader.Parameters.GradientColor = rarityColor.ToVector4();
-
-        rarityShader.Apply();
-
-        sb.Begin(ss with { CustomEffect = rarityShader.Shader });
-        {
-            sb.DrawPhrase(phrase, position, color, elk_name_tooltip_scale, Vector2.Zero);
-        }
-        sb.Restart(in ss);
-
-        DrawStack();
-
-        if (showPrefix)
-        {
-            DrawPrefix();
-        }
+        sb.DrawItemNamePhrase(phrase, item, position, gradient, white, Color.Black, Color.Black, elk_name_tooltip_scale, Vector2.Zero, showPrefix);
 
         return;
 
@@ -450,6 +622,60 @@ public static class ElkLangItemSets
 
             return col;
         }
+    }
+
+    private static void DrawItemNamePhrase(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position, Color gradient, Color white, Color outlineGradient, Color black, float scale, Vector2 origin = default, bool showPrefix = true)
+    {
+        var rarityShader = Assets.Elk.Language.RarityGradient.CreateRarityGradientShader();
+
+        var size = phrase.Measure(scale);
+
+        sb.End(out var ss);
+
+        const float padding = 20f;
+
+        var transform = ss.TransformMatrix;
+
+        var topLeft = position - (origin * scale);
+        topLeft.Y -= padding;
+
+        var bottomLeft = topLeft;
+        bottomLeft.Y += size.Y + padding;
+
+        topLeft = topLeft.Transform(transform);
+        bottomLeft = bottomLeft.Transform(transform);
+
+        rarityShader.Parameters.GradientTop = topLeft.Y;
+        rarityShader.Parameters.GradientHeight = bottomLeft.Y - topLeft.Y;
+
+        rarityShader.Parameters.GradientColor = outlineGradient.ToVector4();
+
+        rarityShader.Apply();
+
+        sb.Begin(ss with { CustomEffect = rarityShader.Shader });
+        {
+            sb.DrawPhraseOutline(phrase, position, black, scale, origin, spread: 1.5f, directions: 8);
+        }
+        sb.End();
+
+        rarityShader.Parameters.GradientColor = gradient.ToVector4();
+
+        rarityShader.Apply();
+
+        sb.Begin(ss with { CustomEffect = rarityShader.Shader });
+        {
+            sb.DrawPhrase(phrase, position, white, scale, origin);
+        }
+        sb.Restart(in ss);
+
+        DrawStack();
+
+        if (showPrefix)
+        {
+            DrawPrefix();
+        }
+
+        return;
 
         void DrawStack()
         {
@@ -463,6 +689,7 @@ public static class ElkLangItemSets
             var stackText = $"({item.stack})";
 
             var stackPosition = new Vector2(position.X + (size.X * 0.5f), position.Y + size.Y);
+            stackPosition -= origin * scale;
 
             var stackSize = font.MeasureString(stackText);
 
@@ -476,8 +703,8 @@ public static class ElkLangItemSets
                 font,
                 stackText,
                 stackPosition,
-                color,
-                Color.Black,
+                white,
+                black,
                 0f,
                 stackOrigin,
                 new Vector2(stackScale),
@@ -487,7 +714,10 @@ public static class ElkLangItemSets
 
         void DrawPrefix()
         {
-            const float prefix_scale = 0.9f * elk_name_tooltip_scale;
+            if (item.prefix == 0)
+            {
+                return;
+            }
 
             var font = FontAssets.MouseText.Value;
 
@@ -496,10 +726,12 @@ public static class ElkLangItemSets
             var lastCharacterHeight = phrase[^1].Height - phrase[^1].Position.Y;
 
             var prefixPosition = new Vector2(position.X + 10f, position.Y + size.Y - (lastCharacterHeight * 0.5f));
+            prefixPosition -= origin * scale;
 
             var prefixRotation = -MathHelper.PiOver2;
 
             var prefixSize = font.MeasureString(prefixText);
+            var prefixScale = 0.9f * scale;
 
             var prefixOrigin = prefixSize * new Vector2(0.5f, 1f);
 
@@ -508,17 +740,17 @@ public static class ElkLangItemSets
                 font,
                 prefixText,
                 prefixPosition,
-                color,
-                Color.Black,
+                white,
+                black,
                 prefixRotation,
                 prefixOrigin,
-                new Vector2(prefix_scale),
+                new Vector2(prefixScale),
                 maxWidth: 999f
             );
         }
     }
 
-    private static Vector2 MeasurePhraseWithStack(this ElkPhrase phrase, float scale, int stack)
+    private static Vector2 MeasureWithStack(this ElkPhrase phrase, float scale, int stack)
     {
         var size = phrase.Measure(elk_name_tooltip_scale);
 

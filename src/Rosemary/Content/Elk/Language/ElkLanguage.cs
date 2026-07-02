@@ -53,7 +53,7 @@ public static class ElkLanguage
     {
         var texture = Assets.Elk.Language.ElkAtlas.Asset.Value;
 
-        position -= origin;
+        position -= origin * scale;
 
         foreach (var symbol in phrase)
         {
