@@ -27,39 +27,23 @@ file class Program
 {
     public static void Main(string[] args)
     {
-        var file = GetDotNetPath();
+        var file = args[0];
 
-        var arguments = args.ToList();
-
-        arguments.RemoveAt(0);
+        var arguments = args.Skip(1).ToArray();
 
         if (!File.Exists(file))
         {
             Console.WriteLine($"File {file} was not found!");
-
             return;
         }
 
-        Console.WriteLine($"ProjectBuild forwarding to: {file}");
+        Console.WriteLine($"ProjectBuild forwarding to: {file} with arguments: {string.Join(' ', arguments)}");
         Console.WriteLine();
-
-        Environment.CurrentDirectory = Path.GetDirectoryName(file)!;
 
         var assembly = Assembly.LoadFile(file);
 
         var entryPointInfo = assembly.EntryPoint;
-        entryPointInfo?.Invoke(null, [arguments.ToArray()]);
-
-        return;
-
-        string GetDotNetPath()
-        {
-            var pathEnv = Environment.GetEnvironmentVariable("PATH");
-            var paths = pathEnv?.Split(Path.PathSeparator);
-
-            return paths?.Select(p => Path.Combine(p, args[0]))
-                         .FirstOrDefault(File.Exists)!;
-        }
+        entryPointInfo?.Invoke(null, [arguments]);
     }
 }
 #endif
