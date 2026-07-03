@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria;
 
-namespace Rosemary.Content;
+namespace Rosemary.Content.Elk;
 
 public sealed class ElkPhrase : List<ElkSymbol>
 {

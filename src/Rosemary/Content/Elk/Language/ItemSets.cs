@@ -20,7 +20,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
 
-namespace Rosemary.Content;
+namespace Rosemary.Content.Elk;
 
 public static class ElkLangItemSets
 {

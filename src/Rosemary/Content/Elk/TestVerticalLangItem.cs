@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace Rosemary.Content;
+namespace Rosemary.Content.Elk;
 
 public sealed class TestVerticalLangItem : ModItem
 {
