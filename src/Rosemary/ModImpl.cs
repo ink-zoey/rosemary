@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Rosemary;
 
@@ -41,6 +42,25 @@ file class Program
         Console.WriteLine();
 
         var assembly = Assembly.LoadFile(file);
+
+        var directory = Path.GetDirectoryName(file)!;
+
+        // TODO: Use a proper assembly resolver.
+        var references = assembly.GetReferencedAssemblies();
+        foreach (var name in references)
+        {
+            try
+            {
+                Console.WriteLine($"Attempting to force resolve assembly: {name.Name}...");
+
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(directory, name.Name + ".dll"));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Could not force resolve assembly: {name.Name}! {e.Message}");
+            }
+        }
+        Console.WriteLine();
 
         var entryPointInfo = assembly.EntryPoint;
         entryPointInfo?.Invoke(null, [arguments]);

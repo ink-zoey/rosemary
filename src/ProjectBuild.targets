@@ -4,24 +4,6 @@
         <DefineConstants>PROJECT_BUILD</DefineConstants>
     </PropertyGroup>
 
-    <!-- Only included as a hack to have Tomat.TML.ClientBootstrap.dll run correctly when using ProjectBuild -->
-    <ItemGroup Condition="'$(DefineConstants.Contains(PROJECT_BUILD))'">
-        <PackageReference Include="CliFx" Version="2.3.6"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="8.0.2"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
-
-        <PackageReference Include="System.Reflection.Metadata" Version="10.0.5"/>
-        <PackageReference Include="Hjson" Version="3.0.0"/>
-        <PackageReference Include="Octokit" Version="13.0.1"/>
-        <PackageReference Include="PolySharp" Version="1.15.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-
-        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.12"/>
-        <PackageReference Include="System.Memory" Version="4.6.3"/>
-    </ItemGroup>
-
     <PropertyGroup Condition="'$(DefineConstants.Contains(PROJECT_BUILD))'">
         <OutputType>Exe</OutputType>
     </PropertyGroup>
