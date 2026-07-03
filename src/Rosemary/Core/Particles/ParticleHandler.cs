@@ -21,23 +21,21 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
 
         public bool MoveNext()
         {
-            if (bits != 0)
+            while (maskIterator < mask.Length)
             {
-                var bitIndex = BitOperations.TrailingZeroCount(bits);
-                Current = maskIterator * BITS_PER_CHUNK + bitIndex;
+                if (bits != 0)
+                {
+                    var bitIndex = BitOperations.TrailingZeroCount(bits);
+                    Current = maskIterator * BITS_PER_CHUNK + bitIndex;
 
-                bits &= bits - 1;
+                    bits &= bits - 1;
 
-                return true;
-            }
+                    return true;
+                }
 
-            maskIterator++;
+                maskIterator++;
 
-            if (maskIterator < mask.Length)
-            {
                 bits = mask[maskIterator];
-
-                return true;
             }
 
             return false;
@@ -47,6 +45,7 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
         {
             maskIterator = 0;
             bits = mask[0];
+            Current = 0;
         }
 
         void IDisposable.Dispose()
