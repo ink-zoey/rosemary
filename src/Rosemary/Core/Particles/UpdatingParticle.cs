@@ -5,7 +5,7 @@ public interface IUpdatingParticle
     bool Update();
 }
 
-public sealed class UpdatingParticleHandler<T>(int count) : ParticleHandler<T>(count)
+public class UpdatingParticleHandler<T>(int count) : ParticleHandler<T>(count)
     where T : struct, IUpdatingParticle
 {
     public void Update()
