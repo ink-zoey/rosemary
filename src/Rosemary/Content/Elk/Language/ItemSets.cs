@@ -4,22 +4,21 @@ using Daybreak.Common.Rendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
-using Newtonsoft.Json.Linq;
 using ReLogic.Graphics;
+using Rosemary.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.GameContent.Drawing;
 using Terraria.GameContent.UI;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
-using static Daybreak.Common.Features.Hooks.ModifyItemDrawBasics;
-using static System.Net.Mime.MediaTypeNames;
-using static Terraria.ModLoader.PlayerDrawLayer;
 
 namespace Rosemary.Content;
 
@@ -73,6 +72,10 @@ public static class ElkLangItemSets
         IL_PopupText.NewText_PopupTextContext_Item_Vector2_int_bool_bool += NewText_UsesElkName;
 
         IL_PopupText.DrawItemTextPopups += DrawItemTextPopups_UsesElkName;
+
+        IL_PopupText.EmitFancyFlashDust += EmitFancyFlashDust_UsesElkName;
+
+        IL_Main.ReforgeItemInReforgeSlot += ReforgeItemInReforgeSlot_UsesElkName;
     }
 
 #region UsesElkName
@@ -82,6 +85,225 @@ public static class ElkLangItemSets
     private static Item? nonTooltipHoverItem;
 
     private static Item?[] popupTextItems = new Item?[PopupText.popupText.Length];
+
+    private static void ReforgeItemInReforgeSlot_UsesElkName(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var bestReforgeIndex = -1;
+
+        var jumpRetTarget = c.DefineLabel();
+
+        c.GotoNext(
+            i => i.MatchCall<PopupText>(nameof(PopupText.NewText))
+        );
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdloc(out bestReforgeIndex),
+            i => i.MatchBrfalse(out _)
+        );
+
+        c.EmitLdloc(bestReforgeIndex);
+
+        c.EmitDelegate(
+            static (bool rolledPrefixIsTopTier) =>
+            {
+                const float y_offset = -16f;
+
+                var item = Main.reforgeItem;
+
+                if (item is null || usesElkName[item.type] is not { } phrase)
+                {
+                    return false;
+                }
+
+                var player = Main.LocalPlayer;
+
+                if (true)
+                {
+                    SoundEngine.PlaySound(in SoundID.BestReforge);
+
+                    var size = phrase.Measure(elk_name_popup_scale);
+
+                    var offset = y_offset - (size.Y * 0.5f);
+                    var position = player.MountedCenter + new Vector2(0f, offset * player.gravDir);
+
+                    var ySpeed = size.Y / 4f;
+
+                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.RainbowRodHit, new ParticleOrchestraSettings
+                    {
+                        PositionInWorld = position,
+                        MovementVector = new Vector2(0, ySpeed) + Main.rand.NextVector2Circular(16f, 16f)
+                    }, Main.myPlayer);
+                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.RainbowRodHit, new ParticleOrchestraSettings
+                    {
+                        PositionInWorld = position,
+                        MovementVector = new Vector2(0f, ySpeed * 0.5f) + Main.rand.NextVector2Circular(5f, 5f)
+                    }, Main.myPlayer);
+                    for (var i = 0; i < 3; i++)
+                    {
+                        ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
+                        {
+                            PositionInWorld = position + Main.rand.NextVector2Circular(16f, 16f)
+                        }, Main.myPlayer);
+                    }
+
+                    Main.reforgeCooldown = 110;
+                }
+                else
+                {
+                    SoundEngine.PlaySound(in SoundID.Item37);
+                    Main.reforgeCooldown = 30;
+                }
+
+                return true;
+            }
+        );
+
+        c.EmitBrfalse(jumpRetTarget);
+
+        c.EmitRet();
+
+        c.MarkLabel(jumpRetTarget);
+    }
+
+    private static void EmitFancyFlashDust_UsesElkName(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var isElkPhrasePopup = c.AddVariable<bool>();
+
+        var widthMultiplier = c.AddVariable<float>();
+        var heightMultiplier = c.AddVariable<float>();
+
+        var popupIndex = -1;      // arg
+        var textHitboxIndex = -1; // loc
+
+        var jumpXVelocitySettingTarget = c.DefineLabel();
+        var jumpYVelocitySettingTarget = c.DefineLabel();
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdarg(out popupIndex),
+            i => i.MatchCallvirt<PopupText>(nameof(PopupText.GetTextHitbox)),
+            i => i.MatchStloc(out textHitboxIndex)
+        );
+
+        c.EmitLdarg(popupIndex);
+        c.EmitDelegate(
+            static (PopupText popupText) =>
+            {
+                var index = PopupText.popupText.IndexOf(popupText);
+
+                var item = popupTextItems[index];
+
+                return item is not null && usesElkName[item.type] is not null;
+            }
+        );
+        c.EmitStloc(isElkPhrasePopup);
+
+        SwapPositionsAndInitialVelocities();
+        SwapPositionsAndInitialVelocities();
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdfld<Vector2>(nameof(Vector2.X)),
+            i => i.MatchStfld<Vector2>(nameof(Vector2.X))
+        );
+
+        c.EmitLdloc(isElkPhrasePopup);
+        c.EmitBrtrue(jumpXVelocitySettingTarget);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdfld<Vector2>(nameof(Vector2.X)),
+            i => i.MatchStfld<Vector2>(nameof(Vector2.X))
+        );
+
+        c.EmitBr(jumpYVelocitySettingTarget);
+
+        c.MarkLabel(jumpXVelocitySettingTarget);
+
+        var vector2YInfo = typeof(Vector2).GetField(nameof(Vector2.Y), BindingFlags.Instance | BindingFlags.Public)!;
+
+        c.EmitLdfld(vector2YInfo);
+        c.EmitStfld(vector2YInfo);
+
+        c.MarkLabel(jumpYVelocitySettingTarget);
+
+        return;
+
+        void SwapPositionsAndInitialVelocities()
+        {
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchLdloc(textHitboxIndex),
+                i => i.MatchLdfld<Vector2>(nameof(Vector2.X))
+            );
+
+            c.GotoNext(
+                MoveType.Before,
+                i => i.MatchMul()
+            );
+
+            c.EmitStloc(widthMultiplier);
+            c.EmitLdloc(widthMultiplier);
+
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchConvR4(),
+                i => i.MatchMul(),
+                i => i.MatchAdd()
+            );
+
+            c.EmitStloc(heightMultiplier);
+            c.EmitLdloc(heightMultiplier);
+
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchNewobj<Vector2>()
+            );
+
+            c.EmitLdloc(isElkPhrasePopup);
+
+            c.EmitLdarg(popupIndex);
+            c.EmitLdloc(textHitboxIndex);
+
+            c.EmitLdloc(widthMultiplier);
+            c.EmitLdloc(heightMultiplier);
+            c.EmitDelegate(
+                static (Vector2 position, bool vertical, PopupText popupText, Vector2 hitbox, float xMultiplier, float yMultiplier) =>
+                {
+                    if (!vertical)
+                    {
+                        return position;
+                    }
+
+                    return popupText.position + (hitbox * new Vector2(yMultiplier, xMultiplier));
+                }
+            );
+
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchNewobj<Vector2>(),
+                i => i.MatchNewobj<Vector2?>()
+            );
+
+            c.EmitLdloc(isElkPhrasePopup);
+            c.EmitDelegate(
+                static (Vector2 velocity, bool vertical) =>
+                {
+                    if (!vertical)
+                    {
+                        return velocity;
+                    }
+
+                    return new Vector2(velocity.Y, velocity.X);
+                }
+            );
+        }
+    }
 
     private static void DrawItemTextPopups_UsesElkName(ILContext il)
     {
@@ -172,25 +394,20 @@ public static class ElkLangItemSets
 
                 white = Color.Lerp(white, Color.White, fade);
 
-                var outlineGradient = origColor;
-                var black = Color.Black;
+                var outline = origColor;
 
                 {
                     var outlineAlpha = popupText.color.A * scaleMultiplier * popupText.alpha;
 
-                    outlineGradient.A = (byte)MathHelper.Lerp(60f, 127f, Utils.GetLerpValue(0f, 255f, outlineAlpha, clamped: true));
+                    outline.A = (byte)MathHelper.Lerp(60f, 127f, Utils.GetLerpValue(0f, 255f, outlineAlpha, clamped: true));
 
-                    var outlineGradientAlt = new Color(0, 0, 0, (int)outlineAlpha);
-
-                    outlineGradient = Color.Lerp(outlineGradient, outlineGradientAlt, 0.25f);
-                    black *= outlineAlpha / byte.MaxValue;
+                    outline = Color.Lerp(outline, new Color(0, 0, 0, (int)outlineAlpha), 0.25f);
                 }
 
                 // The gradient looks particularly ugly with the colors given in this case.
                 if (popupText.context == PopupTextContext.ItemReforge_Best)
                 {
                     white = gradient;
-                    black = outlineGradient;
                 }
 
                 var scale = elk_name_popup_scale * popupText.scale;
@@ -198,7 +415,7 @@ public static class ElkLangItemSets
                 var position = popupText.position - Main.screenPosition + (size * elk_name_popup_scale * 0.5f);
 
                 // TODO: Maybe account for rotation? PopupText doesn't use it however so it should be fine.
-                sb.DrawItemNamePhrase(phrase, item, position, gradient, white, outlineGradient, black, scale, prefixScale: 1.1f, origin: size * 0.5f);
+                sb.DrawItemNamePhrase(phrase, item, position, gradient, white, outline, scale, prefixScale: 1.1f, origin: size * 0.5f);
 
                 return true;
             }
@@ -297,6 +514,7 @@ public static class ElkLangItemSets
                 {
                     self.velocity *= 0.84f;
 
+                    // Have the popup "remember" what direction it previously moved in.
                     if (MathF.Abs(self.velocity.X) < epsilon)
                     {
                         self.velocity.X = epsilon * sign;
@@ -670,7 +888,13 @@ public static class ElkLangItemSets
         sb.DrawItemNamePhrase(phrase, item, position);
     }
 
-    private static void DrawItemNamePhrase(this SpriteBatch sb, ElkPhrase phrase, Item item, Vector2 position, bool showPrefix = true)
+    private static void DrawItemNamePhrase(
+        this SpriteBatch sb,
+        ElkPhrase phrase,
+        Item item,
+        Vector2 position,
+        bool showPrefix = true
+    )
     {
         var multiplier = (float)Main.mouseTextColor / byte.MaxValue;
 
@@ -680,7 +904,7 @@ public static class ElkLangItemSets
 
         white.A = byte.MaxValue;
 
-        sb.DrawItemNamePhrase(phrase, item, position, gradient, white, Color.Black, Color.Black, elk_name_tooltip_scale, showPrefix: showPrefix);
+        sb.DrawItemNamePhrase(phrase, item, position, gradient, white, Color.Black, elk_name_tooltip_scale, showPrefix: showPrefix);
 
         return;
 
@@ -718,16 +942,18 @@ public static class ElkLangItemSets
         Vector2 position,
         Color gradient,
         Color white,
-        Color outlineGradient,
-        Color black,
+        Color outline,
         float scale,
         float prefixScale = 0.9f,
         Vector2 origin = default,
-        bool showPrefix = true)
+        bool showPrefix = true
+    )
     {
         var rarityShader = Assets.Elk.Language.RarityGradient.CreateRarityGradientShader();
 
         var size = phrase.Measure(scale);
+
+        sb.DrawPhraseOutline(phrase, position, outline, scale, origin, spread: 1.5f, directions: 8);
 
         sb.End(out var ss);
 
@@ -746,16 +972,6 @@ public static class ElkLangItemSets
 
         rarityShader.Parameters.GradientTop = topLeft.Y;
         rarityShader.Parameters.GradientHeight = bottomLeft.Y - topLeft.Y;
-
-        rarityShader.Parameters.GradientColor = outlineGradient.ToVector4();
-
-        rarityShader.Apply();
-
-        sb.Begin(ss with { CustomEffect = rarityShader.Shader });
-        {
-            sb.DrawPhraseOutline(phrase, position, black, scale, origin, spread: 1.5f, directions: 8);
-        }
-        sb.End();
 
         rarityShader.Parameters.GradientColor = gradient.ToVector4();
 
@@ -803,7 +1019,7 @@ public static class ElkLangItemSets
                 stackText,
                 stackPosition,
                 white,
-                black,
+                outline,
                 0f,
                 stackOrigin,
                 new Vector2(stackScale),
@@ -840,7 +1056,7 @@ public static class ElkLangItemSets
                 prefixText,
                 prefixPosition,
                 white,
-                black,
+                outline,
                 prefixRotation,
                 prefixOrigin,
                 new Vector2(prefixScale),
