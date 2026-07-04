@@ -21,21 +21,26 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
 
         public bool MoveNext()
         {
-            while (maskIterator < mask.Length)
+            // There's probably a cleaner way of going about this.
+        START:
+
+            if (bits != 0)
             {
-                if (bits != 0)
-                {
-                    var bitIndex = BitOperations.TrailingZeroCount(bits);
-                    Current = maskIterator * BITS_PER_CHUNK + bitIndex;
+                var bitIndex = BitOperations.TrailingZeroCount(bits);
+                Current = maskIterator * BITS_PER_CHUNK + bitIndex;
 
-                    bits &= bits - 1;
+                bits &= bits - 1;
 
-                    return true;
-                }
+                return true;
+            }
 
-                maskIterator++;
+            maskIterator++;
 
+            if (maskIterator < mask.Length)
+            {
                 bits = mask[maskIterator];
+
+                goto START;
             }
 
             return false;

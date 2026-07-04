@@ -75,15 +75,6 @@ public sealed class ElkAtlasReferenceGenerator : IIncrementalGenerator
             {
                 var (rootNamespace, descriptors) = tuple;
 
-                if (descriptors.Length <= 0)
-                {
-                    ctx.AddSource(
-                        "ElkSymbolsFAIL.g.cs",
-                        "// kms"
-                    );
-                    return;
-                }
-
                 ctx.AddSource(
                     "ElkSymbols.g.cs",
                     GenerateReferences(rootNamespace, descriptors[0])
@@ -101,7 +92,7 @@ public sealed class ElkAtlasReferenceGenerator : IIncrementalGenerator
               #nullable enable
               #pragma warning disable CS8981
 
-              namespace {{rootNamespace}}.Content;
+              namespace {{rootNamespace}}.Content.Elk;
 
               // ReSharper disable ArrangeAccessorOwnerBody
               // ReSharper disable InconsistentNaming
@@ -120,11 +111,11 @@ public sealed class ElkAtlasReferenceGenerator : IIncrementalGenerator
             sb.AppendLine(
                 $$"""
                       [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
-                      public static global::{{rootNamespace}}.Content.ElkSymbol {{name}}
+                      public static global::{{rootNamespace}}.Content.Elk.ElkSymbol {{name}}
                       {
                           get
                           {
-                              return new global::{{rootNamespace}}.Content.ElkSymbol(
+                              return new global::{{rootNamespace}}.Content.Elk.ElkSymbol(
                                   new global::Microsoft.Xna.Framework.Vector2({{symbol.X}}, {{symbol.Y}}),
                                   new global::Microsoft.Xna.Framework.Rectangle({{symbol.Source.X}}, {{symbol.Source.Y}}, {{symbol.Source.Width}}, {{symbol.Source.Height}}),
                                   {{symbol.Height}}
@@ -132,10 +123,10 @@ public sealed class ElkAtlasReferenceGenerator : IIncrementalGenerator
                           }
                       }
                       
-                      extension(global::{{rootNamespace}}.Content.ElkPhrase phrase)
+                      extension(global::{{rootNamespace}}.Content.Elk.ElkPhrase phrase)
                       {
                           [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute]
-                          public global::{{rootNamespace}}.Content.ElkPhrase {{name}}
+                          public global::{{rootNamespace}}.Content.Elk.ElkPhrase {{name}}
                           {
                               get
                               {
