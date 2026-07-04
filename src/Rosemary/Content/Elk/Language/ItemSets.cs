@@ -119,35 +119,16 @@ public static class ElkLangItemSets
 
                 var player = Main.LocalPlayer;
 
-                if (true)
+                var size = phrase.Measure(elk_name_popup_scale);
+
+                var offset = y_offset - (size.Y * 0.5f);
+                var position = player.MountedCenter + new Vector2(0f, offset * player.gravDir);
+
+                var ySpeed = size.Y * 0.1f;
+
+                if (rolledPrefixIsTopTier)
                 {
                     SoundEngine.PlaySound(in SoundID.BestReforge);
-
-                    var size = phrase.Measure(elk_name_popup_scale);
-
-                    var offset = y_offset - (size.Y * 0.5f);
-                    var position = player.MountedCenter + new Vector2(0f, offset * player.gravDir);
-
-                    var ySpeed = size.Y / 4f;
-
-                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.RainbowRodHit, new ParticleOrchestraSettings
-                    {
-                        PositionInWorld = position,
-                        MovementVector = new Vector2(0, ySpeed) + Main.rand.NextVector2Circular(16f, 16f)
-                    }, Main.myPlayer);
-                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.RainbowRodHit, new ParticleOrchestraSettings
-                    {
-                        PositionInWorld = position,
-                        MovementVector = new Vector2(0f, ySpeed * 0.5f) + Main.rand.NextVector2Circular(5f, 5f)
-                    }, Main.myPlayer);
-                    for (var i = 0; i < 3; i++)
-                    {
-                        ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
-                        {
-                            PositionInWorld = position + Main.rand.NextVector2Circular(16f, 16f)
-                        }, Main.myPlayer);
-                    }
-
                     Main.reforgeCooldown = 110;
                 }
                 else
@@ -156,7 +137,45 @@ public static class ElkLangItemSets
                     Main.reforgeCooldown = 30;
                 }
 
+                SpawnSparks();
+
                 return true;
+
+                void SpawnSparks()
+                {
+                    var dark = new Color(179, 133, 255, 100) * 0.5f;
+                    for (var i = 0; i < 170; i++)
+                    {
+                        var velocity = new Vector2(0, ySpeed * Main.rand.NextBool().ToDirectionInt()).RotatedByRandom(0.6f);
+
+                        velocity *= Main.rand.NextFloat(0.2f, 1.1f);
+
+                        var offset = (size * 0.2f) * Main.rand.NextFloat(-1f, 1f);
+                        offset.X = 0f;
+
+                        ElkParticles.Sparks += new ElkParticles.Spark(
+                            position + offset,
+                            velocity,
+                            Main.rand.NextFloat(0.7f, 2f),
+                            dark,
+                            (byte)Main.rand.Next(3)
+                        );
+                    }
+
+                    var bright = new Color(179, 133, 255, 115);
+                    for (var i = 0; i < 55; i++)
+                    {
+                        var velocity = Vector2.UnitX.RotatedByRandom(MathF.Tau) * Main.rand.NextFloat(1f, 5f);
+
+                        ElkParticles.Sparks += new ElkParticles.Spark(
+                            position,
+                            velocity,
+                            Main.rand.NextFloat(2f, 3f),
+                            bright,
+                            (byte)Main.rand.Next(3)
+                        );
+                    }
+                }
             }
         );
 
