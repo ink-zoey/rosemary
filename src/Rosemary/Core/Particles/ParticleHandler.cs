@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Terraria;
 
 namespace Rosemary.Core;
 
@@ -123,7 +124,11 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
 
     public virtual IEnumerator<int> GetEnumerator()
     {
-        return new ActiveParticleEnumerator(ParticleMask);
+        var enumerator = new ActiveParticleEnumerator(ParticleMask);
+
+        enumerator.Reset();
+
+        return enumerator;
     }
 
     IEnumerator IEnumerable.GetEnumerator()

@@ -28,4 +28,11 @@ public class UpdatingParticleHandler<T>(int count) : ParticleHandler<T>(count)
             count++;
         }
     }
+
+    public static UpdatingParticleHandler<T> operator +(UpdatingParticleHandler<T> handler, T particle)
+    {
+        handler.Add(particle);
+
+        return handler;
+    }
 }
