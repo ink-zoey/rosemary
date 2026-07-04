@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace Rosemary.Core;
@@ -62,6 +63,8 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
 
     public ref T this[int index] => ref Particles[index];
 
+    public virtual int ActiveParticleCount => this.Count();
+
     public int GetFirstInactive()
     {
         for (var i = 0; i < ParticleMask.Length; i++)
@@ -81,7 +84,7 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
         return -1;
     }
 
-    public bool Add(T particle)
+    public virtual bool Add(T particle)
     {
         var index = GetFirstInactive();
 
@@ -92,10 +95,17 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
 
         Particles[index] = particle;
 
+        Flip(index);
+
         return true;
     }
 
-    public void Deactivate(int index)
+    public virtual void Deactivate(int index)
+    {
+        Flip(index);
+    }
+
+    public virtual void Flip(int index)
     {
         var maskIndex = (int)Math.Floor((float)index / BITS_PER_CHUNK);
         var bitIndex = index % BITS_PER_CHUNK;
@@ -103,7 +113,15 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
         ParticleMask[maskIndex] ^= 1uL << bitIndex;
     }
 
-    public IEnumerator<int> GetEnumerator()
+    public virtual void Clear()
+    {
+        for (var i = 0; i < ParticleMask.Length; i++)
+        {
+            ParticleMask[i] = 0uL;
+        }
+    }
+
+    public virtual IEnumerator<int> GetEnumerator()
     {
         return new ActiveParticleEnumerator(ParticleMask);
     }
