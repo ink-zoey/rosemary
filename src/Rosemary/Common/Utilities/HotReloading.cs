@@ -90,8 +90,15 @@ public static class HotReloading
         {
             Main.NewText($"Reapplying {nameof(ILHook)} {edit?.Manipulator.Method.DeclaringType?.Name}::{edit?.Manipulator.Method.Name} for {edit?.Method.DeclaringType?.Name}::{edit?.Method.Name}...", Color.Yellow);
 
-            edit?.Undo();
-            edit?.Apply();
+            try
+            {
+                edit?.Undo();
+                edit?.Apply();
+            }
+            catch (Exception ex)
+            {
+                Main.NewText($"Error reapplying {nameof(ILHook)}: {ex.Message}", Color.Red);
+            }
         }
 
         return;
