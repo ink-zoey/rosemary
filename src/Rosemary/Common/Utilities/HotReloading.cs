@@ -1,9 +1,12 @@
 ﻿using Rosemary.Common;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Daybreak.Common.Features.Hooks;
 using Microsoft.Xna.Framework;
+using MonoMod.RuntimeDetour;
+using MonoMod.RuntimeDetour.HookGen;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -59,6 +62,7 @@ public static class HotReloading
     private static void Load()
     {
         OnHotReload += OnHotReload_SetStaticDefaults;
+        OnHotReload += OnHotReload_MonoModHooks;
     }
 
     private static void OnHotReload_SetStaticDefaults(Type[] updatedTypes)
@@ -70,9 +74,36 @@ public static class HotReloading
                 return;
             }
 
-            Main.NewText($"Running {nameof(ModType.SetStaticDefaults)} for type: {type.Name}...", Color.Yellow);
+            Main.NewText($"Running {nameof(ModType.SetStaticDefaults)} for type {type.Name}...", Color.Yellow);
 
             ModContent.GetInstanceAs<ModType>(type).SetStaticDefaults();
+        }
+    }
+
+    private static void OnHotReload_MonoModHooks(Type[] updatedTypes)
+    {
+        var edits = MonoModHooks._hookCache.Values.Where(IsEditAndFromUpdatedType).Select(p => p as ILHook);
+
+        edits = edits.Union(HookEndpointManager.ILHooks.Values.Where(FromUpdatedType));
+
+        foreach (var edit in edits)
+        {
+            Main.NewText($"Reapplying {nameof(ILHook)} {edit?.Manipulator.Method.DeclaringType?.Name}::{edit?.Manipulator.Method.Name} for {edit?.Method.DeclaringType?.Name}::{edit?.Method.Name}...", Color.Yellow);
+
+            edit?.Undo();
+            edit?.Apply();
+        }
+
+        return;
+
+        bool IsEditAndFromUpdatedType(IDisposable potentialEdit)
+        {
+            return potentialEdit is ILHook edit && FromUpdatedType(edit);
+        }
+
+        bool FromUpdatedType(ILHook edit)
+        {
+            return updatedTypes.Contains(edit.Manipulator.Method.DeclaringType);
         }
     }
 }

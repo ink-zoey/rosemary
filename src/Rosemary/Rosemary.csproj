@@ -17,7 +17,7 @@
 
     <!-- Publicizer -->
     <ItemGroup>
-        <Publicize Include="FNA;ReLogic" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+        <Publicize Include="FNA;ReLogic;MonoMod.RuntimeDetour" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
     </ItemGroup>
 
 </Project>
