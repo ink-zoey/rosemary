@@ -1,9 +1,9 @@
-﻿using System;
-using Daybreak.Common.Features.Hooks;
+﻿using Daybreak.Common.Features.Hooks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Core;
+using System;
 using System.Reflection;
 using Terraria;
 using Terraria.Graphics.Renderers;
@@ -24,7 +24,7 @@ public static class ElkParticles
 
             Velocity = newVelocity;
 
-            Scale -= 0.1f;
+            Scale -= 0.085f;
 
             return Scale > 0f;
         }
@@ -103,19 +103,21 @@ public static class ElkParticles
 
                 var frame = new Rectangle(16 * spark.Style, 0, 16, 40);
 
-                var color = spark.Color * MathF.Pow(spark.Scale, 3);
+                var color = spark.Color * spark.Scale;
 
                 var rotation = spark.Velocity.ToRotation() + MathHelper.PiOver2;
 
-                var scale = 1f - MathF.Pow(1f - spark.Scale, 2);
+                var scale = 1f - MathF.Pow(1f - spark.Scale, 1.5f);
 
-                var size = new Vector2(0.23f * spark.Scale, .7f * scale);
+                var size = new Vector2(0.3f * scale, .8f * spark.Scale);
 
                 sb.Draw(texture, position, frame, color, rotation, origin, size, SpriteEffects.None, 0f);
 
-                var starScale = MathF.Pow(MathF.Max(spark.Scale - 1f, 0f), 3) * 0.5f;
+                var starScale = MathF.Max(spark.Scale - 0.6f, 0f) * 2f;
 
-                sb.Draw(texture, position, starFrame, color, 0f, starOrigin, starScale, SpriteEffects.None, 0f);
+                starScale = MathF.Min(starScale, 0.9f);
+
+                sb.Draw(texture, position, starFrame, spark.Color, 0f, starOrigin, starScale, SpriteEffects.None, 0f);
             }
         }
     }

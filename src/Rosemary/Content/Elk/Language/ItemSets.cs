@@ -124,7 +124,7 @@ public static class ElkLangItemSets
                 var offset = y_offset - (size.Y * 0.5f);
                 var position = player.MountedCenter + new Vector2(0f, offset * player.gravDir);
 
-                var ySpeed = size.Y * 0.1f;
+                var ySpeed = size.Y * 0.075f;
 
                 if (rolledPrefixIsTopTier)
                 {
@@ -143,10 +143,16 @@ public static class ElkLangItemSets
 
                 void SpawnSparks()
                 {
-                    var dark = new Color(179, 133, 255, 100) * 0.5f;
-                    for (var i = 0; i < 170; i++)
+                    const float max_range = 0.8f;
+
+                    var dark = new Color(179, 133, 255, 100) * 0.7f;
+                    for (var i = 0; i < 40; i++)
                     {
-                        var velocity = new Vector2(0, ySpeed * Main.rand.NextBool().ToDirectionInt()).RotatedByRandom(0.6f);
+                        var range = Main.rand.NextFloat(0f, max_range);
+
+                        var dir = Main.rand.NextBool().ToDirectionInt();
+
+                        var velocity = new Vector2(0, ySpeed * dir).RotatedByRandom(range);
 
                         velocity *= Main.rand.NextFloat(0.2f, 1.1f);
 
@@ -156,14 +162,14 @@ public static class ElkLangItemSets
                         ElkParticles.Sparks += new ElkParticles.Spark(
                             position + offset,
                             velocity,
-                            Main.rand.NextFloat(0.7f, 2f),
+                            Main.rand.NextFloat(0.6f, 2f),
                             dark,
                             (byte)Main.rand.Next(3)
                         );
                     }
 
                     var bright = new Color(179, 133, 255, 115);
-                    for (var i = 0; i < 55; i++)
+                    for (var i = 0; i < 10; i++)
                     {
                         var velocity = Vector2.UnitX.RotatedByRandom(MathF.Tau) * Main.rand.NextFloat(1f, 5f);
 
