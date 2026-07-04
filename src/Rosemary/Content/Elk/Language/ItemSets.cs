@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
+using Rosemary.Common;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -124,20 +125,28 @@ public static class ElkLangItemSets
                 var offset = y_offset - (size.Y * 0.5f);
                 var position = player.MountedCenter + new Vector2(0f, offset * player.gravDir);
 
-                var ySpeed = size.Y * 0.075f;
+                var ySpeed = size.Y * 0.06f;
 
                 if (rolledPrefixIsTopTier)
                 {
                     SoundEngine.PlaySound(in SoundID.BestReforge);
                     Main.reforgeCooldown = 110;
+
+                    for (var i = 0; i < 3; i++)
+                    {
+                        ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
+                        {
+                            PositionInWorld = position + Rand.NextUnitVector(16f),
+                        }, Main.myPlayer);
+                    }
                 }
                 else
                 {
                     SoundEngine.PlaySound(in SoundID.Item37);
                     Main.reforgeCooldown = 30;
-                }
 
-                SpawnSparks();
+                    SpawnSparks();
+                }
 
                 return true;
 
@@ -145,42 +154,103 @@ public static class ElkLangItemSets
                 {
                     const float max_range = 0.8f;
 
-                    var dark = new Color(179, 133, 255, 100) * 0.7f;
-                    for (var i = 0; i < 40; i++)
+                    var dark = new Color(245, 174, 70, 100);
+                    for (var i = 0; i < 50; i++)
                     {
-                        var range = Main.rand.NextFloat(0f, max_range);
+                        var range = Rand.Next(0f, max_range);
 
-                        var dir = Main.rand.NextBool().ToDirectionInt();
+                        var dir = Rand.NextDirection();
 
                         var velocity = new Vector2(0, ySpeed * dir).RotatedByRandom(range);
 
-                        velocity *= Main.rand.NextFloat(0.2f, 1.1f);
+                        velocity *= Rand.Next(0.2f, 1.1f);
 
-                        var offset = (size * 0.2f) * Main.rand.NextFloat(-1f, 1f);
+                        var offset = (size * 0.2f) * Rand.Next(-1f, 1f);
                         offset.X = 0f;
 
                         ElkParticles.Sparks += new ElkParticles.Spark(
                             position + offset,
                             velocity,
-                            Main.rand.NextFloat(0.6f, 2f),
+                            Rand.Next(0.8f, 2f),
                             dark,
-                            (byte)Main.rand.Next(3)
+                            Rand.Next((byte)3)
                         );
                     }
 
-                    var bright = new Color(179, 133, 255, 115);
-                    for (var i = 0; i < 10; i++)
+                    var bright = new Color(179, 133, 255, 40);
+                    for (var i = 0; i < 7; i++)
                     {
-                        var velocity = Vector2.UnitX.RotatedByRandom(MathF.Tau) * Main.rand.NextFloat(1f, 5f);
+                        var velocity = Rand.NextUnitVector(Rand.Next(1f, 5f));
+
+                        var offset = Vector2.Normalize(velocity) * 10f;
 
                         ElkParticles.Sparks += new ElkParticles.Spark(
-                            position,
+                            position + offset,
                             velocity,
-                            Main.rand.NextFloat(2f, 3f),
+                            Main.rand.NextFloat(2f, 4f),
                             bright,
-                            (byte)Main.rand.Next(3)
+                            Rand.Next((byte)3)
                         );
                     }
+
+                    ParticleOrchestrator.RequestParticleSpawn(
+                        clientOnly: true,
+                        ParticleOrchestraType.BestReforge,
+                        new ParticleOrchestraSettings
+                        {
+                            PositionInWorld = position,
+                        },
+                        Main.myPlayer
+                    );
+                }
+
+                void SpawnBestSparks()
+                {
+                    const float max_range = 0.8f;
+
+                    var dark = new Color(245, 174, 70, 100);
+                    for (var i = 0; i < 50; i++)
+                    {
+                        var range = Rand.Next(0f, max_range);
+
+                        var dir = Rand.NextDirection();
+
+                        var velocity = new Vector2(0, ySpeed * dir).RotatedByRandom(range);
+
+                        velocity *= Rand.Next(0.2f, 1.1f);
+
+                        var offset = (size * 0.2f) * Rand.Next(-1f, 1f);
+                        offset.X = 0f;
+
+                        ElkParticles.Sparks += new ElkParticles.Spark(
+                            position + offset,
+                            velocity,
+                            Rand.Next(0.8f, 2f),
+                            dark,
+                            Rand.Next((byte)3)
+                        );
+                    }
+
+                    var bright = new Color(179, 133, 255, 40);
+                    for (var i = 0; i < 7; i++)
+                    {
+                        var velocity = Rand.NextUnitVector(Rand.Next(1f, 5f));
+
+                        var offset = Vector2.Normalize(velocity) * 10f;
+
+                        ElkParticles.Sparks += new ElkParticles.Spark(
+                            position + offset,
+                            velocity,
+                            Main.rand.NextFloat(2f, 4f),
+                            bright,
+                            Rand.Next((byte)3)
+                        );
+                    }
+
+                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
+                    {
+                        PositionInWorld = position,
+                    }, Main.myPlayer);
                 }
             }
         );

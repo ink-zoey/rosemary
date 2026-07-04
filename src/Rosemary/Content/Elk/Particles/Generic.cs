@@ -20,7 +20,7 @@ public static class ElkParticles
 
             var newVelocity = Velocity;
 
-            newVelocity.Y += (1f - (Scale * 0.15f)) * 0.07f;
+            newVelocity.Y += (1f - (Scale * 0.15f)) * 0.04f;
 
             Velocity = newVelocity;
 
@@ -107,13 +107,13 @@ public static class ElkParticles
 
                 var rotation = spark.Velocity.ToRotation() + MathHelper.PiOver2;
 
-                var scale = 1f - MathF.Pow(1f - spark.Scale, 1.5f);
+                var scale = 1f - MathF.Pow(1f - MathF.Min(spark.Scale, 1f), 1.5f);
 
-                var size = new Vector2(0.3f * scale, .8f * spark.Scale);
+                var size = new Vector2(0.24f * scale, 0.7f * spark.Scale);
 
                 sb.Draw(texture, position, frame, color, rotation, origin, size, SpriteEffects.None, 0f);
 
-                var starScale = MathF.Max(spark.Scale - 0.6f, 0f) * 2f;
+                var starScale = MathF.Max(spark.Scale - 0.6f, 0f) * 1.4f * (spark.Style * 0.33f);
 
                 starScale = MathF.Min(starScale, 0.9f);
 
