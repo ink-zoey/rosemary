@@ -132,13 +132,7 @@ public static class ElkLangItemSets
                     SoundEngine.PlaySound(in SoundID.BestReforge);
                     Main.reforgeCooldown = 110;
 
-                    for (var i = 0; i < 3; i++)
-                    {
-                        ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
-                        {
-                            PositionInWorld = position + Rand.NextUnitVector(16f),
-                        }, Main.myPlayer);
-                    }
+                    SpawnBestSparks();
                 }
                 else
                 {
@@ -168,7 +162,7 @@ public static class ElkLangItemSets
                         var offset = (size * 0.2f) * Rand.Next(-1f, 1f);
                         offset.X = 0f;
 
-                        ElkParticles.Sparks += new ElkParticles.Spark(
+                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
                             position + offset,
                             velocity,
                             Rand.Next(0.8f, 2f),
@@ -177,14 +171,14 @@ public static class ElkLangItemSets
                         );
                     }
 
-                    var bright = new Color(179, 133, 255, 40);
+                    var bright = new Color(179, 133, 255, 120);
                     for (var i = 0; i < 7; i++)
                     {
                         var velocity = Rand.NextUnitVector(Rand.Next(1f, 5f));
 
-                        var offset = Vector2.Normalize(velocity) * 10f;
+                        var offset = Vector2.Normalize(velocity) * 17f;
 
-                        ElkParticles.Sparks += new ElkParticles.Spark(
+                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
                             position + offset,
                             velocity,
                             Main.rand.NextFloat(2f, 4f),
@@ -206,51 +200,46 @@ public static class ElkLangItemSets
 
                 void SpawnBestSparks()
                 {
-                    const float max_range = 0.8f;
-
-                    var dark = new Color(245, 174, 70, 100);
-                    for (var i = 0; i < 50; i++)
+                    for (var i = 0; i < 2; i++)
                     {
-                        var range = Rand.Next(0f, max_range);
+                        ParticleOrchestrator.RequestParticleSpawn(
+                            clientOnly: true,
+                            ParticleOrchestraType.BestReforge,
+                            new ParticleOrchestraSettings
+                            {
+                                PositionInWorld = position + Rand.NextUnitVector(16f),
+                            },
+                            Main.myPlayer
+                        );
 
-                        var dir = Rand.NextDirection();
-
-                        var velocity = new Vector2(0, ySpeed * dir).RotatedByRandom(range);
-
-                        velocity *= Rand.Next(0.2f, 1.1f);
-
-                        var offset = (size * 0.2f) * Rand.Next(-1f, 1f);
-                        offset.X = 0f;
-
-                        ElkParticles.Sparks += new ElkParticles.Spark(
-                            position + offset,
-                            velocity,
-                            Rand.Next(0.8f, 2f),
-                            dark,
-                            Rand.Next((byte)3)
+                        ParticleOrchestrator.RequestParticleSpawn(
+                            clientOnly: true,
+                            ParticleOrchestraType.RainbowRodHit,
+                            new ParticleOrchestraSettings
+                            {
+                                PositionInWorld = position,
+                                MovementVector = new Vector2(0f, 70f).RotatedByRandom(0.3f),
+                            },
+                            Main.myPlayer
                         );
                     }
 
-                    var bright = new Color(179, 133, 255, 40);
-                    for (var i = 0; i < 7; i++)
+                    for (var i = 0; i < 25; i++)
                     {
-                        var velocity = Rand.NextUnitVector(Rand.Next(1f, 5f));
+                        var velocity = Rand.NextUnitVector(Rand.Next(2f, 7f));
 
-                        var offset = Vector2.Normalize(velocity) * 10f;
+                        var offset = Vector2.Normalize(velocity) * 13f;
 
-                        ElkParticles.Sparks += new ElkParticles.Spark(
+                        var color = Main.hslToRgb(0.65f + (Rand.Next(0.2f)), 1f, 0.65f);
+
+                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
                             position + offset,
                             velocity,
-                            Main.rand.NextFloat(2f, 4f),
-                            bright,
+                            Main.rand.NextFloat(3f, 4.5f),
+                            color,
                             Rand.Next((byte)3)
                         );
                     }
-
-                    ParticleOrchestrator.RequestParticleSpawn(clientOnly: true, ParticleOrchestraType.BestReforge, new ParticleOrchestraSettings
-                    {
-                        PositionInWorld = position,
-                    }, Main.myPlayer);
                 }
             }
         );
@@ -1134,7 +1123,7 @@ public static class ElkLangItemSets
 
             var lastCharacterHeight = phrase[^1].Height - phrase[^1].Position.Y;
 
-            var prefixPosition = new Vector2(position.X + 10f, position.Y + size.Y - (lastCharacterHeight * 0.5f));
+            var prefixPosition = new Vector2(position.X + (10f * scale), position.Y + size.Y - (lastCharacterHeight * 0.5f * scale));
             prefixPosition -= origin * scale;
 
             var prefixRotation = -MathHelper.PiOver2;

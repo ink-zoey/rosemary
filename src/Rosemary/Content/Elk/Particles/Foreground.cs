@@ -10,7 +10,7 @@ using Terraria.Graphics.Renderers;
 
 namespace Rosemary.Content.Elk;
 
-public static class ElkParticles
+public static class ElkForegroundParticles
 {
     public record struct Spark(Vector2 Position, Vector2 Velocity, float Scale, Color Color, byte Style) : IUpdatingParticle
     {
