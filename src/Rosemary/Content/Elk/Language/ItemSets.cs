@@ -5,12 +5,12 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using ReLogic.Graphics;
+using Rosemary.Common;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
-using Rosemary.Common;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -399,6 +399,7 @@ public static class ElkLangItemSets
         var colorIndex = -1;
 
         ILLabel? contLoopTarget = null;
+        ILLabel? jumpDrawEffectsTarget = null;
 
         c.GotoNext(
             MoveType.After,
@@ -424,6 +425,8 @@ public static class ElkLangItemSets
             i => i.MatchCallvirt<string>($"get_{nameof(string.Length)}")
         );
 
+        var c2 = c.Clone();
+
         c.GotoNext(
             i => i.MatchSwitch(out _)
         );
@@ -443,10 +446,109 @@ public static class ElkLangItemSets
             i => i.MatchLdloc(out magicAlphaMultiplierIndex)
         );
 
+        // Crafting Effects
+        {
+            c2.GotoPrev(
+                MoveType.Before,
+                i => i.MatchLdloc(out _),
+                i => i.MatchCall<Color>($"get_{nameof(Color.Black)}"),
+                i => i.MatchLdloc(out _),
+                i => i.MatchCall<Color>(nameof(Color.Lerp)),
+                i => i.MatchStloc(colorIndex)
+            );
+
+            c2.FindPrev(
+                out _,
+                i => i.MatchLdfld<PopupText>(nameof(PopupText.effectStyle)),
+                i => i.MatchLdcI4(5),
+                i => i.MatchBneUn(out jumpDrawEffectsTarget)
+            );
+
+            Debug.Assert(jumpDrawEffectsTarget is not null);
+
+            c2.EmitLdloc(popupTextIndex);
+            c2.EmitLdloca(colorIndex);
+            c2.EmitLdloc(magicAlphaMultiplierIndex);
+
+            c2.EmitDelegate(
+                static (PopupText popupText, ref Color origColor, float magic) =>
+                {
+                    var index = PopupText.popupText.IndexOf(popupText);
+
+                    var item = popupTextItems[index];
+
+                    if (item is null || usesElkName[item.type] is not { } phrase)
+                    {
+                        return false;
+                    }
+
+                    var sb = Main.spriteBatch;
+
+                    var phraseSize = phrase.Measure(1f);
+
+                    var fade = Utils.Remap(popupText.framesSinceSpawn, 0f, 55, 0f, 1f);
+
+                    var texture = TextureAssets.Extra[ExtrasID.NinetyEight].Value;
+                    var origin = texture.Size() * 0.5f;
+
+                    var scale = popupText.scale * 1.1f;
+
+                    var position = popupText.position - Main.screenPosition + (phraseSize * elk_name_popup_scale * 0.5f);
+
+                    var value = popupText.color;
+                    value.Lightness = 1f - fade;
+                    value.A = 0;
+
+                    origColor = Color.Lerp(value, origColor, fade);
+
+                    var colorAlpha = Utils.Remap(fade, 0f, 0.1f, 0f, 1f) * Utils.Remap(fade, 0.1f, 1f, 1f, 0f);
+                    var whiteAlpha = Utils.Remap(fade, 0f, 0.2f, 0f, 1f) * Utils.Remap(fade, 0.2f, 0.8f, 1f, 0f);
+                    if (colorAlpha <= 0f && whiteAlpha <= 0f)
+                    {
+                        return true;
+                    }
+
+                    var e98Size = new Vector2(1f, phraseSize.Y / texture.Width);
+                    e98Size *= scale;
+
+                    var slide = new Vector2(0f, Utils.Remap(magic, 1f, 0f, -30f, 30f));
+                    slide *= scale;
+
+                    var color = popupText.color * colorAlpha;
+
+                    var white = Color.White with { A = 0 };
+                    white *= 0.5f;
+                    white *= whiteAlpha;
+
+                    var colorStep = 60 * (phraseSize.Y / 160f);
+                    var whiteStep = 20 * (phraseSize.Y / 160f);
+
+                    for (var i = 0; i < 3; i++)
+                    {
+                        var colorOffset = new Vector2(0f, -colorStep + (colorStep * i));
+                        colorOffset += slide;
+                        colorOffset *= scale;
+
+                        var whiteOffset = new Vector2(0f, whiteStep + (whiteStep * i));
+                        whiteOffset += slide;
+                        whiteOffset *= scale;
+
+                        sb.Draw(texture, position + colorOffset, null, color, 0f, origin, e98Size, SpriteEffects.None, 0f);
+                        sb.Draw(texture, position + whiteOffset, null, white, 0f, origin, e98Size * 0.5f, SpriteEffects.None, 0f);
+                    }
+
+                    return true;
+                }
+            );
+
+            c2.EmitBrtrue(jumpDrawEffectsTarget);
+        }
+
         c.EmitLdloc(popupTextIndex);
         c.EmitLdloc(colorIndex);
         c.EmitLdloc(scaleMultiplierIndex);
         c.EmitLdloc(magicAlphaMultiplierIndex);
+
         c.EmitDelegate(
             static (PopupText popupText, Color origColor, float scaleMultiplier, float magic) =>
             {
@@ -465,17 +567,17 @@ public static class ElkLangItemSets
 
                 var multiplier = (float)Main.mouseTextColor / byte.MaxValue;
 
+                var fade = (float)Utils.EaseOutCirc(Utils.Remap(popupText.framesSinceSpawn, 0f, 40, 0f, 1f));
+
                 var gradient = popupText.color * scaleMultiplier * popupText.alpha * magic;
                 var white = Color.White * multiplier;
                 white.A = byte.MaxValue;
 
                 white *= popupText.alpha * magic;
 
-                var fade = 1 - (float)Utils.EaseOutCirc(Utils.Remap(popupText.framesSinceSpawn, 0f, 40, 0f, 1f));
+                gradient = Color.Lerp(gradient, Color.White, 1f - fade);
 
-                gradient = Color.Lerp(gradient, Color.White, fade);
-
-                white = Color.Lerp(white, Color.White, fade);
+                white = Color.Lerp(white, Color.White, 1f - fade);
 
                 var outline = origColor;
 
@@ -659,12 +761,12 @@ public static class ElkLangItemSets
 
         popupTextItems[index] = newItem.Clone();
 
-        if (usesElkName[newItem.type] is null)
+        if (usesElkName[newItem.type] is not { } phrase)
         {
             return index;
         }
 
-        PopupText.popupText[index].velocity.Y -= 20f;
+        PopupText.popupText[index].velocity.Y -= phrase.Measure(elk_name_popup_scale).Y * 0.1f;
 
         return index;
     }
