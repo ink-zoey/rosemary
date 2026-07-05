@@ -228,9 +228,9 @@ public static class ElkLangItemSets
                     {
                         var velocity = Rand.NextUnitVector(Rand.Next(2f, 7f));
 
-                        var offset = Vector2.Normalize(velocity) * 13f;
+                        var offset = velocity.Normalized * 13f;
 
-                        var color = Main.hslToRgb(0.65f + (Rand.Next(0.2f)), 1f, 0.65f);
+                        var color = Color.FromHsl(0.65f + Rand.Next(0.2f), 1f, 0.65f);
 
                         ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
                             position + offset,
