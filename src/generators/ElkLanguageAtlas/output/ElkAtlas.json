@@ -4,8 +4,8 @@
     "X": -1,
     "Y": -2,
     "Source": {
-      "X": 210,
-      "Y": 146,
+      "X": 118,
+      "Y": 267,
       "Width": 25,
       "Height": 16
     },
@@ -16,8 +16,8 @@
     "X": -6,
     "Y": -4,
     "Source": {
-      "X": 195,
-      "Y": 212,
+      "X": 264,
+      "Y": 186,
       "Width": 29,
       "Height": 10
     },
@@ -28,20 +28,44 @@
     "X": 5,
     "Y": -2,
     "Source": {
-      "X": 164,
-      "Y": 120,
+      "X": 239,
+      "Y": 87,
       "Width": 18,
       "Height": 21
     },
     "Height": 18.0
   },
   {
+    "Name": "BranchLeftD",
+    "X": -7,
+    "Y": 0,
+    "Source": {
+      "X": 276,
+      "Y": 242,
+      "Width": 27,
+      "Height": 9
+    },
+    "Height": 6.0
+  },
+  {
+    "Name": "BranchLeftE",
+    "X": -7,
+    "Y": 0,
+    "Source": {
+      "X": 2,
+      "Y": 259,
+      "Width": 30,
+      "Height": 23
+    },
+    "Height": 7.0
+  },
+  {
     "Name": "BranchRightA",
     "X": 18,
     "Y": -5,
     "Source": {
-      "X": 118,
-      "Y": 210,
+      "X": 271,
+      "Y": 200,
       "Width": 29,
       "Height": 14
     },
@@ -52,8 +76,8 @@
     "X": 18,
     "Y": -3,
     "Source": {
-      "X": 162,
-      "Y": 212,
+      "X": 271,
+      "Y": 218,
       "Width": 22,
       "Height": 15
     },
@@ -64,20 +88,56 @@
     "X": 17,
     "Y": -4,
     "Source": {
-      "X": 2,
-      "Y": 216,
+      "X": 281,
+      "Y": 142,
       "Width": 23,
       "Height": 13
     },
     "Height": 8.0
   },
   {
+    "Name": "BranchRightD",
+    "X": 17,
+    "Y": -7,
+    "Source": {
+      "X": 2,
+      "Y": 286,
+      "Width": 23,
+      "Height": 12
+    },
+    "Height": 5.0
+  },
+  {
+    "Name": "BranchRightE",
+    "X": 19,
+    "Y": -6,
+    "Source": {
+      "X": 48,
+      "Y": 282,
+      "Width": 26,
+      "Height": 10
+    },
+    "Height": 4.0
+  },
+  {
+    "Name": "BranchRightF",
+    "X": 19,
+    "Y": -7,
+    "Source": {
+      "X": 285,
+      "Y": 262,
+      "Width": 15,
+      "Height": 12
+    },
+    "Height": 5.0
+  },
+  {
     "Name": "CloseBracketA",
     "X": 10,
     "Y": -2,
     "Source": {
-      "X": 42,
-      "Y": 217,
+      "X": 179,
+      "Y": 285,
       "Width": 23,
       "Height": 10
     },
@@ -88,20 +148,32 @@
     "X": -3,
     "Y": -8,
     "Source": {
-      "X": 192,
-      "Y": 2,
+      "X": 229,
+      "Y": 242,
       "Width": 43,
       "Height": 16
     },
     "Height": 7.0
   },
   {
+    "Name": "ConstellationA",
+    "X": 12,
+    "Y": -2,
+    "Source": {
+      "X": 148,
+      "Y": 200,
+      "Width": 27,
+      "Height": 59
+    },
+    "Height": 55.0
+  },
+  {
     "Name": "CrownA",
     "X": 13,
     "Y": -30,
     "Source": {
-      "X": 207,
-      "Y": 71,
+      "X": 264,
+      "Y": 115,
       "Width": 13,
       "Height": 43
     },
@@ -112,8 +184,8 @@
     "X": -15,
     "Y": -37,
     "Source": {
-      "X": 42,
-      "Y": 156,
+      "X": 229,
+      "Y": 200,
       "Width": 38,
       "Height": 38
     },
@@ -124,32 +196,56 @@
     "X": 15,
     "Y": -30,
     "Source": {
-      "X": 2,
-      "Y": 156,
+      "X": 199,
+      "Y": 2,
       "Width": 36,
       "Height": 56
     },
     "Height": 15.0
   },
   {
+    "Name": "CrownC",
+    "X": -22,
+    "Y": -64,
+    "Source": {
+      "X": 2,
+      "Y": 2,
+      "Width": 193,
+      "Height": 109
+    },
+    "Height": 32.0
+  },
+  {
     "Name": "CurlA",
     "X": 11,
     "Y": -2,
     "Source": {
-      "X": 90,
-      "Y": 198,
+      "X": 281,
+      "Y": 115,
       "Width": 15,
       "Height": 23
     },
     "Height": 20.0
   },
   {
+    "Name": "CurlB",
+    "X": 0,
+    "Y": -4,
+    "Source": {
+      "X": 92,
+      "Y": 267,
+      "Width": 22,
+      "Height": 25
+    },
+    "Height": 6.0
+  },
+  {
     "Name": "DiamondA",
     "X": 14,
     "Y": -3,
     "Source": {
-      "X": 215,
-      "Y": 22,
+      "X": 212,
+      "Y": 270,
       "Width": 13,
       "Height": 23
     },
@@ -160,12 +256,24 @@
     "X": 17,
     "Y": -1,
     "Source": {
-      "X": 192,
-      "Y": 59,
+      "X": 136,
+      "Y": 184,
       "Width": 6,
       "Height": 6
     },
     "Height": 5.0
+  },
+  {
+    "Name": "ExcuseLeftA",
+    "X": -12,
+    "Y": -5,
+    "Source": {
+      "X": 264,
+      "Y": 162,
+      "Width": 28,
+      "Height": 20
+    },
+    "Height": 14.0
   },
   {
     "Name": "EyeRightFlare",
@@ -173,7 +281,7 @@
     "Y": -5,
     "Source": {
       "X": 2,
-      "Y": 2,
+      "Y": 115,
       "Width": 142,
       "Height": 65
     },
@@ -184,8 +292,8 @@
     "X": 7,
     "Y": -69,
     "Source": {
-      "X": 2,
-      "Y": 71,
+      "X": 148,
+      "Y": 115,
       "Width": 112,
       "Height": 81
     },
@@ -196,8 +304,8 @@
     "X": 2,
     "Y": -6,
     "Source": {
-      "X": 148,
-      "Y": 2,
+      "X": 48,
+      "Y": 184,
       "Width": 40,
       "Height": 60
     },
@@ -208,20 +316,32 @@
     "X": 2,
     "Y": -6,
     "Source": {
-      "X": 118,
-      "Y": 146,
+      "X": 92,
+      "Y": 184,
       "Width": 40,
       "Height": 60
     },
     "Height": 54.0
   },
   {
+    "Name": "HookA",
+    "X": 7,
+    "Y": -2,
+    "Source": {
+      "X": 264,
+      "Y": 60,
+      "Width": 19,
+      "Height": 29
+    },
+    "Height": 22.0
+  },
+  {
     "Name": "IBeam",
     "X": 13,
     "Y": -5,
     "Source": {
-      "X": 192,
-      "Y": 22,
+      "X": 229,
+      "Y": 262,
       "Width": 19,
       "Height": 33
     },
@@ -232,44 +352,44 @@
     "X": -36,
     "Y": -1,
     "Source": {
-      "X": 162,
-      "Y": 146,
+      "X": 239,
+      "Y": 2,
       "Width": 44,
       "Height": 31
     },
     "Height": 9.0
   },
   {
+    "Name": "LargeRightSpike",
+    "X": 28,
+    "Y": -9,
+    "Source": {
+      "X": 239,
+      "Y": 37,
+      "Width": 21,
+      "Height": 46
+    },
+    "Height": 6.0
+  },
+  {
     "Name": "LeafA",
     "X": 14,
     "Y": -2,
     "Source": {
-      "X": 215,
-      "Y": 49,
+      "X": 285,
+      "Y": 278,
       "Width": 12,
       "Height": 14
     },
     "Height": 12.0
   },
   {
-    "Name": "LeftExcuse",
-    "X": -12,
-    "Y": -5,
-    "Source": {
-      "X": 207,
-      "Y": 118,
-      "Width": 28,
-      "Height": 20
-    },
-    "Height": 14.0
-  },
-  {
     "Name": "Og",
     "X": 0,
     "Y": -5,
     "Source": {
-      "X": 118,
-      "Y": 71,
+      "X": 2,
+      "Y": 184,
       "Width": 42,
       "Height": 71
     },
@@ -280,8 +400,8 @@
     "X": 9,
     "Y": -1,
     "Source": {
-      "X": 210,
-      "Y": 166,
+      "X": 118,
+      "Y": 287,
       "Width": 23,
       "Height": 11
     },
@@ -292,8 +412,8 @@
     "X": 0,
     "Y": -4,
     "Source": {
-      "X": 42,
-      "Y": 198,
+      "X": 92,
+      "Y": 248,
       "Width": 44,
       "Height": 15
     },
@@ -304,8 +424,8 @@
     "X": 8,
     "Y": -5,
     "Source": {
-      "X": 162,
-      "Y": 181,
+      "X": 179,
+      "Y": 254,
       "Width": 29,
       "Height": 27
     },
@@ -316,8 +436,8 @@
     "X": -40,
     "Y": -5,
     "Source": {
-      "X": 164,
-      "Y": 71,
+      "X": 199,
+      "Y": 62,
       "Width": 22,
       "Height": 45
     },
@@ -328,8 +448,8 @@
     "X": 5,
     "Y": -3,
     "Source": {
-      "X": 84,
-      "Y": 156,
+      "X": 48,
+      "Y": 248,
       "Width": 28,
       "Height": 30
     },
@@ -340,20 +460,32 @@
     "X": 7,
     "Y": -3,
     "Source": {
-      "X": 195,
-      "Y": 181,
+      "X": 148,
+      "Y": 263,
       "Width": 23,
       "Height": 27
     },
     "Height": 26.0
   },
   {
+    "Name": "RootsC",
+    "X": 3,
+    "Y": -3,
+    "Source": {
+      "X": 264,
+      "Y": 37,
+      "Width": 33,
+      "Height": 19
+    },
+    "Height": 13.0
+  },
+  {
     "Name": "Space",
     "X": 0,
     "Y": 0,
     "Source": {
-      "X": 148,
-      "Y": 66,
+      "X": 136,
+      "Y": 194,
       "Width": 1,
       "Height": 1
     },
@@ -364,11 +496,47 @@
     "X": 15,
     "Y": -4,
     "Source": {
-      "X": 190,
-      "Y": 71,
+      "X": 212,
+      "Y": 200,
       "Width": 13,
       "Height": 66
     },
     "Height": 64.0
+  },
+  {
+    "Name": "TangentLeftA",
+    "X": -10,
+    "Y": 0,
+    "Source": {
+      "X": 252,
+      "Y": 262,
+      "Width": 29,
+      "Height": 23
+    },
+    "Height": 5.0
+  },
+  {
+    "Name": "TangentLeftB",
+    "X": 10,
+    "Y": -1,
+    "Source": {
+      "X": 264,
+      "Y": 93,
+      "Width": 11,
+      "Height": 18
+    },
+    "Height": 16.0
+  },
+  {
+    "Name": "TangentRightA",
+    "X": 19,
+    "Y": -9,
+    "Source": {
+      "X": 179,
+      "Y": 200,
+      "Width": 29,
+      "Height": 50
+    },
+    "Height": 9.0
   }
 ]

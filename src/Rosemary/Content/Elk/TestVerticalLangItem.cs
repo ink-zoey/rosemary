@@ -19,7 +19,7 @@ public sealed class TestVerticalLangItem : ModItem
                        .EyeRightFlare.UseHeight(0f)  .UseOffset(new Vector2(-10f, -15f))
                        .BranchLeftC                  .UseOffset(new Vector2(-8f, 0f))
                        .LeafA        .UseHeight(0f)  .UseOffset(new Vector2(17f, 3f))
-                       .LeftExcuse                   .UseOffset(new Vector2(0f, 9f))
+                       .ExcuseLeftA                  .UseOffset(new Vector2(0f, 9f))
                        .Space        .UseHeight(14f)
                        .SpearA       .UseHeight(0f)  .UseOffset(new Vector2(10f, -5f))
                        .DotSmall                     .UseOffset(new Vector2(-10f, 0f))
