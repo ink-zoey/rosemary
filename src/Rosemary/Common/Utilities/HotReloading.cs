@@ -15,7 +15,7 @@ using Terraria.ModLoader;
 
 namespace Rosemary.Common;
 
-public static class HotReloading
+file static class HotReloading
 {
 #region Nasty Boilerplate
     public static void UpdateApplication(Type[]? updatedTypes)
