@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using Rosemary.Core;
 
 namespace Rosemary;
 
@@ -19,6 +20,11 @@ partial class ModImpl : IHasCustomAuthorMessage
     string IHasCustomAuthorMessage.GetAuthorText()
     {
         return AuthorText.GetAuthorTooltip(this, headerText: null);
+    }
+
+    public override void HandlePacket(BinaryReader reader, int whoAmI)
+    {
+        PacketHandler.Handle(this, reader, whoAmI);
     }
 }
 
