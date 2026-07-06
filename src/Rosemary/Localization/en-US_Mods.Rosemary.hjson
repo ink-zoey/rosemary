@@ -10,4 +10,11 @@ Items: {
 		DisplayName: First Vial
 		Tooltip: ""
 	}
+
+	DinosaurExtendoGrip: {
+		DisplayName: Dinosaur Extendo Grip
+		Tooltip: ""
+	}
 }
+
+Projectiles.DinosaurExtendoGripHoldout.DisplayName: Dinosaur Extendo Grip Holdout
