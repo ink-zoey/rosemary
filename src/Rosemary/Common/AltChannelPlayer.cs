@@ -2,6 +2,7 @@
 using Rosemary.Core;
 using System.IO;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace Rosemary.Common;
@@ -12,15 +13,20 @@ file sealed class AltChannelPlayer : ModPlayer
     {
         internal static int WhoAmI { get; set; }
 
-        public void Write(BinaryWriter writer)
+        public void Write(BinaryWriter writer, int sender)
         {
             writer.Write(WhoAmI);
             writer.Write(Main.player[WhoAmI].AltChannel);
         }
 
-        public void Read(BinaryReader reader)
+        public void Read(BinaryReader reader, int sender)
         {
             WhoAmI = reader.ReadInt32();
+
+            if (Main.netMode == NetmodeID.Server)
+            {
+                WhoAmI = sender;
+            }
 
             var player = Main.player[WhoAmI];
 

@@ -12,9 +12,9 @@ namespace Rosemary.Core;
 
 public interface IPacketHandler
 {
-    void Write(BinaryWriter writer);
+    void Write(BinaryWriter writer, int sender);
 
-    void Read(BinaryReader reader);
+    void Read(BinaryReader reader, int sender);
 }
 
 public interface IPacketHandler<T> : IPacketHandler
@@ -32,7 +32,7 @@ public interface IPacketHandler<T> : IPacketHandler
         var packet = mod.GetPacket();
         packet.Write(index);
         {
-            handler.Write(packet);
+            handler.Write(packet, ignoreClient);
         }
         packet.Send(toClient, ignoreClient);
     }
@@ -86,7 +86,7 @@ public static class PacketHandler
 
         var handler = handlers_by_id[index];
 
-        handler.Read(reader);
+        handler.Read(reader, whoAmI);
 
         if (Main.netMode == NetmodeID.Server)
         {
@@ -101,7 +101,7 @@ public static class PacketHandler
             var packet = mod.GetPacket();
             packet.Write(index);
             {
-                handler.Write(packet);
+                handler.Write(packet, whoAmI);
             }
             packet.Send(-1, whoAmI);
         }
