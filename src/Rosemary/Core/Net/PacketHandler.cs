@@ -1,9 +1,5 @@
-﻿using Daybreak.Common.Features.Hooks;
-using Rosemary.Common;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -12,67 +8,55 @@ namespace Rosemary.Core;
 
 public interface IPacketHandler
 {
-    void Write(BinaryWriter writer, int sender);
+    void Write(BinaryWriter writer);
 
     void Read(BinaryReader reader, int sender);
+
+    void Send(ModPacket packet, int toClient = -1, int ignoreClient = -1);
 }
 
-public interface IPacketHandler<T> : IPacketHandler
-    where T : IPacketHandler<T>
+public interface IPacketHandler<T> : IPacketHandler, ILoadable
+    where T : struct, IPacketHandler<T>
 {
-    static void Send(Mod mod, int toClient = -1, int ignoreClient = -1)
+    static virtual ushort Id => PacketHandler.PacketId<T>.Id;
+
+    void ILoadable.Load(Mod mod)
     {
-        var (handler, index) = PacketHandler.HANDLER_INFO_BY_TYPES[typeof(T)];
+        PacketHandler.Register<T>(this);
+    }
 
-        if (index == -1)
-        {
-            return;
-        }
+    void ILoadable.Unload()
+    { }
 
-        var packet = mod.GetPacket();
-        packet.Write(index);
-        {
-            handler.Write(packet, ignoreClient);
-        }
+    void IPacketHandler.Send(ModPacket packet, int toClient, int ignoreClient)
+    {
+        packet.Write(T.Id);
+
+        Write(packet);
+
         packet.Send(toClient, ignoreClient);
     }
 }
 
 public static class PacketHandler
 {
-    // TODO: Better method of indexing packets.
-    public static readonly Dictionary<Type, (IPacketHandler, int)> HANDLER_INFO_BY_TYPES = [];
-
-    private static readonly Dictionary<int, IPacketHandler> handlers_by_id = [];
-
-    [OnLoad]
-    private static void Load(Mod mod)
+    internal static class PacketId<T> where T : struct, IPacketHandler<T>
     {
-        var asm = mod.Code;
+        // ReSharper disable once StaticMemberInGenericType
+        public static ushort Id { get; set; }
+    }
 
-        var types = asm.GetTypes()
-                       .Where(t => t.IsAssignableTo(typeof(IPacketHandler)))
-                       .ToArray();
+    public static readonly Dictionary<ushort, IPacketHandler> HANDLERS_BY_ID = [];
 
-        for (var i = 0; i < types.Length; i++)
-        {
-            var handler = GetHandler(types[i]);
+    private static ushort newId;
 
-            HANDLER_INFO_BY_TYPES[types[i]] = (handler, i);
-            handlers_by_id[i] = handler;
-        }
+    public static void Register<T>(IPacketHandler handler)
+        where T : struct, IPacketHandler<T>
+    {
+        PacketId<T>.Id = newId;
+        HANDLERS_BY_ID[newId] = handler;
 
-        return;
-
-        static IPacketHandler GetHandler(Type type)
-        {
-            if (ModContent.TryGetInstanceAs<IPacketHandler>(type, out var handler))
-            {
-                return handler;
-            }
-
-            return (IPacketHandler)Activator.CreateInstance(type)!;
-        }
+        newId++;
     }
 
     public static void Handle(Mod mod, BinaryReader reader, int whoAmI)
@@ -82,34 +66,26 @@ public static class PacketHandler
             return;
         }
 
-        var index = reader.ReadInt32();
+        var index = reader.ReadUInt16();
 
-        var handler = handlers_by_id[index];
+        var handler = HANDLERS_BY_ID[index];
 
         handler.Read(reader, whoAmI);
 
         if (Main.netMode == NetmodeID.Server)
         {
-            Send();
-        }
-
-        return;
-
-        // ReSharper disable once LocalFunctionHidesMethod
-        void Send()
-        {
-            var packet = mod.GetPacket();
-            packet.Write(index);
-            {
-                handler.Write(packet, whoAmI);
-            }
-            packet.Send(-1, whoAmI);
+            handler.Send(mod.GetPacket(), -1, whoAmI);
         }
     }
 
-    extension<T>(IPacketHandler<T>)
-        where T : IPacketHandler<T>, new()
+    extension<T>(IPacketHandler<T> handler)
+        where T : struct, IPacketHandler<T>
     {
-        public static void Send(Mod mod, int toClient = -1, int ignoreClient = -1) => IPacketHandler<T>.Send(mod, toClient, ignoreClient);
+        public void Send(Mod mod, int toClient = -1, int ignoreClient = -1)
+        {
+            handler.Send(mod.GetPacket(), toClient, ignoreClient);
+        }
+
+        public void Send(int toClient = -1, int ignoreClient = -1) => handler.Send(ModContent.GetInstance<ModImpl>(), toClient, ignoreClient);
     }
 }

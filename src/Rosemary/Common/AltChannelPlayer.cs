@@ -9,11 +9,9 @@ namespace Rosemary.Common;
 
 file sealed class AltChannelPlayer : ModPlayer
 {
-    private sealed class Packet : IPacketHandler<Packet>
+    private record struct Packet(int WhoAmI) : IPacketHandler<Packet>
     {
-        internal static int WhoAmI { get; set; }
-
-        public void Write(BinaryWriter writer, int sender)
+        public void Write(BinaryWriter writer)
         {
             writer.Write(WhoAmI);
             writer.Write(Main.player[WhoAmI].AltChannel);
@@ -72,8 +70,7 @@ file sealed class AltChannelPlayer : ModPlayer
 
     public override void SyncPlayer(int toWho, int fromWho, bool newPlayer)
     {
-        Packet.WhoAmI = Player.whoAmI;
-        Packet.Send(Mod, toWho, fromWho);
+        new Packet(Player.whoAmI).Send(toWho, fromWho);
     }
 
     public override void CopyClientState(ModPlayer targetCopy)
