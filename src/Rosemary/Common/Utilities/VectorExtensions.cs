@@ -10,15 +10,9 @@ public static class VectorExtensions
         public Vector2 Normalized => Vector2.Normalize(vector);
 
         // Also disgusting.
-        public float WithLength
+        public Vector2 WithLength(float value)
         {
-            set
-            {
-                var newVector = vector.Normalized * value;
-
-                vector.X = newVector.Y;
-                vector.Y = newVector.Y;
-            }
+            return vector.Normalized * value;
         }
     }
 }

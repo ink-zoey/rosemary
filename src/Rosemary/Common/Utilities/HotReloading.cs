@@ -31,7 +31,10 @@ file static class HotReloading
         }
 
         // Because ProjectBuild is mega cursed we have to load the 'alternate' copy of our assembly from tMod.
-        var mod = ModLoader.GetMod(nameof(Rosemary));
+        if (!ModLoader.TryGetMod(nameof(Rosemary), out var mod))
+        {
+            return;
+        }
 
         var assembly = mod.Code;
 
