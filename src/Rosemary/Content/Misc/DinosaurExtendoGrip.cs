@@ -1,7 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Rosemary.Common;
 using System;
+using Daybreak.Common.Mathematics;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -51,6 +54,12 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 {
     public override string Texture => Assets.Misc.DinosaurExtendoGrip.KEY;
 
+    public override void SetStaticDefaults()
+    {
+        ProjectileID.Sets.TrailCacheLength[Type] = 3;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+    }
+
     public override void SetDefaults()
     {
         Projectile.width = 30;
@@ -64,8 +73,25 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
-        // Projectile.hide = true;
+        Projectile.hide = true;
         Projectile.tileCollide = false;
+    }
+
+    public int HeldItem
+    {
+        get => (int)Projectile.ai[0];
+        set => Projectile.ai[0] = value;
+    }
+
+    public float InitialRotation
+    {
+        get => Projectile.ai[1];
+        set => Projectile.ai[1] = value;
+    }
+
+    public override void OnSpawn(IEntitySource source)
+    {
+        HeldItem = -1;
     }
 
     public override void AI()
@@ -74,29 +100,23 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         UpdatePlayerHoldout();
 
-        
+        GrabBehaviour(player);
 
         return;
 
-        void GrabBehaviour()
-        {
-
-        }
-
         void UpdatePlayerHoldout()
         {
-            const float max_length = 120f;
-
             Projectile.spriteDirection = Projectile.direction;
 
             player.ChangeDir(Projectile.direction);
             player.heldProj = Projectile.whoAmI;
             player.SetDummyItemTime(2);
 
-            var rotationOffset = Projectile.spriteDirection == -1 ? MathF.PI : 0;
-            var dir = Projectile.velocity;
+            Projectile.drawLayer = ProjectileDrawLayerID.HeldProj;
 
-            player.itemRotation = dir.ToRotation() + rotationOffset;
+            var dir = Projectile.velocity * Projectile.spriteDirection;
+
+            player.itemRotation = dir.ToRotation();
 
             Projectile.timeLeft = 4;
 
@@ -109,13 +129,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             var offset = Main.MouseWorld - center;
 
-            var targetLength = MathF.Min(offset.Length(), max_length);
-
-            var length = MathHelper.Lerp((Projectile.Center - center).Length(), targetLength, 0.3f);
-
-            offset = offset.Normalized * length;
-
-            Projectile.Center = center + offset;
+            Projectile.Center = GetPosition(player);
 
             Projectile.velocity = offset.Normalized;
 
@@ -126,5 +140,191 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 Projectile.Kill();
             }
         }
+    }
+
+    private Vector2 GetPosition(Player player)
+    {
+        const float min_length = 40f;
+        const float max_length = 150f;
+
+        var center = player.RotatedRelativePoint(player.MountedCenter, true);
+
+        var target = Main.MouseWorld;
+        target -= center;
+
+        var targetLength = MathHelper.Clamp(target.Length(), min_length, max_length);
+
+        var length = MathHelper.Lerp((Projectile.Center - center).Length(), targetLength, 0.5f);
+
+        target = WithLength(target, length);
+        target += center;
+
+        return Vector2.Lerp(Projectile.Center, target, 0.3f);
+    }
+
+    private void GrabBehaviour(Player player)
+    {
+        if (!player.AltChannel)
+        {
+            if (HeldItem != -1)
+            {
+                LetGoOfItem();
+            }
+
+            HeldItem = -1;
+
+            return;
+        }
+
+        if (HeldItem == -1 && TryFindItem(out var index))
+        {
+            HeldItem = index;
+
+            InitialRotation = Projectile.velocity.ToRotation() + MathF.Tau - Main.item[HeldItem].Rotation;
+        }
+
+        if (HeldItem == -1)
+        {
+            return;
+        }
+
+        HoldItem();
+
+        return;
+
+        bool TryFindItem(out int index)
+        {
+            index = -1;
+
+            foreach (var item in Main.ActiveItems)
+            {
+                if (item.shimmered || !item.Hitbox.Intersects(Projectile.Hitbox))
+                {
+                    continue;
+                }
+
+                index = item.whoAmI;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        void LetGoOfItem()
+        {
+            const float pickup_distance = 50f;
+
+            const float drop_speed = 3.4f;
+
+            var item = Main.item[HeldItem];
+
+            if (player.whoAmI != Main.myPlayer)
+            {
+                return;
+            }
+
+            var center = player.RotatedRelativePoint(player.MountedCenter, true);
+
+            var length = (Projectile.Center - center).Length();
+
+            if (length > pickup_distance)
+            {
+                item.velocity = WithLength(Projectile.velocity, drop_speed);
+
+                var offset = AveragePositionChanges();
+
+                offset.Y *= 0.2f;
+
+                item.velocity += offset;
+
+                return;
+            }
+
+            item.noGrabDelay = 0;
+            player.PickupItem(item);
+
+            return;
+
+            Vector2 AveragePositionChanges()
+            {
+                var offset = Vector2.Zero;
+
+                for (var i = 0; i < Projectile.oldPos.Length; i++)
+                {
+                    var prior = i == 0 ? Projectile.position : Projectile.oldPos[i - 1];
+
+                    offset += prior - Projectile.oldPos[i];
+                }
+
+                offset /= Projectile.oldPos.Length;
+
+                return offset;
+            }
+        }
+
+        void HoldItem()
+        {
+            var item = Main.item[HeldItem];
+
+            if (item.shimmered)
+            {
+                HeldItem = -1;
+
+                return;
+            }
+
+            item.noGrabDelay = 30;
+
+            item.Center = Projectile.Center;
+
+            item.onConveyor = false;
+
+            item.velocity = Vector2.Zero;
+
+            var rotation = Projectile.velocity.ToRotation() + MathF.Tau - InitialRotation;
+            item.Rotation = rotation;
+
+            Main.NewText(InitialRotation);
+        }
+    }
+
+    public override bool PreDraw(Player player, ref Color lightColor)
+    {
+        const float offset = 30f;
+
+        var texture = Assets.Misc.DinosaurExtendoGripBits.Asset.Value;
+
+        var frame = new Rectangle(20, 0, 10, 10);
+
+        var origin = frame.Size() * 0.5f;
+
+        var playerCenter = player.RotatedRelativePoint(player.MountedCenter, true);
+
+        var centerDirection = (Projectile.Center - playerCenter).Normalized;
+
+        var position = Projectile.Center - centerDirection * offset;
+
+        var dir = Projectile.spriteDirection == -1
+            ? SpriteEffects.FlipHorizontally
+            : SpriteEffects.None;
+
+        Main.EntitySpriteDraw(texture, position - Main.screenPosition, frame, lightColor, 0f, origin, 1f, dir);
+
+        return false;
+    }
+
+    private static Vector2 ClampLength(Vector2 vector, float min, float max)
+    {
+        vector = vector.Normalized * MathHelper.Clamp(vector.Length(), min, max);
+
+        return vector;
+    }
+
+    private static Vector2 WithLength(Vector2 vector, float newLength)
+    {
+        vector = vector.Normalized * newLength;
+
+        return vector;
     }
 }
