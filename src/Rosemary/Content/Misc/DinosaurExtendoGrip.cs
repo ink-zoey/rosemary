@@ -1,12 +1,14 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Daybreak.Common.Mathematics;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using System;
-using Daybreak.Common.Mathematics;
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Terraria.ModLoader.BackupIO;
+using Player = Terraria.Player;
 
 namespace Rosemary.Content;
 
@@ -92,74 +94,72 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     public override void OnSpawn(IEntitySource source)
     {
         HeldItem = -1;
+
+        Projectile.netUpdate = true;
     }
 
     public override void AI()
     {
         var player = Main.player[Projectile.owner];
 
-        UpdatePlayerHoldout();
+        UpdatePlayerHoldout(player);
 
         GrabBehaviour(player);
-
-        return;
-
-        void UpdatePlayerHoldout()
-        {
-            Projectile.spriteDirection = Projectile.direction;
-
-            player.ChangeDir(Projectile.direction);
-            player.heldProj = Projectile.whoAmI;
-            player.SetDummyItemTime(2);
-
-            Projectile.drawLayer = ProjectileDrawLayerID.HeldProj;
-
-            var dir = Projectile.velocity * Projectile.spriteDirection;
-
-            player.itemRotation = dir.ToRotation();
-
-            Projectile.timeLeft = 4;
-
-            if (Main.myPlayer != Projectile.owner)
-            {
-                return;
-            }
-
-            var center = player.RotatedRelativePoint(player.MountedCenter, true);
-
-            var offset = Main.MouseWorld - center;
-
-            Projectile.Center = GetPosition(player);
-
-            Projectile.velocity = offset.Normalized;
-
-            var stillInUse = player is { channel: true, noItems: false, CCed: false };
-
-            if (!stillInUse)
-            {
-                Projectile.Kill();
-            }
-        }
     }
 
-    private Vector2 GetPosition(Player player)
+    private void UpdatePlayerHoldout(Player player)
     {
-        const float min_length = 40f;
-        const float max_length = 150f;
+        Projectile.spriteDirection = Projectile.direction;
+
+        player.ChangeDir(Projectile.direction);
+        player.heldProj = Projectile.whoAmI;
+        player.SetDummyItemTime(2);
+
+        Projectile.drawLayer = ProjectileDrawLayerID.HeldProj;
+
+        var dir = Projectile.velocity * Projectile.spriteDirection;
+
+        player.itemRotation = dir.ToRotation();
+
+        Projectile.timeLeft = 4;
+
+        if (Main.myPlayer != Projectile.owner)
+        {
+            return;
+        }
 
         var center = player.RotatedRelativePoint(player.MountedCenter, true);
 
         var target = Main.MouseWorld;
         target -= center;
 
-        var targetLength = MathHelper.Clamp(target.Length(), min_length, max_length);
+        Projectile.Center = GetPosition(target);
 
-        var length = MathHelper.Lerp((Projectile.Center - center).Length(), targetLength, 0.5f);
+        Projectile.velocity = target.Normalized;
 
-        target = WithLength(target, length);
-        target += center;
+        var stillInUse = player is { channel: true, noItems: false, CCed: false };
 
-        return Vector2.Lerp(Projectile.Center, target, 0.3f);
+        if (!stillInUse)
+        {
+            Projectile.Kill();
+        }
+
+        return;
+
+        Vector2 GetPosition(Vector2 target)
+        {
+            const float min_length = 40f;
+            const float max_length = 150f;
+
+            var targetLength = MathHelper.Clamp(target.Length(), min_length, max_length);
+
+            var length = MathHelper.Lerp((Projectile.Center - center).Length(), targetLength, 0.5f);
+
+            target.WithLength = length;
+            target += center;
+
+            return Vector2.Lerp(Projectile.Center, target, 0.3f);
+        }
     }
 
     private void GrabBehaviour(Player player)
@@ -230,7 +230,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             if (length > pickup_distance)
             {
-                item.velocity = WithLength(Projectile.velocity, drop_speed);
+                item.velocity.WithLength = drop_speed;
 
                 var offset = AveragePositionChanges();
 
@@ -246,6 +246,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             return;
 
+            // Gives us a more accurate velocity change, as opposed to just the prior position.
             Vector2 AveragePositionChanges()
             {
                 var offset = Vector2.Zero;
@@ -291,6 +292,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
     public override bool PreDraw(Player player, ref Color lightColor)
     {
+        var handlePosition = (Projectile.Center + Vector2.UnitY * Projectile.gfxOffY - Main.screenPosition).Floor();
+
         const float offset = 30f;
 
         var texture = Assets.Misc.DinosaurExtendoGripBits.Asset.Value;
@@ -312,19 +315,5 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Main.EntitySpriteDraw(texture, position - Main.screenPosition, frame, lightColor, 0f, origin, 1f, dir);
 
         return false;
-    }
-
-    private static Vector2 ClampLength(Vector2 vector, float min, float max)
-    {
-        vector = vector.Normalized * MathHelper.Clamp(vector.Length(), min, max);
-
-        return vector;
-    }
-
-    private static Vector2 WithLength(Vector2 vector, float newLength)
-    {
-        vector = vector.Normalized * newLength;
-
-        return vector;
     }
 }

@@ -8,5 +8,17 @@ public static class VectorExtensions
     {
         // Gross but no other way of going about this really.
         public Vector2 Normalized => Vector2.Normalize(vector);
+
+        // Also disgusting.
+        public float WithLength
+        {
+            set
+            {
+                var newVector = vector.Normalized * value;
+
+                vector.X = newVector.Y;
+                vector.Y = newVector.Y;
+            }
+        }
     }
 }
