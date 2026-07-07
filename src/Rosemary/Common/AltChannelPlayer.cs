@@ -2,6 +2,7 @@
 using Rosemary.Core;
 using System.IO;
 using Terraria;
+using Terraria.Graphics.Capture;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -36,36 +37,24 @@ file sealed class AltChannelPlayer : ModPlayer
 
     public override void Load()
     {
-        IL_Player.ItemCheck_ManageRightClickFeatures += ItemCheck_ManageRightClickFeatures_AltChannel;
+        On_Player.ItemCheck_ManageRightClickFeatures += ItemCheck_ManageRightClickFeatures_AltChannel; ;
     }
 
-    private static void ItemCheck_ManageRightClickFeatures_AltChannel(ILContext il)
+    private static void ItemCheck_ManageRightClickFeatures_AltChannel(On_Player.orig_ItemCheck_ManageRightClickFeatures orig, Player self)
     {
-        var c = new ILCursor(il);
+        // Vanilla condition taken from the method, baring left click checks to allow using both buttons at the same time.
+        var clicking = self.selectedItem != ItemID.Heart
+                    && self.controlUseTile
+                    && self.whoAmI == Main.myPlayer
+                    && !self.tileInteractionHappened
+                    && !self.mouseInterface
+                    && !CaptureManager.Instance.Active
+                    && (!Main.mouseRightRelease || !Main.HoveringAnInteractable)
+                    && !Main.LocalPlayerHasPendingInventoryActions();
 
-        var playerIndex = -1; // arg
-        var flag2Index = -1;  // loc
+        self.GetModPlayer<AltChannelPlayer>().AltChannel = clicking;
 
-        c.GotoNext(
-            i => i.MatchLdarg(out playerIndex),
-            i => i.MatchLdfld<Player>(nameof(Player.altFunctionUse))
-        );
-
-        c.GotoPrev(
-            MoveType.Before,
-            i => i.MatchLdloc(out flag2Index)
-        );
-
-        c.MoveAfterLabels();
-
-        c.EmitLdarg(playerIndex);
-        c.EmitLdloc(flag2Index);
-        c.EmitDelegate(
-            static (Player player, bool altChannel) =>
-            {
-                player.GetModPlayer<AltChannelPlayer>().AltChannel = altChannel;
-            }
-        );
+        orig(self);
     }
 
     public override void SyncPlayer(int toWho, int fromWho, bool newPlayer)
