@@ -584,7 +584,7 @@ public static class ElkLangItemSets
                 {
                     var outlineAlpha = popupText.color.A * scaleMultiplier * popupText.alpha;
 
-                    outline.A = (byte)MathHelper.Lerp(60f, 127f, Utils.GetLerpValue(0f, 255f, outlineAlpha, clamped: true));
+                    outline.A = (byte)MathF.Lerp(60f, 127f, Utils.GetLerpValue(0f, 255f, outlineAlpha, clamped: true));
 
                     outline = Color.Lerp(outline, new Color(0, 0, 0, (int)outlineAlpha), 0.25f);
                 }
@@ -1228,7 +1228,7 @@ public static class ElkLangItemSets
             var prefixPosition = new Vector2(position.X + (10f * scale), position.Y + size.Y - (lastCharacterHeight * 0.5f * scale));
             prefixPosition -= origin * scale;
 
-            var prefixRotation = -MathHelper.PiOver2;
+            var prefixRotation = -MathF.PiOver2;
 
             var prefixSize = font.MeasureString(prefixText);
             prefixScale *= scale;

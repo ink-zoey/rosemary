@@ -9,7 +9,6 @@ public static class VectorExtensions
         // Gross but no other way of going about this really.
         public Vector2 Normalized => Vector2.Normalize(vector);
 
-        // Also disgusting.
         public Vector2 WithLength(float value)
         {
             return vector.Normalized * value;

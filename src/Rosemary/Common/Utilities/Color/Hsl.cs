@@ -6,7 +6,7 @@ namespace Rosemary.Common;
 
 public static class Hsl
 {
-    extension(Color color)
+    extension(ref Color color)
     {
         public float Hue
         {
@@ -36,6 +36,7 @@ public static class Hsl
 
                 return (color.R == lowest ? 3f + g2 : 5f - r2) / 6f;
             }
+
             set
             {
                 var newColor = Color.FromHsl(value, color.Saturation, color.Lightness);
@@ -62,6 +63,7 @@ public static class Hsl
 
                 return range / (lightness <= 0.5f ? (highest + lowest) : (2f - highest - lowest));
             }
+
             set
             {
                 var newColor = Color.FromHsl(color.Hue, value, color.Lightness);
@@ -84,6 +86,7 @@ public static class Hsl
 
                 return (lowest + highest) / 2f;
             }
+
             set
             {
                 var newColor = Color.FromHsl(color.Hue, color.Saturation, value);
@@ -93,7 +96,10 @@ public static class Hsl
                 color.B = newColor.B;
             }
         }
+    }
 
+    extension(Color color)
+    {
         public static Color FromHsl(float hue, float saturation, float lightness)
         {
             return Main.hslToRgb(hue, saturation, lightness);
