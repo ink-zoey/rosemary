@@ -2,10 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using System;
-using System.Linq;
 using Terraria;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -145,9 +143,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Projectile.drawLayer = ProjectileDrawLayerID.HeldProj;
         player.SetDummyItemTime(2);
 
+        CompositeArm();
+
         var dir = (Projectile.Center - center) * Projectile.spriteDirection;
-        var rotation = dir.ToRotation();
-        player.itemRotation = rotation;
+        player.itemRotation = dir.ToRotation();
 
         Projectile.timeLeft = 4;
 
@@ -175,6 +174,19 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         }
 
         return;
+
+        void CompositeArm()
+        {
+            var rotation = GetArmRotation(player);
+
+            var offset = Utils.Remap(clawInterpolator, 0f, 1f, 0f, 0.4f, clamped: false);
+
+            var backRotation = rotation + (offset * Projectile.spriteDirection);
+
+            player.SetCompositeArmBack(true, Player.CompositeArmStretchAmount.Full, backRotation);
+
+            player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, rotation);
+        }
 
         Vector2 GetVelocity(Vector2 target)
         {
@@ -315,7 +327,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         var texture = Assets.Misc.DinosaurExtendoGripBits.Asset.Value;
 
-        var center = player.RotatedRelativePoint(player.MountedCenter, true) + player.velocity;
+        var center = player.GetFrontHandPosition(
+            Player.CompositeArmStretchAmount.Full,
+            GetArmRotation(player)
+        );
 
         var effects = Projectile.spriteDirection == -1
             ? SpriteEffects.FlipHorizontally
@@ -328,7 +343,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var color = lightColor;
 
-        var handlePosition = center + centerDirection.WithLength(12f);
+        var handlePosition = center + centerDirection.WithLength(4f);
         var clawPosition = Projectile.Center - centerDirection.WithLength(16f);
 
         DrawHeldItem();
@@ -445,5 +460,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             Main.EntitySpriteDraw(texture, position, boltFrame, color, 0f, boltOrigin, 1f, effects);
         }
+    }
+
+    private float GetArmRotation(Player player)
+    {
+        return (Projectile.Center - player.MountedCenter).ToRotation() - MathF.PiOver2 - player.fullRotation;
     }
 }
