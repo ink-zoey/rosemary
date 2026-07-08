@@ -315,7 +315,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         var texture = Assets.Misc.DinosaurExtendoGripBits.Asset.Value;
 
-        var center = player.RotatedRelativePoint(player.MountedCenter, true);
+        var center = player.RotatedRelativePoint(player.MountedCenter, true) + player.velocity;
 
         var effects = Projectile.spriteDirection == -1
             ? SpriteEffects.FlipHorizontally
@@ -328,8 +328,12 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var color = lightColor;
 
-        DrawHandle();
+        var handlePosition = center + centerDirection.WithLength(12f);
+        var clawPosition = Projectile.Center - centerDirection.WithLength(16f);
+
         DrawHeldItem();
+        DrawChain();
+        DrawHandle();
         DrawClaw();
 
         return false;
@@ -353,9 +357,60 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             var rotation = direction;
             rotation += MathF.PiOver4 * Projectile.spriteDirection;
 
-            var position = center + centerDirection.WithLength(12f) - Main.screenPosition;
+            var position = handlePosition - Main.screenPosition;
 
-            Main.EntitySpriteDraw(texture, position, frame, color, rotation, origin, 1f, effects);
+            var handleColor = Lighting.GetColor(handlePosition.ToTileCoordinates());
+
+            Main.EntitySpriteDraw(texture, position, frame, handleColor, rotation, origin, 1f, effects);
+        }
+
+        void DrawChain()
+        {
+            const float segment_size = 32;
+
+            const float max_length = 190f;
+
+            var brightFrame = new Rectangle(0, 0, 18, 6);
+
+            var darkFrame = new Rectangle(0, 8, 18, 6);
+
+            var origin = new Vector2(1, 3);
+
+            var segments = (int)Math.Ceiling(max_length / segment_size) - 1;
+
+            for (var i = 0; i < segments; i++)
+            {
+                var position = Vector2.Lerp(handlePosition, clawPosition, (float)i / segments) - Main.screenPosition;
+                var nextPosition = Vector2.Lerp(handlePosition, clawPosition, (float)(i + 1) / segments) - Main.screenPosition;
+
+                DrawSegment(position, nextPosition);
+            }
+
+            return;
+
+            void DrawSegment(Vector2 position, Vector2 nextPosition)
+            {
+                const float size = 16;
+
+                var segmentDirection = nextPosition - position;
+
+                var length = segmentDirection.Length();
+
+                // Get the angle of the right triangle formed by base: length/2 hyp: size.
+
+                var angle = MathF.Acos((length * 0.5f) / size);
+
+                var rotation = segmentDirection.ToRotation();
+
+                var worldPosition = Vector2.Lerp(position, nextPosition, 0.5f) + Main.screenPosition;
+                var segmentColor = Lighting.GetColor(worldPosition.ToTileCoordinates());
+
+                Main.EntitySpriteDraw(texture, position, darkFrame, segmentColor, rotation - angle, origin, 1f, SpriteEffects.None);
+                Main.EntitySpriteDraw(texture, position, brightFrame, segmentColor, rotation + angle, origin, 1f, SpriteEffects.None);
+
+                Main.EntitySpriteDraw(texture, nextPosition, darkFrame, segmentColor, MathF.PI + rotation - angle, origin, 1f, SpriteEffects.None);
+                Main.EntitySpriteDraw(texture, nextPosition, brightFrame, segmentColor, MathF.PI + rotation + angle, origin, 1f, SpriteEffects.None);
+            }
         }
 
         void DrawClaw()
@@ -369,7 +424,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             var boltFrame = new Rectangle(20, 0, 10, 10);
             var boltOrigin = boltFrame.Size() * 0.5f;
 
-            var position = Projectile.Center - centerDirection.WithLength(16f) - Main.screenPosition;
+            var position = clawPosition - Main.screenPosition;
 
             if (effects.HasFlag(SpriteEffects.FlipHorizontally))
             {
