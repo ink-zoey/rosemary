@@ -9,6 +9,8 @@ public sealed class FirstVial : ModItem
 {
     public override string Texture => Assets.Elk.Consumables.FirstVial.KEY;
 
+    public override string LocalizationCategory => Mods.Rosemary.Content.Elk.KEY;
+
     public override void SetStaticDefaults()
     {
         Item.ResearchUnlockCount = 20;
