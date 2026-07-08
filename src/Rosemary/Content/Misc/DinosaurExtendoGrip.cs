@@ -302,7 +302,6 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             item.onConveyor = false;
             item.shimmered = false;
-            item.shimmerTime = 0f;
 
             item.Hidden = true;
         }
