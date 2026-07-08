@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using System;
+using MonoMod.Cil;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -14,6 +15,53 @@ public sealed class DinosaurExtendoGrip : ModItem
     public override string Texture => Assets.Misc.DinosaurExtendoGrip.KEY;
 
     public override string LocalizationCategory => "Content.Misc";
+
+    public override void Load()
+    {
+        IL_Main.DrawMouseOver += DrawMouseOver_DisplayHeldItemTooltip;
+    }
+
+    private void DrawMouseOver_DisplayHeldItemTooltip(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var worldItemIndexIndex = -1;
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdsfld<Main>(nameof(Main.item)),
+            i => i.MatchLdloc(out worldItemIndexIndex),
+            i => i.MatchLdelemRef(),
+            i => i.MatchCallvirt<WorldItem>($"get_{nameof(WorldItem.master)}")
+        );
+
+        c.GotoPrev(
+            MoveType.After,
+            i => i.MatchCall<Rectangle>(nameof(Rectangle.Intersects))
+        );
+
+        c.EmitLdloc(worldItemIndexIndex);
+        c.EmitDelegate(
+            static (int i) =>
+            {
+                if (Main.LocalPlayer.heldProj == -1)
+                {
+                    return false;
+                }
+
+                var projectile = Main.projectile[Main.LocalPlayer.heldProj];
+
+                if (projectile.ModProjectile is not DinosaurExtendoGripHoldout holdout)
+                {
+                    return false;
+                }
+
+                return i == holdout.HeldItem;
+            }
+        );
+
+        c.EmitOr();
+    }
 
     public override void SetStaticDefaults()
     {
@@ -89,7 +137,20 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         set => Projectile.ai[1] = value;
     }
 
+    public float MaxReach
+    {
+        get => Projectile.ai[2];
+        set => Projectile.ai[2] = value;
+    }
+
     private float clawInterpolator;
+
+    private float GetReach()
+    {
+        const float min_reach = 170f;
+
+        return MathF.Max(MaxReach, min_reach);
+    }
 
     public override bool OnTileCollide(Vector2 oldVelocity)
     {
@@ -99,6 +160,13 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     public override void OnSpawn(IEntitySource source)
     {
         HeldItem = -1;
+
+        MaxReach = 0;
+
+        if (Main.myPlayer == Projectile.owner)
+        {
+            MaxReach = Math.Min(Player.tileRangeX * 16f, 1000f);
+        }
 
         Projectile.netUpdate = true;
     }
@@ -130,9 +198,11 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     private void UpdatePlayerHoldout(Player player)
     {
         const float min_length = 37f;
-        const float max_length = 170f;
-        const float inner_max_length = 155f;
-        const float over_max_length = 185f;
+
+        var reach = GetReach();
+
+        var innerMaxLength = reach - 15f;
+        var overMaxLength = reach + 20f;
 
         var center = player.RotatedRelativePoint(player.MountedCenter, true);
 
@@ -162,7 +232,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         Projectile.velocity = GetVelocity(target) * 0.15f + player.velocity;
 
-        var overExtended = currentLength > (Projectile.tileCollide ? over_max_length : inner_max_length);
+        var overExtended = currentLength > (Projectile.tileCollide ? overMaxLength : innerMaxLength);
 
         Projectile.tileCollide = !overExtended;
 
@@ -190,7 +260,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         Vector2 GetVelocity(Vector2 target)
         {
-            var targetLength = MathF.Clamp(target.Length(), min_length, max_length);
+            var targetLength = MathF.Clamp(target.Length(), min_length, reach);
 
             var length = MathF.Lerp(currentLength, targetLength, 0.5f);
 
@@ -296,6 +366,13 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         {
             var item = Main.item[HeldItem];
 
+            if (!item.active)
+            {
+                HeldItem = -1;
+
+                return;
+            }
+
             item.noGrabDelay = 30;
 
             Main.instance.DrawItem_GetBasics(item.inner, item.whoAmI, out _, out var frame, out _);
@@ -383,7 +460,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         {
             const float segment_size = 32;
 
-            const float max_length = 190f;
+            var reach = GetReach() + 20f;
 
             var brightFrame = new Rectangle(0, 0, 18, 6);
 
@@ -391,7 +468,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             var origin = new Vector2(1, 3);
 
-            var segments = (int)Math.Ceiling(max_length / segment_size) - 1;
+            var segments = (int)Math.Ceiling(reach / segment_size) - 1;
 
             for (var i = 0; i < segments; i++)
             {
