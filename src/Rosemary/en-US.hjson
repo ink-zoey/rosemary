@@ -1,0 +1,30 @@
+Mods: {
+	Rosemary: {
+		Mods: {
+			Rosemary: {
+				Content: {
+					Misc: {
+						DinosaurExtendoGrip: {
+							DisplayName: Dinosaur Extendo Grip
+							Tooltip: ""
+						}
+
+						DinosaurExtendoGripHoldout.DisplayName: Dinosaur Extendo Grip Holdout
+					}
+
+					Elk: {
+						FirstVial: {
+							DisplayName: First Vial
+							Tooltip: ""
+						}
+
+						TestVerticalLangItem: {
+							DisplayName: Test Vertical Lang Item
+							Tooltip: ""
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,10 +1,10 @@
 ﻿DinosaurExtendoGrip: {
 	DisplayName: Dino Grabber
 	Tooltip:
-        '''
-        Can be used to safely grab items from a distance
-        Grab items with {InputTrigger_InteractWithTile}
-        '''
+		'''
+		Can be used to safely grab items from a distance
+		Grab items with {InputTrigger_InteractWithTile}
+		'''
 }
 
 DinosaurExtendoGripHoldout.DisplayName: Dino Grabber

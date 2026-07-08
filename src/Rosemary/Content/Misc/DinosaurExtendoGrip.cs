@@ -15,6 +15,8 @@ public sealed class DinosaurExtendoGrip : ModItem
 {
     public override string Texture => Assets.Misc.DinosaurExtendoGrip.KEY;
 
+    public override string LocalizationCategory => "Content.Misc";
+
     public override void SetStaticDefaults()
     {
         ItemID.Sets.SkipsInitialUseSound[Type] = true;
@@ -56,6 +58,8 @@ public sealed class DinosaurExtendoGrip : ModItem
 public sealed class DinosaurExtendoGripHoldout : ModProjectile
 {
     public override string Texture => Assets.Misc.DinosaurExtendoGrip.KEY;
+
+    public override string LocalizationCategory => "Content.Misc";
 
     public override void SetDefaults()
     {

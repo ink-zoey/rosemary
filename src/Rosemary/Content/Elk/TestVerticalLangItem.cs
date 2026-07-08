@@ -9,6 +9,8 @@ public sealed class TestVerticalLangItem : ModItem
 {
     public override string Texture => Assets.Elk.TestItem.KEY;
 
+    public override string LocalizationCategory => "Content.Elk";
+
     public override void SetStaticDefaults()
     {
         ItemID.Sets.UsesElkName[Type] = ItemID.Sets.UsesElkName[ItemID.TerraBlade] =
