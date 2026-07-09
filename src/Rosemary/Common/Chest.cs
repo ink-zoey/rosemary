@@ -4,6 +4,7 @@ using MonoMod.Cil;
 using Terraria;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Terraria.UI;
 using Terraria.Utilities;
 
@@ -12,10 +13,47 @@ namespace Rosemary.Common;
 
 file static class ChestBehavior
 {
+    internal static bool NextChestOpenSilent;
+
     [OnLoad]
     private static void Load()
     {
         IL_ParticleOrchestrator.Spawn_ItemTransfer += Spawn_ItemTransfer_Ext;
+
+        IL_Wiring.TryAddingToEmptySlot += TryAddingToEmptySlot_Ext;
+    }
+
+    private static void TryAddingToEmptySlot_Ext(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var jumpPlaySoundTarget = c.DefineLabel();
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdcI4(7)
+        );
+
+        c.MoveAfterLabels();
+
+        c.EmitDelegate(
+            static () =>
+            {
+                var wasSilent = NextChestOpenSilent;
+
+                NextChestOpenSilent = false;
+
+                return wasSilent;
+            }
+        );
+        c.EmitBrtrue(jumpPlaySoundTarget);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchPop()
+        );
+
+        c.MarkLabel(jumpPlaySoundTarget);
     }
 
     private static void Spawn_ItemTransfer_Ext(ILContext il)
@@ -128,6 +166,8 @@ public static class ChestExtensions
 
             // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir.'
             var type = item.type;
+
+            ChestBehavior.NextChestOpenSilent = settings.Silent;
 
             if (!item.active
              || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]

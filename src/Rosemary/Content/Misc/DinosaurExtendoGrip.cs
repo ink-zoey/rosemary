@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
-using Newtonsoft.Json.Linq;
 using Rosemary.Common;
 using System;
 using Terraria;
@@ -10,10 +9,6 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.ObjectData;
-using Terraria.UI;
-using static Terraria.ModLoader.BackupIO;
-using Player = Terraria.Player;
 
 namespace Rosemary.Content;
 
@@ -28,7 +23,7 @@ public sealed class DinosaurExtendoGrip : ModItem
         IL_Main.DrawMouseOver += DrawMouseOver_DisplayHeldItemTooltip;
     }
 
-    private void DrawMouseOver_DisplayHeldItemTooltip(ILContext il)
+    private static void DrawMouseOver_DisplayHeldItemTooltip(ILContext il)
     {
         var c = new ILCursor(il);
 
@@ -482,6 +477,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 ItemTransferVisualizationSettingsExt.HOPPER with
                 {
                     ShortAnimation = true,
+                    Silent = true,
                 }
             );
         }
