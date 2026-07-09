@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using Daybreak.Common.Features.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
@@ -8,7 +7,7 @@ using Terraria.DataStructures;
 
 namespace Rosemary.Common;
 
-file static class WorldItemFields
+file static class WorldItemBehavior
 {
     internal static readonly float[] rotations = new float[Main.maxItems];
 
@@ -135,14 +134,14 @@ public static class WorldItemExtensions
     {
         public float Rotation
         {
-            get => WorldItemFields.rotations[item.whoAmI];
-            set => WorldItemFields.rotations[item.whoAmI] = value;
+            get => WorldItemBehavior.rotations[item.whoAmI];
+            set => WorldItemBehavior.rotations[item.whoAmI] = value;
         }
 
         public bool Hidden
         {
-            get => WorldItemFields.hidden[item.whoAmI];
-            set => WorldItemFields.hidden[item.whoAmI] = value;
+            get => WorldItemBehavior.hidden[item.whoAmI];
+            set => WorldItemBehavior.hidden[item.whoAmI] = value;
         }
     }
 }

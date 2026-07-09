@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using Newtonsoft.Json.Linq;
 using Rosemary.Common;
 using System;
 using Terraria;
@@ -9,6 +10,8 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ObjectData;
+using Terraria.UI;
 using static Terraria.ModLoader.BackupIO;
 using Player = Terraria.Player;
 
@@ -284,7 +287,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var overExtended = currentLength > (Projectile.tileCollide ? overMaxLength : innerMaxLength);
 
-        Projectile.tileCollide = !overExtended;
+        Projectile.tileCollide = !overExtended && stillInUse;
 
         return;
 
@@ -435,6 +438,11 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             return;
         }
 
+        if (TryPlacingItemInChest(HeldItem, Projectile.Center.ToTileCoordinates()))
+        {
+            return;
+        }
+
         var length = (Projectile.Center - center).Length();
 
         if (length > pickup_distance)
@@ -455,6 +463,20 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         item.noGrabDelay = 0;
         player.PickupItem(item);
+
+        return;
+
+        static bool TryPlacingItemInChest(int worldItemIndex, Point position)
+        {
+            var index = Chest.GetFreeChest(position);
+
+            if (index == -1)
+            {
+                return false;
+            }
+
+            return Chest.TransferWorldItem(worldItemIndex, index, ItemTransferVisualizationSettingsExt.HOPPER);
+        }
     }
 
     public override bool PreDraw(Player player, ref Color lightColor)
@@ -608,4 +630,25 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         return (Projectile.Center - player.MountedCenter).ToRotation() - MathF.PiOver2 - player.fullRotation;
     }
+    /*
+    private static void ForceChestOpen(Point position)
+    {
+        var item = Main.item[worldItemIndex];
+
+        var (i, j) = position;
+
+        (i, j) = TileObjectData.TopLeft(i, j);
+
+        if (Chest.IsLocked(i, j))
+        {
+            return false;
+        }
+
+        var chestIndex = Chest.FindChest(i, j);
+
+        if (chestIndex == -1 || Chest.UsingChest(chestIndex) != -1)
+        {
+            return false;
+        }
+    }*/
 }
