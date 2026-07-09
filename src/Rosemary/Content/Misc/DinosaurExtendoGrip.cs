@@ -478,6 +478,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             return Chest.TransferWorldItem(
                 worldItemIndex,
                 index,
+                false,
                 ItemTransferVisualizationSettingsExt.HOPPER with
                 {
                     ShortAnimation = true,

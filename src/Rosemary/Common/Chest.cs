@@ -1,11 +1,9 @@
 ﻿using Daybreak.Common.Features.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
-using System;
 using Terraria;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
-using Terraria.ObjectData;
 using Terraria.UI;
 using Terraria.Utilities;
 
@@ -47,7 +45,7 @@ file static class ChestBehavior
                     return duration;
                 }
 
-                return Rand.Next(10, 20);
+                return Rand.Next(5, 10);
             }
         );
     }
@@ -124,7 +122,7 @@ public static class ChestExtensions
             return chestIndex;
         }
 
-        public static bool TransferWorldItem(int worldItemIndex, int chestIndex, ItemTransferVisualizationSettingsExt settings)
+        public static bool TransferWorldItem(int worldItemIndex, int chestIndex, bool sort, ItemTransferVisualizationSettingsExt settings)
         {
             var item = Main.item[worldItemIndex];
 
@@ -146,7 +144,11 @@ public static class ChestExtensions
             var chestCenter = chestPosition.ToWorldCoordinates(16f, 16f);
 
             Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings);
-            ItemSorting.SortInventory(Main.chest[chestIndex], withSync: false, withFeedback: false);
+
+            if (sort)
+            {
+                ItemSorting.SortInventory(Main.chest[chestIndex], withSync: false, withFeedback: false);
+            }
 
             return true;
         }
