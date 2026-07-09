@@ -1,12 +1,16 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Daybreak.Common.Rendering;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoMod.Cil;
 using Rosemary.Common;
 using System;
-using MonoMod.Cil;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Terraria.ModLoader.BackupIO;
+using Player = Terraria.Player;
 
 namespace Rosemary.Content;
 
@@ -65,7 +69,6 @@ public sealed class DinosaurExtendoGrip : ModItem
 
     public override void SetStaticDefaults()
     {
-        ItemID.Sets.SkipsInitialUseSound[Type] = true;
         ItemID.Sets.ShimmerTransformToItem[ItemID.ExtendoGrip] = Type;
         ItemID.Sets.ShimmerTransformToItem[Type] = ItemID.ExtendoGrip;
 
@@ -79,13 +82,18 @@ public sealed class DinosaurExtendoGrip : ModItem
         Item.rare = ItemRarityID.Orange;
         Item.value = Item.buyPrice(0, 10);
 
-        Item.UseSound = SoundID.Item95;
+        Item.UseSound = Assets.Misc.DinosaurExtendoGripCreak.Asset with
+        {
+            SoundLimitBehavior = SoundLimitBehavior.IgnoreNew,
+            MaxInstances = 4,
+            PitchRange = (-0.1f, 0.2f),
+            Volume = 0.25f,
+        };
 
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.useAnimation = 10;
         Item.useTime = 10;
         Item.reuseDelay = 5;
-        Item.UseSound = SoundID.Item95;
         Item.autoReuse = true;
         Item.noUseGraphic = true;
         Item.noMelee = true;
@@ -157,6 +165,14 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         return false;
     }
 
+    public override void OnKill(int timeLeft)
+    {
+        if (HeldItem != -1)
+        {
+            LetGoOfItem(Main.player[Projectile.owner]);
+        }
+    }
+
     public override void OnSpawn(IEntitySource source)
     {
         HeldItem = -1;
@@ -175,6 +191,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         var player = Main.player[Projectile.owner];
 
+        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+
         UpdatePlayerHoldout(player);
 
         GrabBehaviour(player);
@@ -184,7 +202,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             clawInterpolator += 0.3f;
             clawInterpolator = MathF.Min(clawInterpolator, 1f);
         }
-        else if (player.AltChannel)
+        else if (player.AltChannel && stillInUse)
         {
             clawInterpolator -= 0.05f;
             clawInterpolator = MathF.Max(clawInterpolator, -0.6f);
@@ -197,7 +215,23 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
     private void UpdatePlayerHoldout(Player player)
     {
-        const float min_length = 37f;
+        const float min_length = 60f;
+        const float min_speed = 7.4f;
+
+        const int despawn_frames = 25;
+
+        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+
+        if (stillInUse)
+        {
+            Projectile.timeLeft = despawn_frames;
+        }
+        else if (HeldItem != -1)
+        {
+            LetGoOfItem(player);
+        }
+
+        var lifetimeRatio = (float)Projectile.timeLeft / despawn_frames;
 
         var reach = GetReach();
 
@@ -218,8 +252,6 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var dir = (Projectile.Center - center) * Projectile.spriteDirection;
         player.itemRotation = dir.ToRotation();
 
-        Projectile.timeLeft = 4;
-
         if (Main.myPlayer != Projectile.owner)
         {
             return;
@@ -230,18 +262,29 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var currentLength = (Projectile.Center - center).Length();
 
-        Projectile.velocity = GetVelocity(target) * 0.15f + player.velocity;
+        Projectile.velocity = GetVelocity(target) * 0.15f;
+
+        if (Projectile.velocity.Length() > min_speed && Rand.NextBoolean(10))
+        {
+            var soundPosition = Vector2.Lerp(center, Projectile.Center, 0.5f);
+
+            SoundEngine.PlaySound(
+                Assets.Misc.DinosaurExtendoGripCreak.Asset with
+                {
+                    SoundLimitBehavior = SoundLimitBehavior.IgnoreNew,
+                    MaxInstances = 4,
+                    PitchRange = (-0.1f, 0.2f),
+                    Volume = 0.12f,
+                },
+                soundPosition
+            );
+        }
+
+        Projectile.velocity += player.velocity;
 
         var overExtended = currentLength > (Projectile.tileCollide ? overMaxLength : innerMaxLength);
 
         Projectile.tileCollide = !overExtended;
-
-        var stillInUse = player is { channel: true, noItems: false, CCed: false };
-
-        if (!stillInUse)
-        {
-            Projectile.Kill();
-        }
 
         return;
 
@@ -262,7 +305,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         {
             var targetLength = MathF.Clamp(target.Length(), min_length, reach);
 
-            var length = MathF.Lerp(currentLength, targetLength, 0.5f);
+            var length = MathF.Lerp(currentLength, targetLength, 0.55f) * MathF.Pow(lifetimeRatio, 2f);
 
             target = target.WithLength(length);
 
@@ -276,13 +319,16 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var rotation = (Projectile.Center - center).ToRotation();
 
+        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+
         // We should drop the item if it's in a wall.
         if (!player.AltChannel
+         || !stillInUse
          || !Projectile.tileCollide)
         {
             if (HeldItem != -1)
             {
-                LetGoOfItem();
+                LetGoOfItem(player);
             }
 
             HeldItem = -1;
@@ -295,6 +341,15 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             HeldItem = index;
 
             InitialRotation = rotation - Main.item[HeldItem].Rotation;
+
+            SoundEngine.PlaySound(
+                SoundID.Item168 with
+                {
+                    Pitch = -0.8f,
+                    PitchRange = (-0.1f, 0.2f),
+                },
+                Projectile.Center
+            );
         }
 
         if (HeldItem == -1)
@@ -327,39 +382,6 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             }
 
             return false;
-        }
-
-        void LetGoOfItem()
-        {
-            const float pickup_distance = 50f;
-
-            var item = Main.item[HeldItem];
-
-            if (player.whoAmI != Main.myPlayer)
-            {
-                return;
-            }
-
-            var length = (Projectile.Center - center).Length();
-
-            if (length > pickup_distance)
-            {
-                item.velocity = (Projectile.Center - center).WithLength(3.4f);
-
-                var offset = Projectile.velocity * 2.3f;
-
-                offset.Y *= 0.23f;
-
-                offset = offset.WithLength(MathF.Min(offset.Length(), 10f));
-
-                item.velocity += offset;
-                item.Hidden = false;
-
-                return;
-            }
-
-            item.noGrabDelay = 0;
-            player.PickupItem(item);
         }
 
         void HoldItem()
@@ -400,8 +422,45 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         }
     }
 
+    private void LetGoOfItem(Player player)
+    {
+        const float pickup_distance = 90f;
+
+        var center = player.RotatedRelativePoint(player.MountedCenter, true);
+
+        var item = Main.item[HeldItem];
+
+        if (player.whoAmI != Main.myPlayer)
+        {
+            return;
+        }
+
+        var length = (Projectile.Center - center).Length();
+
+        if (length > pickup_distance)
+        {
+            item.velocity = (Projectile.Center - center).WithLength(3.4f);
+
+            var offset = Projectile.velocity * 2.3f;
+
+            offset.Y *= 0.23f;
+
+            offset = offset.WithLength(MathF.Min(offset.Length(), 10f));
+
+            item.velocity += offset;
+            item.Hidden = false;
+
+            return;
+        }
+
+        item.noGrabDelay = 0;
+        player.PickupItem(item);
+    }
+
     public override bool PreDraw(Player player, ref Color lightColor)
     {
+        var sb = Main.spriteBatch;
+
         var texture = Assets.Misc.DinosaurExtendoGripBits.Asset.Value;
 
         var center = player.GetFrontHandPosition(
@@ -424,9 +483,15 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var clawPosition = Projectile.Center - centerDirection.WithLength(16f);
 
         DrawHeldItem();
-        DrawChain();
-        DrawHandle();
-        DrawClaw();
+
+        sb.End(out var ss);
+        sb.Begin(ss with { SortMode = SpriteSortMode.Deferred });
+        {
+            DrawChain();
+            DrawHandle();
+            DrawClaw();
+        }
+        sb.Restart(in ss);
 
         return false;
 
@@ -453,7 +518,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             var handleColor = Lighting.GetColor(handlePosition.ToTileCoordinates());
 
-            Main.EntitySpriteDraw(texture, position, frame, handleColor, rotation, origin, 1f, effects);
+            sb.Draw(texture, position, frame, handleColor, rotation, origin, 1f, effects, 0f);
         }
 
         void DrawChain()
@@ -497,11 +562,11 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 var worldPosition = Vector2.Lerp(position, nextPosition, 0.5f) + Main.screenPosition;
                 var segmentColor = Lighting.GetColor(worldPosition.ToTileCoordinates());
 
-                Main.EntitySpriteDraw(texture, position, darkFrame, segmentColor, rotation - angle, origin, 1f, SpriteEffects.None);
-                Main.EntitySpriteDraw(texture, position, brightFrame, segmentColor, rotation + angle, origin, 1f, SpriteEffects.None);
+                sb.Draw(texture, position, darkFrame, segmentColor, rotation - angle, origin, 1f, SpriteEffects.None, 0f);
+                sb.Draw(texture, position, brightFrame, segmentColor, rotation + angle, origin, 1f, SpriteEffects.None, 0f);
 
-                Main.EntitySpriteDraw(texture, nextPosition, darkFrame, segmentColor, MathF.PI + rotation - angle, origin, 1f, SpriteEffects.None);
-                Main.EntitySpriteDraw(texture, nextPosition, brightFrame, segmentColor, MathF.PI + rotation + angle, origin, 1f, SpriteEffects.None);
+                sb.Draw(texture, nextPosition, darkFrame, segmentColor, MathF.PI + rotation - angle, origin, 1f, SpriteEffects.None, 0f);
+                sb.Draw(texture, nextPosition, brightFrame, segmentColor, MathF.PI + rotation + angle, origin, 1f, SpriteEffects.None, 0f);
             }
         }
 
@@ -532,10 +597,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             var lowerRotation = direction;
             lowerRotation += (MathF.PiOver4 + jawRotation) * Projectile.spriteDirection;
 
-            Main.EntitySpriteDraw(texture, position, lowerFrame, color, lowerRotation, lowerOrigin, 1f, effects);
-            Main.EntitySpriteDraw(texture, position, upperFrame, color, upperRotation, upperOrigin, 1f, effects);
+            sb.Draw(texture, position, lowerFrame, color, lowerRotation, lowerOrigin, 1f, effects, 0f);
+            sb.Draw(texture, position, upperFrame, color, upperRotation, upperOrigin, 1f, effects, 0f);
 
-            Main.EntitySpriteDraw(texture, position, boltFrame, color, 0f, boltOrigin, 1f, effects);
+            sb.Draw(texture, position, boltFrame, color, 0f, boltOrigin, 1f, effects, 0f);
         }
     }
 

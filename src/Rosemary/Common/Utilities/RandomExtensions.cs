@@ -33,7 +33,7 @@ public static class RandomExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool NextBool(int consequent = 2, int antecedent = 1)
+        public static bool NextBoolean(int consequent = 2, int antecedent = 1)
         {
             return Rand.Next(consequent) < antecedent;
         }
@@ -66,7 +66,7 @@ public static class RandomExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int NextDirection()
         {
-            return Rand.NextBool() ? 1 : -1;
+            return Rand.NextBoolean() ? 1 : -1;
         }
     }
 }
