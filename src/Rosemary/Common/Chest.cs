@@ -1,6 +1,7 @@
 ﻿using Daybreak.Common.Features.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
+using System;
 using Terraria;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
@@ -95,9 +96,18 @@ public static class ChestExtensions
     {
         public static int GetFreeChest(Point position)
         {
+            var tile = Framing.GetTileSafely(position);
+
             var (i, j) = position;
 
-            (i, j) = TileObjectData.TopLeft(i, j);
+            if (tile.frameX % 36 != 0)
+            {
+                i--;
+            }
+            if (tile.frameY % 36 != 0)
+            {
+                j--;
+            }
 
             if (Chest.IsLocked(i, j))
             {

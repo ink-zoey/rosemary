@@ -475,7 +475,14 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 return false;
             }
 
-            return Chest.TransferWorldItem(worldItemIndex, index, ItemTransferVisualizationSettingsExt.HOPPER);
+            return Chest.TransferWorldItem(
+                worldItemIndex,
+                index,
+                ItemTransferVisualizationSettingsExt.HOPPER with
+                {
+                    ShortAnimation = true,
+                }
+            );
         }
     }
 
