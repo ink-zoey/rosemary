@@ -189,7 +189,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         var player = Main.player[Projectile.owner];
 
-        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+        var stillInUse = player is { channel: true, noItems: false, CCed: false, dead: false };
 
         UpdatePlayerHoldout(player);
 
@@ -218,15 +218,11 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         const int despawn_frames = 25;
 
-        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+        var stillInUse = player is { channel: true, noItems: false, CCed: false, dead: false };
 
         if (stillInUse)
         {
             Projectile.timeLeft = despawn_frames;
-        }
-        else if (HeldItem != -1)
-        {
-            LetGoOfItem(player);
         }
 
         var lifetimeRatio = (float)Projectile.timeLeft / despawn_frames;
@@ -317,12 +313,14 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var rotation = (Projectile.Center - center).ToRotation();
 
-        var stillInUse = player is { channel: true, noItems: false, CCed: false };
+        var alive = player is { noItems: false, CCed: false, dead: false };
+
+        var overExtended = !Projectile.tileCollide && player.channel;
 
         // We should drop the item if it's in a wall.
         if (!player.AltChannel
-         || !stillInUse
-         || !Projectile.tileCollide)
+         || !alive
+         || overExtended)
         {
             if (HeldItem != -1)
             {
