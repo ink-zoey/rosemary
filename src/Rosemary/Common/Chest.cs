@@ -5,6 +5,7 @@ using System;
 using Terraria;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
+using Terraria.ObjectData;
 using Terraria.UI;
 using Terraria.Utilities;
 
@@ -213,15 +214,22 @@ public static class ChestExtensions
         {
             var tile = Framing.GetTileSafely(position);
 
+            // For whatever reason trapped containers aren't considered under IsAContainer?
+            if (!TileID.Sets.IsAContainer[tile.TileType]
+             && tile.TileType != TileID.FakeContainers
+             && tile.TileType != TileID.FakeContainers2)
+            {
+                return -1;
+            }
+
             var (i, j) = position;
 
-            if (tile.frameX % 36 != 0)
+            if (!TryFindChest(out var chestIndex)
+             && !TryFindVanilla(out chestIndex)
+             && !TryFindDressers(out chestIndex)
+             && !TryFindFromTopLeft(out chestIndex))
             {
-                i--;
-            }
-            if (tile.frameY % 36 != 0)
-            {
-                j--;
+                return -1;
             }
 
             if (Chest.IsLocked(i, j))
@@ -229,14 +237,89 @@ public static class ChestExtensions
                 return -1;
             }
 
-            var chestIndex = Chest.FindChest(i, j);
-
             if (chestIndex == -1 || Chest.UsingChest(chestIndex) != -1)
             {
                 return -1;
             }
 
             return chestIndex;
+
+            bool TryFindChest(out int index)
+            {
+                index = Chest.FindChest(i, j);
+
+                return index != -1;
+            }
+
+            bool TryFindVanilla(out int index)
+            {
+                var (i2, j2) = (i, j);
+
+                if (tile.frameX % 36 != 0)
+                {
+                    i2--;
+                }
+
+                if (tile.frameY % 36 != 0)
+                {
+                    j2--;
+                }
+
+                index = Chest.FindChest(i2, j2);
+
+                if (index == -1)
+                {
+                    return false;
+                }
+
+                (i, j) = (i2, j2);
+                return true;
+            }
+
+            bool TryFindDressers(out int index)
+            {
+                index = -1;
+
+                if (!TileID.Sets.BasicDresser[tile.TileType])
+                {
+                    return false;
+                }
+
+                var frameX = tile.TileFrameX / 18;
+                frameX %= 3;
+                var i2 = i - frameX;
+
+                var frameY = tile.TileFrameY / 18;
+                frameY %= 2;
+                var j2 = j - frameY;
+
+                index = Chest.FindChest(i2, j2);
+
+                if (index == -1)
+                {
+                    return false;
+                }
+
+                (i, j) = (i2, j2);
+                return true;
+            }
+
+            bool TryFindFromTopLeft(out int index)
+            {
+                index = -1;
+
+                var (i2, j2) = TileObjectData.TopLeft(i, j);
+
+                index = Chest.FindChest(i2, j2);
+
+                if (index == -1)
+                {
+                    return false;
+                }
+
+                (i, j) = (i2, j2);
+                return true;
+            }
         }
 
         public static bool TransferWorldItem(int worldItemIndex, int chestIndex, bool sort, ItemTransferVisualizationSettingsExt settings)

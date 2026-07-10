@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using System;
+using System.Reflection;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -21,6 +22,61 @@ public sealed class DinosaurExtendoGrip : ModItem
     public override void Load()
     {
         IL_Main.DrawMouseOver += DrawMouseOver_DisplayHeldItemTooltip;
+
+        On_Main.DrawMouseOver += DrawMouseOver_HideItemTooltips;
+        MonoModHooks.Add(
+            typeof(Player).GetMethod(
+                nameof(Player.TileInteractionsMouseOver),
+                BindingFlags.Instance | BindingFlags.NonPublic
+            ),
+            TileInteractions_HideTileIcons
+        );
+        MonoModHooks.Add(
+            typeof(Player).GetMethod(
+                nameof(Player.TileInteractionsCheckLongDistance),
+                BindingFlags.Instance | BindingFlags.NonPublic
+            ),
+            TileInteractions_HideTileIcons
+        );
+    }
+
+    private static void TileInteractions_HideTileIcons(Action<Player, int, int> orig, Player self, int myX, int myY)
+    {
+        if (self.PriorHeldProj == -1)
+        {
+            orig(self, myX, myY);
+            return;
+        }
+
+        var projectile = Main.projectile[self.PriorHeldProj];
+
+        if (projectile.ModProjectile is DinosaurExtendoGripHoldout holdout
+         && holdout.HeldItem != -1)
+        {
+            return;
+        }
+
+        orig(self, myX, myY);
+    }
+
+    private static void DrawMouseOver_HideItemTooltips(On_Main.orig_DrawMouseOver orig, Main self)
+    {
+        if (Main.LocalPlayer.heldProj == -1)
+        {
+            orig(self);
+            return;
+        }
+
+        var projectile = Main.projectile[Main.LocalPlayer.heldProj];
+
+        if (projectile.ModProjectile is DinosaurExtendoGripHoldout holdout
+         && holdout.HeldItem != -1
+         && Main.LocalPlayer.cursorItemIconEnabled)
+        {
+            return;
+        }
+
+        orig(self);
     }
 
     private static void DrawMouseOver_DisplayHeldItemTooltip(ILContext il)
@@ -417,6 +473,23 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             item.shimmered = false;
 
             item.Hidden = true;
+
+            if (player.whoAmI != Main.myPlayer)
+            {
+                return;
+            }
+
+            var index = Chest.GetFreeChest(Projectile.Center.ToTileCoordinates());
+
+            if (index == -1)
+            {
+                return;
+            }
+
+            player.cursorItemIconText = Mods.Rosemary.Content.Misc.DinosaurExtendoGrip.DepositItems.GetTextValue();
+            player.cursorItemIconID = -1;
+            player.cursorItemIconEnabled = true;
+            Main.mouseText = true;
         }
     }
 
@@ -634,25 +707,4 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     {
         return (Projectile.Center - player.MountedCenter).ToRotation() - MathF.PiOver2 - player.fullRotation;
     }
-    /*
-    private static void ForceChestOpen(Point position)
-    {
-        var item = Main.item[worldItemIndex];
-
-        var (i, j) = position;
-
-        (i, j) = TileObjectData.TopLeft(i, j);
-
-        if (Chest.IsLocked(i, j))
-        {
-            return false;
-        }
-
-        var chestIndex = Chest.FindChest(i, j);
-
-        if (chestIndex == -1 || Chest.UsingChest(chestIndex) != -1)
-        {
-            return false;
-        }
-    }*/
 }
