@@ -7,6 +7,7 @@ using Terraria.DataStructures;
 
 namespace Rosemary.Common;
 
+// ReSharper disable InconsistentNaming
 file static class WorldItemBehavior
 {
     internal static readonly float[] rotations = new float[Main.maxItems];
@@ -138,6 +139,9 @@ public static class WorldItemExtensions
             set => WorldItemBehavior.rotations[item.whoAmI] = value;
         }
 
+        /// <summary>
+        ///     Hides the item from standard rendering in <see cref="Main.DrawItems"/>, should be manually drawn if applicable.
+        /// </summary>
         public bool Hidden
         {
             get => WorldItemBehavior.hidden[item.whoAmI];

@@ -1,17 +1,21 @@
 ﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
+using System;
 using Terraria;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
 using Terraria.UI;
 using Terraria.Utilities;
 
+// ReSharper disable InconsistentNaming
 // ReSharper disable UseSymbolAlias
 namespace Rosemary.Common;
 
 file static class ChestBehavior
 {
+    internal static readonly int[] silentOpenAnimationTime = new int[Main.maxChests];
+
     internal static bool NextChestOpenSilent;
 
     [OnLoad]
@@ -20,6 +24,39 @@ file static class ChestBehavior
         IL_ParticleOrchestrator.Spawn_ItemTransfer += Spawn_ItemTransfer_Ext;
 
         IL_Wiring.TryAddingToEmptySlot += TryAddingToEmptySlot_Ext;
+
+        IL_Chest.UpdateChestFrames += UpdateChestFrames_SilentOpen;
+    }
+
+    private static void UpdateChestFrames_SilentOpen(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var chestIndex = -1;
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdloc(out chestIndex),
+            i => i.MatchLdfld<Chest>(nameof(Chest.eatingAnimationTime))
+        );
+
+        c.MoveAfterLabels();
+
+        c.EmitLdloc(chestIndex);
+
+        c.EmitDelegate(
+            static (Chest chest) =>
+            {
+                if (chest.SilentOpenAnimationTime > 0)
+                {
+                    chest.SilentOpenAnimationTime--;
+                }
+                if (chest.frameCounter < chest.SilentOpenAnimationTime)
+                {
+                    chest.frameCounter = chest.SilentOpenAnimationTime;
+                }
+            }
+        );
     }
 
     private static void TryAddingToEmptySlot_Ext(ILContext il)
@@ -82,12 +119,27 @@ file static class ChestBehavior
                     return duration;
                 }
 
+                // TODO: Perhaps allow a custom value?
                 return Rand.Next(5, 10);
             }
         );
     }
 }
 
+/// <summary>
+///     Extended from <see cref="Chest.ItemTransferVisualizationSettings"/>;<br/>
+///     provides additional properties for use with <see cref="ChestExtensions.VisualizeChestTransfer"/>.
+/// </summary>
+/// <param name="RandomizeStartPosition"></param>
+/// <param name="RandomizeEndPosition"></param>
+/// <param name="TransitionIn"></param>
+/// <param name="FullBright"></param>
+/// <param name="ShortAnimation">
+///     Shortens the animation from 60-80 to 5-10 frames.
+/// </param>
+/// <param name="Silent">
+///     Disables the initial grab sound when used with <see cref="ChestExtensions.TransferWorldItem"/>.
+/// </param>
 public record struct ItemTransferVisualizationSettingsExt(
     bool RandomizeStartPosition,
     bool RandomizeEndPosition,
@@ -127,8 +179,36 @@ public record struct ItemTransferVisualizationSettingsExt(
 
 public static class ChestExtensions
 {
+    extension(Chest chest)
+    {
+        public int SilentOpenAnimationTime
+        {
+            get => ChestBehavior.silentOpenAnimationTime[chest.index];
+            set => ChestBehavior.silentOpenAnimationTime[chest.index] = value;
+        }
+    }
+
     extension(Chest)
     {
+        /// <summary>
+        ///     <inheritdoc cref="Chest.AskForChestToEatItem"/><br/>
+        ///     Does not play the grab sound effect upon closing.
+        /// </summary>
+        /// <inheritdoc cref="Chest.AskForChestToEatItem"/>
+        public static void AskForChestToOpenSilently(Vector2 worldPosition, int duration)
+        {
+            var tilePosition = worldPosition.ToTileCoordinates();
+            var index = Chest.GetFreeChest(tilePosition);
+
+            if (index == -1)
+            {
+                return;
+            }
+
+            var chest = Main.chest[index];
+            chest.SilentOpenAnimationTime = Math.Max(duration, chest.SilentOpenAnimationTime);
+        }
+
         public static int GetFreeChest(Point position)
         {
             var tile = Framing.GetTileSafely(position);
@@ -166,6 +246,7 @@ public static class ChestExtensions
             // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir.'
             var type = item.type;
 
+            // Cheap hack to have 'Wiring.TryToPutItemInChest' not play the pickup sound.
             ChestBehavior.NextChestOpenSilent = settings.Silent;
 
             if (!item.active

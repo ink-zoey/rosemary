@@ -1,8 +1,10 @@
-﻿global using static Rosemary.Common.ShaderMacros;
+﻿// ReSharper disable RedundantUsingDirective.Global
+global using static Rosemary.Common.ShaderMacros;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 
+// ReSharper disable UnusedMember.Global
 namespace Rosemary.Common;
 
 internal static class ShaderMacros

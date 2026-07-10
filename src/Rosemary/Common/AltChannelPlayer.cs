@@ -36,7 +36,7 @@ file sealed class AltChannelPlayer : ModPlayer
 
     public override void Load()
     {
-        On_Player.ItemCheck_ManageRightClickFeatures += ItemCheck_ManageRightClickFeatures_AltChannel; ;
+        On_Player.ItemCheck_ManageRightClickFeatures += ItemCheck_ManageRightClickFeatures_AltChannel;
     }
 
     private static void ItemCheck_ManageRightClickFeatures_AltChannel(On_Player.orig_ItemCheck_ManageRightClickFeatures orig, Player self)
@@ -83,6 +83,9 @@ public static class AltChannelPlayerExtensions
 {
     extension(Player player)
     {
+        /// <summary>
+        ///      <see langword="true"/> if the player is using their alt fire key; can be used in conjunction with <see cref="Player.channel"/>.
+        /// </summary>
         public bool AltChannel => player.GetModPlayer<AltChannelPlayer>().AltChannel;
     }
 }

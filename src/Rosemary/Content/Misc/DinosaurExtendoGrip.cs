@@ -401,6 +401,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             var position = Projectile.Center;
 
+            Chest.AskForChestToOpenSilently(position, 10);
+
             // Cheap hack.
             if (!Collision.SolidCollision(Projectile.position - new Vector2(2), Projectile.width + 4, Projectile.height + 4))
             {
