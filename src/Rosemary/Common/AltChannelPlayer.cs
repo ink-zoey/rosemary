@@ -1,6 +1,4 @@
-﻿using MonoMod.Cil;
-using Rosemary.Core;
-using System.IO;
+﻿using System.IO;
 using Daybreak.Networking;
 using Terraria;
 using Terraria.Graphics.Capture;
