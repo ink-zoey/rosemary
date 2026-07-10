@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
-using Daybreak.Common.Features.Hooks;
+using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 using MonoMod.RuntimeDetour.HookGen;

@@ -1,6 +1,7 @@
 ﻿using MonoMod.Cil;
 using Rosemary.Core;
 using System.IO;
+using Daybreak.Networking;
 using Terraria;
 using Terraria.Graphics.Capture;
 using Terraria.ID;
@@ -10,7 +11,7 @@ namespace Rosemary.Common;
 
 file sealed class AltChannelPlayer : ModPlayer
 {
-    private record struct Packet(int WhoAmI) : IPacketHandler<Packet>
+    private record struct Packet(int WhoAmI) : IPacket<Packet>
     {
         public void Write(BinaryWriter writer)
         {
@@ -18,16 +19,16 @@ file sealed class AltChannelPlayer : ModPlayer
             writer.Write(Main.player[WhoAmI].AltChannel);
         }
 
-        public void Read(BinaryReader reader, int sender)
+        public static void Receive(BinaryReader reader, int sender)
         {
-            WhoAmI = reader.ReadInt32();
+            var whoAmI = reader.ReadInt32();
 
             if (Main.netMode == NetmodeID.Server)
             {
-                WhoAmI = sender;
+                whoAmI = sender;
             }
 
-            var player = Main.player[WhoAmI];
+            var player = Main.player[whoAmI];
 
             player.GetModPlayer<AltChannelPlayer>().AltChannel = reader.ReadBoolean();
         }
@@ -59,7 +60,7 @@ file sealed class AltChannelPlayer : ModPlayer
 
     public override void SyncPlayer(int toWho, int fromWho, bool newPlayer)
     {
-        new Packet(Player.whoAmI).Send(toWho, fromWho);
+        new Packet(Player.whoAmI).Send(PacketDestination.From(toWho, fromWho));
     }
 
     public override void CopyClientState(ModPlayer targetCopy)

@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Tomat.Terraria.ModLoader.Sdk">
 
     <!-- ProjectBuild -->
-    <Import Project="..\ProjectBuild.targets" />
+    <Import Project="ProjectBuild.targets" />
+
+    <!-- Daybreak -->
+    <ItemGroup>
+        <Analyzer Include="libanalyzer\Daybreak.CodeAnalysis.dll"/>
+    </ItemGroup>
 
     <!-- Source Generators -->
     <Import Project="..\generators\ElkLanguageReferences.targets" />
-
-    <!-- DAYBREAK -->
-    <Import Project="..\Daybreak.targets" />
 
     <PropertyGroup>
         <TmlBuildUseDefaultModImpl>true</TmlBuildUseDefaultModImpl>

@@ -13,5 +13,10 @@ public static class VectorExtensions
         {
             return vector.Normalized * value;
         }
+
+        public Vector2 Transform(Matrix matrix)
+        {
+            return Vector2.Transform(vector, matrix);
+        }
     }
 }

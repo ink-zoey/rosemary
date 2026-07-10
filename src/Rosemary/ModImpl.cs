@@ -1,6 +1,4 @@
-﻿using Daybreak.Common.Features.Authorship;
-using Daybreak.Common.Features.ModPanel;
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,17 +7,12 @@ using Rosemary.Core;
 
 namespace Rosemary;
 
-partial class ModImpl : IHasCustomAuthorMessage
+partial class ModImpl
 {
     public ModImpl()
     {
         // Handled by the asset generator.
         MusicAutoloadingEnabled = false;
-    }
-
-    string IHasCustomAuthorMessage.GetAuthorText()
-    {
-        return AuthorText.GetAuthorTooltip(this, headerText: null);
     }
 
     public override void HandlePacket(BinaryReader reader, int whoAmI)

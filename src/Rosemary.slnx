@@ -1,11 +1,19 @@
 <Solution>
     <Folder Name="/daybreak-mod/">
+        <File Path="daybreak-mod/src/DaybreakModuleAttribute.cs" />
+        <File Path="daybreak-mod/src/Module.props" />
         <Project Path="daybreak-mod/src/Daybreak.CodeAnalysis/Daybreak.CodeAnalysis.csproj" />
-        <Project Path="daybreak-mod/src/Daybreak.SourceGen/Daybreak.SourceGen.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Contracts/Daybreak.Contracts.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.EarlyLoader/Daybreak.EarlyLoader.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Hooks/Daybreak.Hooks.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Mathematics/Daybreak.Mathematics.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Models/Daybreak.Models.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.MonoMod/Daybreak.MonoMod.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Networking/Daybreak.Networking.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Rendering.Buffers/Daybreak.Rendering.Buffers.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Rendering/Daybreak.Rendering.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Resources/Daybreak.Resources.csproj" />
         <Project Path="daybreak-mod/src/Daybreak/Daybreak.csproj" />
-    </Folder>
-    <Folder Name="/daybreak-mod/generators/">
-        <Project Path="daybreak-mod/src/generators/DaybreakHookGenerator/DaybreakHookGenerator.csproj" />
     </Folder>
     <Project Path="Rosemary/Rosemary.csproj" />
     <Folder Name="/generators/">

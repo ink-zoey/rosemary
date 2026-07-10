@@ -1,6 +1,6 @@
-﻿using Daybreak.Common.CIL;
-using Daybreak.Common.Features.Hooks;
-using Daybreak.Common.Rendering;
+﻿using Daybreak.MonoMod;
+using Daybreak.Hooks;
+using Daybreak.Rendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -413,7 +413,7 @@ public static class ElkLangItemSets
         c.GotoNext(
             MoveType.After,
             i => i.MatchLdfld<PopupText>(nameof(PopupText.scale)),
-            i => i.MatchLdloc(out _),
+            i => i.MatchLdloc(out int _),
             i => i.MatchDiv(),
             i => i.MatchStloc(out scaleMultiplierIndex)
         );
@@ -421,7 +421,7 @@ public static class ElkLangItemSets
         c.GotoNext(
             MoveType.Before,
             i => i.MatchLdcR4(1f),
-            i => i.MatchLdloc(out _),
+            i => i.MatchLdloc(out int _),
             i => i.MatchCallvirt<string>($"get_{nameof(string.Length)}")
         );
 
@@ -434,7 +434,7 @@ public static class ElkLangItemSets
         c.GotoPrev(
             MoveType.After,
             i => i.MatchDiv(),
-            i => i.MatchStloc(out _)
+            i => i.MatchStloc(out int _)
         );
 
         c.FindNext(
@@ -450,9 +450,9 @@ public static class ElkLangItemSets
         {
             c2.GotoPrev(
                 MoveType.Before,
-                i => i.MatchLdloc(out _),
+                i => i.MatchLdloc(out int _),
                 i => i.MatchCall<Color>($"get_{nameof(Color.Black)}"),
-                i => i.MatchLdloc(out _),
+                i => i.MatchLdloc(out int _),
                 i => i.MatchCall<Color>(nameof(Color.Lerp)),
                 i => i.MatchStloc(colorIndex)
             );
@@ -864,7 +864,7 @@ public static class ElkLangItemSets
 
         c.GotoNext(
             MoveType.Before,
-            i => i.MatchLdarg(out _)
+            i => i.MatchLdarg(out int _)
         );
 
         c.MoveAfterLabels();
@@ -891,7 +891,7 @@ public static class ElkLangItemSets
 
         c.GotoNext(
             MoveType.Before,
-            i => i.MatchLdloca(out _),
+            i => i.MatchLdloca(out int _),
             i => i.MatchLdcR4(out magicNumber),
             i => i.MatchLdsfld(typeof(FontAssets), nameof(FontAssets.MouseText))
         );
@@ -996,7 +996,7 @@ public static class ElkLangItemSets
 
         c.GotoNext(
             MoveType.Before,
-            i => i.MatchLdarg(out _),
+            i => i.MatchLdarg(out int _),
             i => i.MatchLdsfld<Main>(nameof(Main.toolTipDistance))
         );
 
