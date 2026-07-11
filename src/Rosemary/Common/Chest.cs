@@ -3,8 +3,10 @@ using Microsoft.Xna.Framework;
 using MonoMod.Cil;
 using System;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent.Drawing;
 using Terraria.ID;
+using Terraria.ModLoader;
 using Terraria.ObjectData;
 using Terraria.UI;
 using Terraria.Utilities;
@@ -17,14 +19,10 @@ file static class ChestBehavior
 {
     internal static readonly int[] silentOpenAnimationTime = new int[Main.maxChests];
 
-    internal static bool NextChestOpenSilent;
-
     [OnLoad]
     private static void Load()
     {
         IL_ParticleOrchestrator.Spawn_ItemTransfer += Spawn_ItemTransfer_Ext;
-
-        IL_Wiring.TryAddingToEmptySlot += TryAddingToEmptySlot_Ext;
 
         IL_Chest.UpdateChestFrames += UpdateChestFrames_SilentOpen;
     }
@@ -60,39 +58,6 @@ file static class ChestBehavior
         );
     }
 
-    private static void TryAddingToEmptySlot_Ext(ILContext il)
-    {
-        var c = new ILCursor(il);
-
-        var jumpPlaySoundTarget = c.DefineLabel();
-
-        c.GotoNext(
-            MoveType.Before,
-            i => i.MatchLdcI4(7)
-        );
-
-        c.MoveAfterLabels();
-
-        c.EmitDelegate(
-            static () =>
-            {
-                var wasSilent = NextChestOpenSilent;
-
-                NextChestOpenSilent = false;
-
-                return wasSilent;
-            }
-        );
-        c.EmitBrtrue(jumpPlaySoundTarget);
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchPop()
-        );
-
-        c.MarkLabel(jumpPlaySoundTarget);
-    }
-
     private static void Spawn_ItemTransfer_Ext(ILContext il)
     {
         var c = new ILCursor(il);
@@ -115,12 +80,19 @@ file static class ChestBehavior
         c.EmitDelegate(
             static (int duration, BitsByte bitsByte) =>
             {
+                // NoAnimation
+                if (bitsByte[5])
+                {
+                    return -1;
+                }
+
+                // ShortAnimation
                 if (!bitsByte[4])
                 {
                     return duration;
                 }
 
-                // TODO: Perhaps allow a custom value?
+                // TODO: Custom duration?
                 return Rand.Next(5, 10);
             }
         );
@@ -136,10 +108,10 @@ file static class ChestBehavior
 /// <param name="TransitionIn"></param>
 /// <param name="FullBright"></param>
 /// <param name="ShortAnimation">
-///     Shortens the animation from 60-80 to 5-10 frames.
+///     Shortens the chest opening animation from 60-80 to 5-10 frames.
 /// </param>
-/// <param name="Silent">
-///     Disables the initial grab sound when used with <see cref="ChestExtensions.TransferWorldItem"/>.
+/// <param name="NoAnimation">
+///     Disables the chest opening animation.
 /// </param>
 public record struct ItemTransferVisualizationSettingsExt(
     bool RandomizeStartPosition,
@@ -147,7 +119,7 @@ public record struct ItemTransferVisualizationSettingsExt(
     bool TransitionIn,
     bool FullBright,
     bool ShortAnimation,
-    bool Silent
+    bool NoAnimation
 )
 {
     public static readonly ItemTransferVisualizationSettingsExt PLAYER_TO_CHEST = new()
@@ -163,7 +135,12 @@ public record struct ItemTransferVisualizationSettingsExt(
         RandomizeEndPosition = true,
     };
 
-    public static implicit operator BitsByte(ItemTransferVisualizationSettingsExt settings)
+    public static readonly ItemTransferVisualizationSettingsExt PERSONAL_STORAGE = new()
+    {
+        NoAnimation = true,
+    };
+
+    public static explicit operator BitsByte(ItemTransferVisualizationSettingsExt settings)
     {
         var bitsByte = new BitsByte(
             settings.RandomizeStartPosition,
@@ -171,11 +148,19 @@ public record struct ItemTransferVisualizationSettingsExt(
             settings.TransitionIn,
             settings.FullBright,
             settings.ShortAnimation,
-            settings.Silent
+            settings.NoAnimation
         );
 
         return bitsByte;
     }
+}
+
+public enum PersonalStorageType
+{
+    PiggyBank = -2,
+    Safe = -3,
+    DefendersForge = -4,
+    VoidVault = -5,
 }
 
 public static class ChestExtensions
@@ -186,6 +171,125 @@ public static class ChestExtensions
         {
             get => ChestBehavior.silentOpenAnimationTime[chest.index];
             set => ChestBehavior.silentOpenAnimationTime[chest.index] = value;
+        }
+
+        /// <summary>
+        ///     Places the item into the first available slot, automatically stacking if needed.
+        /// </summary>
+        /// <param name="item">
+        ///     The item to add.
+        /// </param>
+        /// <param name="whoAmI">
+        ///     The index of this chest either in <see cref="Main.chest"/> or a negative value for personal storage.
+        /// </param>
+        /// <param name="silent">
+        ///     Disables the grab sound effect.
+        /// </param>
+        /// <returns>
+        ///     <see langword="true"/> if any part of <paramref name="item"/> was placed into the chest;<br/>
+        ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
+        /// </returns>
+        public bool TryAddingItem(Item item, int whoAmI, bool silent = true)
+        {
+            const int magic_to_context = 3;
+
+            Item[] inv = chest.item;
+
+            if (ChestUI.IsBlockedFromTransferIntoChest(item, inv))
+            {
+                return false;
+            }
+
+            if (item.maxStack > 1 && StackItems())
+            {
+                return true;
+            }
+            
+            return StackSingleItem();
+
+            bool StackSingleItem()
+            {
+                for (var i = 0; i < chest.maxItems; i++)
+                {
+                    if (inv[i].stack != 0)
+                    {
+                        continue;
+                    }
+
+                    if (!silent)
+                    {
+                        SoundEngine.PlaySound(in SoundID.Grab);
+                    }
+
+                    inv[i] = item.Clone();
+                    item.SetDefaults(ItemID.None);
+
+                    ItemSlot.AnnounceTransfer(new ItemSlot.ItemTransferInfo(inv[i], 0, magic_to_context));
+
+                    if (Main.netMode == NetmodeID.MultiplayerClient)
+                    {
+                        NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool StackItems()
+            {
+                var returnValue = false;
+
+                for (var i = 0; i < chest.maxItems; i++)
+                {
+                    if (inv[i].stack >= inv[i].maxStack
+                     || !Item.CanStack(item, inv[i])
+                     || !ItemLoader.CanStack(item, inv[i]))
+                    {
+                        continue;
+                    }
+
+                    returnValue = true;
+
+                    ItemLoader.StackItems(inv[i], item, out _);
+
+                    if (item.stack <= 0)
+                    {
+                        item.SetDefaults(ItemID.None);
+
+                        if (Main.netMode == NetmodeID.MultiplayerClient)
+                        {
+                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
+                        }
+
+                        break;
+                    }
+
+                    // Empty slot, just deposit the remainder of the item.
+                    if (inv[i].type == ItemID.None)
+                    {
+                        inv[i] = item.Clone();
+                        item.SetDefaults(ItemID.None);
+
+                        if (Main.netMode == NetmodeID.MultiplayerClient)
+                        {
+                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
+                        }
+
+                        break;
+                    }
+
+                    // Item was not fully deposited, loop.
+                }
+
+                if (!silent && returnValue)
+                {
+                    SoundEngine.PlaySound(in SoundID.Grab);
+                }
+
+                return returnValue;
+            }
         }
     }
 
@@ -210,6 +314,13 @@ public static class ChestExtensions
             chest.SilentOpenAnimationTime = Math.Max(duration, chest.SilentOpenAnimationTime);
         }
 
+        /// <summary>
+        /// Tries to find the index of the <see cref="Chest"/> at <paramref name="position"/> (in tile coordinates.)<br/>
+        /// </summary>
+        /// <param name="position">Target position in tile coordinates, does not have to be the top left of the tile.</param>
+        /// <returns>
+        ///     The index of the <see cref="Chest"/>, <![CDATA[-1]]> if not found.
+        /// </returns>
         public static int GetFreeChest(Point position)
         {
             var tile = Framing.GetTileSafely(position);
@@ -322,38 +433,165 @@ public static class ChestExtensions
             }
         }
 
-        public static bool TransferWorldItem(int worldItemIndex, int chestIndex, bool sort, ItemTransferVisualizationSettingsExt settings)
+        /// <summary>
+        ///     Transfers the <see cref="WorldItem"/> to the specified chest.
+        /// </summary>
+        /// <param name="worldItemIndex">
+        ///     The index of the <see cref="WorldItem"/>.
+        /// </param>
+        /// <param name="chestIndex">
+        ///     The index of the <see cref="Chest"/>, should not be negative.
+        /// </param>
+        /// <param name="sort">
+        ///     Whether to sort the chest after adding the item.
+        /// </param>
+        /// <param name="settings">
+        ///     Extended visualization settings for the transfer particle, leave <see langword="null"/> to not have a visual.
+        /// </param>
+        /// <param name="silent">
+        ///     Disables the grab sound from placing the item into storage.
+        /// </param>
+        /// <returns>
+        ///     <see langword="true"/> if any part of the item was placed into the chest;<br/>
+        ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
+        /// </returns>
+        public static bool TransferWorldItem(
+            int worldItemIndex,
+            int chestIndex,
+            bool sort,
+            ItemTransferVisualizationSettingsExt? settings = null,
+            bool silent = true
+        )
         {
-            var item = Main.item[worldItemIndex];
-
-            // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir.'
-            var type = item.type;
-
-            // Cheap hack to have 'Wiring.TryToPutItemInChest' not play the pickup sound.
-            ChestBehavior.NextChestOpenSilent = settings.Silent;
-
-            if (!item.active
-             || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]
-             || !Wiring.TryToPutItemInChest(worldItemIndex, chestIndex))
+            if (chestIndex == -1)
             {
                 return false;
             }
 
-            NetMessage.SendData(MessageID.SyncItem, -1, -1, null, worldItemIndex);
+            var item = Main.item[worldItemIndex];
+
+            // Cache the item type as adding the item to the chest may turn it into air.
+            var type = item.type;
 
             var chest = Main.chest[chestIndex];
-            var chestPosition = new Point(chest.x, chest.y);
 
-            var chestCenter = chestPosition.ToWorldCoordinates(16f, 16f);
+            if (!item.active
+             || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]
+             || !chest.TryAddingItem(item.inner, chestIndex, silent))
+            {
+                return false;
+            }
 
-            Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings);
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+            {
+                NetMessage.SendData(MessageID.SyncItem, -1, -1, null, worldItemIndex);
+            }
+
+            if (settings is not null)
+            {
+                var position = new Point(chest.x, chest.y);
+
+                var tile = Main.tile[position];
+                var tileData = TileObjectData.GetTileData(tile);
+
+                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
+
+                var chestCenter = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
+
+                Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings.Value);
+            }
 
             if (sort)
             {
-                ItemSorting.SortInventory(Main.chest[chestIndex], withSync: false, withFeedback: false);
+                ItemSorting.SortInventory(chest, withSync: false, withFeedback: false);
             }
 
             return true;
+        }
+
+        /// <summary>
+        ///     Transfers the <see cref="WorldItem"/> to the specified personal storage.<br/>
+        ///     Should only be called on the client whose storage the item should be deposited to.
+        /// </summary>
+        /// <param name="worldItemIndex">
+        ///     The index of the <see cref="WorldItem"/>.
+        /// </param>
+        /// <param name="storageType">
+        ///     The type of personal storage to add to.
+        /// </param>
+        /// <param name="sort">
+        ///     Whether to sort the storage after adding the item.
+        /// </param>
+        /// <param name="settings">
+        ///     Extended visualization settings for the transfer particle, leave <see langword="null"/> to not have a visual.
+        /// </param>
+        /// <param name="silent">
+        ///     Disables the grab sound from placing the item into storage.
+        /// </param>
+        /// <returns>
+        ///     <see langword="true"/> if any part of the item was placed into the storage;<br/>
+        ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
+        /// </returns>
+        public static bool TransferWorldItemPersonalStorage(
+            int worldItemIndex,
+            PersonalStorageType storageType,
+            bool sort,
+            ItemTransferVisualizationSettingsExt? settings,
+            bool silent = true
+        )
+        {
+            var player = Main.LocalPlayer;
+
+            var item = Main.item[worldItemIndex];
+
+            var chest = Chest.GetPersonalStorage(storageType, player);
+
+            // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir.'
+            var type = item.type;
+
+            if (!item.active
+             || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]
+             || !chest.TryAddingItem(item.inner, (int)storageType, silent))
+            {
+                return false;
+            }
+
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+            {
+                NetMessage.SendData(MessageID.SyncItem, -1, -1, null, worldItemIndex);
+            }
+
+            if (settings is not null)
+            {
+                var position = new Point(chest.x, chest.y);
+
+                var tile = Main.tile[position];
+                var tileData = TileObjectData.GetTileData(tile);
+
+                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
+
+                var chestCenter = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
+
+                Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings.Value);
+            }
+
+            if (sort)
+            {
+                ItemSorting.SortInventory(chest, withSync: false, withFeedback: false);
+            }
+
+            return true;
+        }
+
+        public static Chest GetPersonalStorage(PersonalStorageType type, Player player)
+        {
+            return type switch
+            {
+                PersonalStorageType.PiggyBank => player.bank,
+                PersonalStorageType.Safe => player.bank2,
+                PersonalStorageType.DefendersForge => player.bank3,
+                _ => player.bank4,
+            };
         }
 
         public static void VisualizeChestTransfer(

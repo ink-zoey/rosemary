@@ -506,7 +506,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             return;
         }
 
-        if (TryPlacingItemInChest(HeldItem, Projectile.Center.ToTileCoordinates()))
+        if (TryPlacingItemInContainers(Projectile.Center.ToTileCoordinates()))
         {
             return;
         }
@@ -514,6 +514,18 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var length = (Projectile.Center - center).Length();
 
         if (length > pickup_distance)
+        {
+            DropItem();
+
+            return;
+        }
+
+        item.noGrabDelay = 0;
+        player.PickupItem(item);
+
+        return;
+
+        void DropItem()
         {
             item.velocity = (Projectile.Center - center).WithLength(3.4f);
 
@@ -525,34 +537,26 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             item.velocity += offset;
             item.Hidden = false;
-
-            return;
         }
 
-        item.noGrabDelay = 0;
-        player.PickupItem(item);
-
-        return;
-
-        static bool TryPlacingItemInChest(int worldItemIndex, Point position)
+        bool TryPlacingItemInContainers(Point position)
         {
-            var index = Chest.GetFreeChest(position);
+            // TODO: Personal storage
 
-            if (index == -1)
+            if (Chest.TransferWorldItem(
+                    HeldItem,
+                    Chest.GetFreeChest(position),
+                    false,
+                    ItemTransferVisualizationSettingsExt.HOPPER with
+                    {
+                        ShortAnimation = true,
+                    }
+                ))
             {
-                return false;
+                return item.IsAir;
             }
 
-            return Chest.TransferWorldItem(
-                worldItemIndex,
-                index,
-                false,
-                ItemTransferVisualizationSettingsExt.HOPPER with
-                {
-                    ShortAnimation = true,
-                    Silent = true,
-                }
-            );
+            return false;
         }
     }
 
