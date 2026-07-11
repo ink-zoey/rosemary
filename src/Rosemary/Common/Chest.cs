@@ -64,6 +64,8 @@ file static class ChestBehavior
 
         var bitsByteIndex = -1;
 
+        var skipChestAnimationTarget = c.DefineLabel();
+
         c.GotoNext(
             MoveType.After,
             i => i.MatchLdloca(out bitsByteIndex),
@@ -80,12 +82,6 @@ file static class ChestBehavior
         c.EmitDelegate(
             static (int duration, BitsByte bitsByte) =>
             {
-                // NoAnimation
-                if (bitsByte[5])
-                {
-                    return -1;
-                }
-
                 // ShortAnimation
                 if (!bitsByte[4])
                 {
@@ -96,6 +92,27 @@ file static class ChestBehavior
                 return Rand.Next(5, 10);
             }
         );
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdloc(out _),
+            i => i.MatchLdcR4(-8f),
+            i => i.MatchLdcR4(-8f)
+        );
+
+        c.EmitLdloc(bitsByteIndex);
+        c.EmitDelegate(
+            static (BitsByte bitsByte) => bitsByte[5]
+        );
+
+        c.EmitBrtrue(skipChestAnimationTarget);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchCall<Chest>(nameof(Chest.AskForChestToEatItem))
+        );
+
+        c.MarkLabel(skipChestAnimationTarget);
     }
 }
 
@@ -110,7 +127,7 @@ file static class ChestBehavior
 /// <param name="ShortAnimation">
 ///     Shortens the chest opening animation from 60-80 to 5-10 frames.
 /// </param>
-/// <param name="NoAnimation">
+/// <param name="NoChestAnimation">
 ///     Disables the chest opening animation.
 /// </param>
 public record struct ItemTransferVisualizationSettingsExt(
@@ -119,7 +136,7 @@ public record struct ItemTransferVisualizationSettingsExt(
     bool TransitionIn,
     bool FullBright,
     bool ShortAnimation,
-    bool NoAnimation
+    bool NoChestAnimation
 )
 {
     public static readonly ItemTransferVisualizationSettingsExt PLAYER_TO_CHEST = new()
@@ -135,9 +152,9 @@ public record struct ItemTransferVisualizationSettingsExt(
         RandomizeEndPosition = true,
     };
 
-    public static readonly ItemTransferVisualizationSettingsExt PERSONAL_STORAGE = new()
+    public static readonly ItemTransferVisualizationSettingsExt PERSONAL_STORAGE_HOPPER = new()
     {
-        NoAnimation = true,
+        NoChestAnimation = true,
     };
 
     public static explicit operator BitsByte(ItemTransferVisualizationSettingsExt settings)
@@ -148,7 +165,7 @@ public record struct ItemTransferVisualizationSettingsExt(
             settings.TransitionIn,
             settings.FullBright,
             settings.ShortAnimation,
-            settings.NoAnimation
+            settings.NoChestAnimation
         );
 
         return bitsByte;
@@ -535,7 +552,6 @@ public static class ChestExtensions
             int worldItemIndex,
             PersonalStorageType storageType,
             bool sort,
-            ItemTransferVisualizationSettingsExt? settings,
             bool silent = true
         )
         {
@@ -558,20 +574,6 @@ public static class ChestExtensions
             if (Main.netMode == NetmodeID.MultiplayerClient)
             {
                 NetMessage.SendData(MessageID.SyncItem, -1, -1, null, worldItemIndex);
-            }
-
-            if (settings is not null)
-            {
-                var position = new Point(chest.x, chest.y);
-
-                var tile = Main.tile[position];
-                var tileData = TileObjectData.GetTileData(tile);
-
-                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
-
-                var chestCenter = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
-
-                Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings.Value);
             }
 
             if (sort)

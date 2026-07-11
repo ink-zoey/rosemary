@@ -4,12 +4,14 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ObjectData;
 
 namespace Rosemary.Content;
 
@@ -42,7 +44,7 @@ public sealed class DinosaurExtendoGrip : ModItem
 
     private static void TileInteractions_HideTileIcons(Action<Player, int, int> orig, Player self, int myX, int myY)
     {
-        if (self.PriorHeldProj == -1)
+        if (self.whoAmI != Main.myPlayer || self.PriorHeldProj == -1)
         {
             orig(self, myX, myY);
             return;
@@ -541,7 +543,27 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         bool TryPlacingItemInContainers(Point position)
         {
-            // TODO: Personal storage
+            var type = item.type;
+
+            if (GetPersonalStorageType(player, out var storageType, out var targetPosition)
+                && Chest.TransferWorldItemPersonalStorage(
+                    HeldItem,
+                    storageType.Value,
+                    false
+                ))
+            {
+                Chest.VisualizeChestTransfer(
+                    Projectile.Center,
+                    targetPosition,
+                    type,
+                    ItemTransferVisualizationSettingsExt.PERSONAL_STORAGE_HOPPER with
+                    {
+                        ShortAnimation = true,
+                    }
+                );
+
+                return item.IsAir;
+            }
 
             if (Chest.TransferWorldItem(
                     HeldItem,
@@ -554,6 +576,98 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 ))
             {
                 return item.IsAir;
+            }
+
+            return false;
+        }
+    }
+
+    private bool GetPersonalStorageType(
+        Player player,
+        [NotNullWhen(true)] out PersonalStorageType? storageType,
+        out Vector2 targetPosition
+    )
+    {
+        var position = Projectile.Center.ToTileCoordinates();
+
+        storageType = null;
+
+        if (FromTiles(out storageType, out targetPosition))
+        {
+            return true;
+        }
+
+        // Unfortunately, no good way to go about this.
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (projectile.type is ProjectileID.FlyingPiggyBank or ProjectileID.ChesterPet)
+            {
+                if (!projectile.Hitbox.Intersects(Projectile.Hitbox))
+                {
+                    continue;
+                }
+
+                targetPosition =projectile.Center;
+                storageType = PersonalStorageType.PiggyBank;
+                return true;
+            }
+
+            if (projectile.type is ProjectileID.VoidLens)
+            {
+                if (!projectile.Hitbox.Intersects(Projectile.Hitbox))
+                {
+                    continue;
+                }
+
+                targetPosition = projectile.Center;
+                storageType = PersonalStorageType.VoidVault;
+                return true;
+            }
+        }
+
+        return false;
+
+        bool FromTiles(
+            [NotNullWhen(true)] out PersonalStorageType? storageType,
+            out Vector2 targetPosition
+        )
+        {
+            storageType = null;
+            targetPosition = Vector2.Zero;
+
+            var tile = Main.tile[position];
+            var tileData = TileObjectData.GetTileData(tile);
+
+            if (tileData is not null)
+            {
+                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
+
+                targetPosition = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
+            }
+
+            switch (tile.TileType)
+            {
+                case TileID.PiggyBank:
+                {
+                    storageType = PersonalStorageType.PiggyBank;
+                    return true;
+                }
+                case TileID.Safes:
+                {
+                    storageType = PersonalStorageType.Safe;
+                    return true;
+                }
+                case TileID.DefendersForge:
+                {
+                    storageType = PersonalStorageType.DefendersForge;
+                    return true;
+                }
+                case TileID.VoidVault
+                    when player.disableVoidBag < 0:
+                {
+                    storageType = PersonalStorageType.VoidVault;
+                    return true;
+                }
             }
 
             return false;
