@@ -191,8 +191,6 @@ public static class ChestExtensions
         /// </returns>
         public bool TryAddingItem(Item item, int whoAmI, bool silent = true)
         {
-            const int magic_to_context = 3;
-
             Item[] inv = chest.item;
 
             if (ChestUI.IsBlockedFromTransferIntoChest(item, inv))
@@ -205,13 +203,14 @@ public static class ChestExtensions
                 return true;
             }
             
+            // Shouldn't really run unless there's some item with a maxStack of 1.
             return StackSingleItem();
 
             bool StackSingleItem()
             {
                 for (var i = 0; i < chest.maxItems; i++)
                 {
-                    if (inv[i].stack != 0)
+                    if (!inv[i].IsAir)
                     {
                         continue;
                     }
@@ -223,8 +222,6 @@ public static class ChestExtensions
 
                     inv[i] = item.Clone();
                     item.SetDefaults(ItemID.None);
-
-                    ItemSlot.AnnounceTransfer(new ItemSlot.ItemTransferInfo(inv[i], 0, magic_to_context));
 
                     if (Main.netMode == NetmodeID.MultiplayerClient)
                     {
@@ -243,6 +240,22 @@ public static class ChestExtensions
 
                 for (var i = 0; i < chest.maxItems; i++)
                 {
+                    // Empty slot, just deposit the remainder of the item.
+                    if (inv[i].IsAir)
+                    {
+                        returnValue = true;
+
+                        inv[i] = item.Clone();
+                        item.SetDefaults(ItemID.None);
+
+                        if (Main.netMode == NetmodeID.MultiplayerClient)
+                        {
+                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
+                        }
+
+                        break;
+                    }
+
                     if (inv[i].stack >= inv[i].maxStack
                      || !Item.CanStack(item, inv[i])
                      || !ItemLoader.CanStack(item, inv[i]))
@@ -256,20 +269,6 @@ public static class ChestExtensions
 
                     if (item.stack <= 0)
                     {
-                        item.SetDefaults(ItemID.None);
-
-                        if (Main.netMode == NetmodeID.MultiplayerClient)
-                        {
-                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
-                        }
-
-                        break;
-                    }
-
-                    // Empty slot, just deposit the remainder of the item.
-                    if (inv[i].type == ItemID.None)
-                    {
-                        inv[i] = item.Clone();
                         item.SetDefaults(ItemID.None);
 
                         if (Main.netMode == NetmodeID.MultiplayerClient)
