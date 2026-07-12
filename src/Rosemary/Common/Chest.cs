@@ -1,15 +1,18 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.Networking;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using Rosemary.Core;
 using System;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
-using Terraria.GameContent.Drawing;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 using Terraria.ObjectData;
 using Terraria.UI;
-using Terraria.Utilities;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable UseSymbolAlias
@@ -22,8 +25,6 @@ file static class ChestBehavior
     [OnLoad]
     private static void Load()
     {
-        IL_ParticleOrchestrator.Spawn_ItemTransfer += Spawn_ItemTransfer_Ext;
-
         IL_Chest.UpdateChestFrames += UpdateChestFrames_SilentOpen;
     }
 
@@ -57,118 +58,236 @@ file static class ChestBehavior
             }
         );
     }
-
-    private static void Spawn_ItemTransfer_Ext(ILContext il)
-    {
-        var c = new ILCursor(il);
-
-        var bitsByteIndex = -1;
-
-        var skipChestAnimationTarget = c.DefineLabel();
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchLdloca(out bitsByteIndex),
-            i => i.MatchLdcI4(3),
-            i => i.MatchCall<BitsByte>("get_Item")
-        );
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchCallvirt<UnifiedRandom>(nameof(UnifiedRandom.Next))
-        );
-
-        c.EmitLdloc(bitsByteIndex);
-        c.EmitDelegate(
-            static (int duration, BitsByte bitsByte) =>
-            {
-                // ShortAnimation
-                if (!bitsByte[4])
-                {
-                    return duration;
-                }
-
-                // TODO: Custom duration?
-                return Rand.Next(5, 10);
-            }
-        );
-
-        c.GotoNext(
-            MoveType.Before,
-            i => i.MatchLdloc(out _),
-            i => i.MatchLdcR4(-8f),
-            i => i.MatchLdcR4(-8f)
-        );
-
-        c.EmitLdloc(bitsByteIndex);
-        c.EmitDelegate(
-            static (BitsByte bitsByte) => bitsByte[5]
-        );
-
-        c.EmitBrtrue(skipChestAnimationTarget);
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchCall<Chest>(nameof(Chest.AskForChestToEatItem))
-        );
-
-        c.MarkLabel(skipChestAnimationTarget);
-    }
 }
 
-/// <summary>
-///     Extended from <see cref="Chest.ItemTransferVisualizationSettings"/>;<br/>
-///     provides additional properties for use with <see cref="ChestExtensions.VisualizeChestTransfer"/>.
-/// </summary>
-/// <param name="RandomizeStartPosition"></param>
-/// <param name="RandomizeEndPosition"></param>
-/// <param name="TransitionIn"></param>
-/// <param name="FullBright"></param>
-/// <param name="ShortAnimation">
-///     Shortens the chest opening animation from 60-80 to 5-10 frames.
-/// </param>
-/// <param name="NoChestAnimation">
-///     Disables the chest opening animation.
-/// </param>
-public record struct ItemTransferVisualizationSettingsExt(
-    bool RandomizeStartPosition,
-    bool RandomizeEndPosition,
-    bool TransitionIn,
-    bool FullBright,
-    bool ShortAnimation,
-    bool NoChestAnimation
-)
+[Autoload(Side = ModSide.Client)]
+file static class ChestParticles
 {
-    public static readonly ItemTransferVisualizationSettingsExt PLAYER_TO_CHEST = new()
-    {
-        RandomizeStartPosition = true,
-        RandomizeEndPosition = true,
-        TransitionIn = true,
-        FullBright = true,
-    };
+    internal record struct ItemTransferData(
+        int ItemType,
+        Vector2 Position,
+        Vector2 ChestPosition,
+        int LifeTime,
+        bool RandomizeStartPosition,
+        bool RandomizeEndPosition,
+        bool TransitionIn,
+        bool FullBright,
+        bool AnimateChest,
+        bool Silent
+    );
 
-    public static readonly ItemTransferVisualizationSettingsExt HOPPER = new()
+    private record struct Packet(ItemTransferData Data) : IPacket<Packet>
     {
-        RandomizeEndPosition = true,
-    };
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(Data.ItemType);
+            writer.WriteVector2(Data.Position);
+            writer.WriteVector2(Data.ChestPosition);
+            writer.Write(Data.LifeTime);
 
-    public static readonly ItemTransferVisualizationSettingsExt PERSONAL_STORAGE_HOPPER = new()
+            writer.WriteFlags(
+                Data.RandomizeStartPosition,
+                Data.RandomizeEndPosition,
+                Data.TransitionIn,
+                Data.FullBright,
+                Data.AnimateChest,
+                Data.Silent
+            );
+        }
+
+        public static void Receive(BinaryReader reader, int sender)
+        {
+            var type = reader.ReadInt32();
+            var position = reader.ReadVector2();
+            var chestPosition = reader.ReadVector2();
+            var lifeTime = reader.ReadInt32();
+
+            reader.ReadFlags(
+                out var randomizeStartPosition,
+                out var randomizeEndPosition,
+                out var transitionIn,
+                out var fullBright,
+                out var animateChest,
+                out var silent
+            );
+
+            var data = new ItemTransferData(
+                type,
+                position,
+                chestPosition,
+                lifeTime,
+                randomizeStartPosition,
+                randomizeEndPosition,
+                transitionIn,
+                fullBright,
+                animateChest,
+                silent
+            );
+
+            if (Main.netMode != NetmodeID.Server)
+            {
+                ItemTransfer += new ItemTransferParticle(data);
+            }
+        }
+    }
+
+    private struct ItemTransferParticle : IUpdatingParticle
     {
-        NoChestAnimation = true,
-    };
+        public Vector2 Position { get; private set; }
 
-    public static explicit operator BitsByte(ItemTransferVisualizationSettingsExt settings)
+        public int ItemType { get; }
+
+        private Vector2 StartPosition { get; }
+
+        private Vector2 EndPosition { get; }
+
+        private Vector2 StartOffset { get; }
+
+        private Vector2 EndOffset { get; }
+
+        private Vector2 BezierHelper1 { get; }
+
+        private Vector2 BezierHelper2 { get; }
+
+        private SoundStyle? Sound { get; }
+
+        public bool TransitionIn { get; }
+
+        public bool FullBright { get; }
+
+        public int LifeTime { get; private set; }
+
+        public int LifeTimeTotal { get; }
+
+        public ItemTransferParticle(ItemTransferData data)
+        {
+            ItemType = data.ItemType;
+            StartPosition = data.Position;
+            EndPosition = data.ChestPosition;
+
+            var offset = Rand.NextSquare(-1f, 1f);
+
+            StartOffset = data.RandomizeStartPosition ? (offset * 24f) : Vector2.Zero;
+            EndOffset = data.RandomizeEndPosition ? (offset * 8f) : Vector2.Zero;
+
+            TransitionIn = data.TransitionIn;
+            FullBright = data.FullBright;
+            Sound = data.Silent ? null : SoundID.Grab;
+
+            LifeTime = 0;
+            LifeTimeTotal = data.LifeTime;
+
+            if (data.AnimateChest)
+            {
+                Chest.AskForChestToOpenSilently(EndPosition, LifeTimeTotal);
+            }
+
+            var length = (EndPosition - StartPosition).Length();
+
+            BezierHelper1 = (-Vector2.UnitY * length) + Rand.NextUnitVector(32f);
+            BezierHelper2 = (Vector2.UnitY * length) + Rand.NextUnitVector(32f);
+        }
+
+        bool IUpdatingParticle.Update()
+        {
+            LifeTime++;
+
+            var ratio = (float)LifeTime / LifeTimeTotal;
+
+            // Mysterious vanilla logic
+            var toMin = Utils.Remap(ratio, 0.1f, 0.5f, 0f, 0.85f);
+            toMin = Utils.Remap(ratio, 0.5f, 0.9f, toMin, 1f);
+
+            Position = Vector2.Hermite(StartPosition, BezierHelper1, EndPosition, BezierHelper2, toMin);
+
+            var offset = ratio switch
+            {
+                <= 0.15f => Vector2.Lerp(Vector2.Zero, StartOffset, ratio / 0.15f),
+                <= 0.5f => Vector2.Lerp(StartOffset, EndOffset, (ratio - 0.15f) / 0.35f),
+                > 0.85f => Vector2.Lerp(EndOffset, Vector2.Zero, Utils.Remap(ratio, 0.85f, 0.95f, 0f, 1f)),
+                _ => EndOffset,
+            };
+
+            Position += offset;
+
+            if (LifeTime == LifeTimeTotal && Sound is not null)
+            {
+                SoundEngine.PlaySound(Sound, Position);
+            }
+
+            return LifeTime <= LifeTimeTotal;
+        }
+    }
+
+    private static UpdatingParticleHandler<ItemTransferParticle> ItemTransfer { get; set; } = new(30);
+
+    public static void BroadcastChestTransfer(ItemTransferData data)
     {
-        var bitsByte = new BitsByte(
-            settings.RandomizeStartPosition,
-            settings.RandomizeEndPosition,
-            settings.TransitionIn,
-            settings.FullBright,
-            settings.ShortAnimation,
-            settings.NoChestAnimation
-        );
+        if (Main.netMode == NetmodeID.MultiplayerClient)
+        {
+            new Packet(data).Send(PacketDestination.Broadcast);
+            return;
+        }
 
-        return bitsByte;
+        ItemTransfer += new ItemTransferParticle(data);
+    }
+
+    [ModSystemHooks.PostUpdateDusts]
+    private static void UpdateParticles()
+    {
+        ItemTransfer.Update();
+    }
+
+    [ParticleLayers.OverPlayers]
+    private static void DrawParticlesOverPlayers(SpriteBatch sb)
+    {
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        {
+            DrawItemTransfer();
+        }
+        sb.End();
+
+        return;
+
+        void DrawItemTransfer()
+        {
+            const int magic_context = 31;
+            const float size_limit = 32f;
+
+            if (ItemTransfer.ActiveParticleCount <= 0)
+            {
+                return;
+            }
+
+            foreach (var index in ItemTransfer)
+            {
+                var itemTransfer = ItemTransfer[index];
+
+                var position = itemTransfer.Position - Main.screenPosition;
+
+                if (!ContentSamples.ItemsByType.TryGetValue(itemTransfer.ItemType, out var item))
+                {
+                    continue;
+                }
+
+                var ratio = (float)itemTransfer.LifeTime / itemTransfer.LifeTimeTotal;
+
+                var color = itemTransfer.FullBright
+                    ? Color.White
+                    : Lighting.GetColor(itemTransfer.Position.ToTileCoordinates());
+
+                var scale = item.scale;
+
+                if (itemTransfer.TransitionIn)
+                {
+                    scale *= Utils.Remap(ratio, 0f, 0.15f, 0f, 1f);
+                }
+
+                scale *= Utils.Remap(ratio, 0.65f, 0.95f, 1f, 0f);
+
+                ItemSlot.DrawItemIcon(item, magic_context, sb, position, scale, size_limit, color);
+            }
+        }
     }
 }
 
@@ -461,9 +580,6 @@ public static class ChestExtensions
         /// <param name="sort">
         ///     Whether to sort the chest after adding the item.
         /// </param>
-        /// <param name="settings">
-        ///     Extended visualization settings for the transfer particle, leave <see langword="null"/> to not have a visual.
-        /// </param>
         /// <param name="silent">
         ///     Disables the grab sound from placing the item into storage.
         /// </param>
@@ -475,7 +591,6 @@ public static class ChestExtensions
             int worldItemIndex,
             int chestIndex,
             bool sort,
-            ItemTransferVisualizationSettingsExt? settings = null,
             bool silent = true
         )
         {
@@ -503,20 +618,6 @@ public static class ChestExtensions
                 NetMessage.SendData(MessageID.SyncItem, -1, -1, null, worldItemIndex);
             }
 
-            if (settings is not null)
-            {
-                var position = new Point(chest.x, chest.y);
-
-                var tile = Main.tile[position];
-                var tileData = TileObjectData.GetTileData(tile);
-
-                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
-
-                var chestCenter = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
-
-                Chest.VisualizeChestTransfer(item.Center, chestCenter, type, settings.Value);
-            }
-
             if (sort)
             {
                 ItemSorting.SortInventory(chest, withSync: false, withFeedback: false);
@@ -537,9 +638,6 @@ public static class ChestExtensions
         /// </param>
         /// <param name="sort">
         ///     Whether to sort the storage after adding the item.
-        /// </param>
-        /// <param name="settings">
-        ///     Extended visualization settings for the transfer particle, leave <see langword="null"/> to not have a visual.
         /// </param>
         /// <param name="silent">
         ///     Disables the grab sound from placing the item into storage.
@@ -595,21 +693,55 @@ public static class ChestExtensions
             };
         }
 
+        /// <summary>
+        /// Broadcasts an item transfer particle to all clients.
+        /// </summary>
+        /// <param name="type">
+        ///     The item's type.
+        /// </param>
+        /// <param name="startPosition"></param>
+        /// <param name="endPosition"></param>
+        /// <param name="lifeTime">
+        ///     How long the animation will last.
+        /// </param>
+        /// <param name="randomizeStartPosition"></param>
+        /// <param name="randomizeEndPosition"></param>
+        /// <param name="transitionIn">
+        ///     If the particle will scale up when spawning, used for quick-stacking into chests from the inventory.
+        /// </param>
+        /// <param name="fullBright"></param>
+        /// <param name="animateChest">
+        ///     Whether to animate the chest at <see cref="endPosition"/>,
+        /// </param>
+        /// <param name="silent">
+        ///     Whether to play the grab sound upon the animation's completion.
+        /// </param>
         public static void VisualizeChestTransfer(
-            Vector2 position,
-            Vector2 chestPosition,
-            int itemType,
-            ItemTransferVisualizationSettingsExt settings
+            int type,
+            Vector2 startPosition,
+            Vector2 endPosition,
+            int lifeTime,
+            bool randomizeStartPosition = false,
+            bool randomizeEndPosition = false,
+            bool transitionIn = false,
+            bool fullBright = false,
+            bool animateChest = false,
+            bool silent = false
         )
         {
-            ParticleOrchestrator.BroadcastOrRequestParticleSpawn(
-                ParticleOrchestraType.ItemTransfer,
-                new ParticleOrchestraSettings
-                {
-                    PositionInWorld = position,
-                    MovementVector = chestPosition - position,
-                    UniqueInfoPiece = itemType | (BitsByte)settings << 24,
-                }
+            ChestParticles.BroadcastChestTransfer(
+                new ChestParticles.ItemTransferData(
+                    type,
+                    startPosition,
+                    endPosition,
+                    lifeTime,
+                    randomizeStartPosition,
+                    randomizeEndPosition,
+                    transitionIn,
+                    fullBright,
+                    animateChest,
+                    silent
+                )
             );
         }
     }

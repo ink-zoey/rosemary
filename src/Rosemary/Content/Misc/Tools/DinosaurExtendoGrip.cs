@@ -12,8 +12,9 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
+using Terraria.UI;
 
-namespace Rosemary.Content;
+namespace Rosemary.Content.Misc;
 
 public sealed class DinosaurExtendoGrip : ModItem
 {
@@ -40,6 +41,42 @@ public sealed class DinosaurExtendoGrip : ModItem
             ),
             TileInteractions_HideTileIcons
         );
+
+        MonoModHooks.Add(
+            typeof(Main).GetMethod(
+                nameof(Main.TryInteractingWithMoneyTrough),
+                BindingFlags.Static | BindingFlags.NonPublic
+            ),
+            TryInteractingWith_HideProjectileIcons
+        );
+        MonoModHooks.Add(
+            typeof(Main).GetMethod(
+                nameof(Main.TryInteractingWithVoidLens),
+                BindingFlags.Static | BindingFlags.NonPublic
+            ),
+            TryInteractingWith_HideProjectileIcons
+        );
+    }
+
+    private static int TryInteractingWith_HideProjectileIcons(Func<Projectile, int> orig, Projectile proj)
+    {
+        var player = Main.player[proj.owner];
+
+        if (player.whoAmI != Main.myPlayer
+         || player.heldProj == -1)
+        {
+            return orig(proj);
+        }
+
+        var projectile = Main.projectile[player.heldProj];
+
+        if (projectile.ModProjectile is DinosaurExtendoGripHoldout holdout
+         && holdout.HeldItem != -1)
+        {
+            return 0;
+        }
+
+        return orig(proj);
     }
 
     private static void TileInteractions_HideTileIcons(Action<Player, int, int> orig, Player self, int myX, int myY)
@@ -359,7 +396,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             var length = MathF.Lerp(currentLength, targetLength, 0.55f) * MathF.Pow(lifetimeRatio, 2f);
 
-            target = target.WithLength(length);
+            target.Magnitude = length;
 
             return target + center - Projectile.Center;
         }
@@ -481,9 +518,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 return;
             }
 
-            var index = Chest.GetFreeChest(Projectile.Center.ToTileCoordinates());
+            var hoveringChest = Chest.GetFreeChest(Projectile.Center.ToTileCoordinates()) != -1;
 
-            if (index == -1)
+            if (!hoveringChest
+             && !GetPersonalStorageType(player, out _, out _))
             {
                 return;
             }
@@ -529,13 +567,14 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         void DropItem()
         {
-            item.velocity = (Projectile.Center - center).WithLength(3.4f);
+            item.velocity = Projectile.Center - center;
+            item.velocity.Magnitude = 3.4f;
 
             var offset = Projectile.velocity * 2.3f;
 
             offset.Y *= 0.23f;
 
-            offset = offset.WithLength(MathF.Min(offset.Length(), 10f));
+            offset.Magnitude = MathF.Min(offset.Length(), 10f);
 
             item.velocity += offset;
             item.Hidden = false;
@@ -553,28 +592,49 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 ))
             {
                 Chest.VisualizeChestTransfer(
+                    type,
                     Projectile.Center,
                     targetPosition,
-                    type,
-                    ItemTransferVisualizationSettingsExt.PERSONAL_STORAGE_HOPPER with
-                    {
-                        ShortAnimation = true,
-                    }
+                    Rand.Next(11, 18),
+                    randomizeEndPosition: true
                 );
 
                 return item.IsAir;
             }
 
+            var chestIndex = Chest.GetFreeChest(position);
+
+            if (chestIndex == -1)
+            {
+                return false;
+            }
+
+            var chest = Main.chest[chestIndex];
+
             if (Chest.TransferWorldItem(
                     HeldItem,
-                    Chest.GetFreeChest(position),
-                    false,
-                    ItemTransferVisualizationSettingsExt.HOPPER with
-                    {
-                        ShortAnimation = true,
-                    }
+                    chestIndex,
+                    false
                 ))
             {
+                var tile = Main.tile[position];
+                var tileData = TileObjectData.GetTileData(tile);
+
+                var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
+
+                var chestPosition = new Point(chest.x, chest.y);
+
+                var chestCenter = chestPosition.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
+
+                Chest.VisualizeChestTransfer(
+                    type,
+                    item.Center,
+                    chestCenter,
+                    Rand.Next(8, 12),
+                    randomizeEndPosition: true,
+                    animateChest: true
+                );
+
                 return item.IsAir;
             }
 
@@ -642,7 +702,9 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             {
                 var chestSize = new Vector2(tileData.Width, tileData.Height) * 16f;
 
-                targetPosition = position.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
+                var chestPosition = TileObjectData.TopLeft(position.X, position.Y);
+
+                targetPosition = chestPosition.ToWorldCoordinates(0f, 0f) + (chestSize * 0.5f);
             }
 
             switch (tile.TileType)

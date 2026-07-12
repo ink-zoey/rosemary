@@ -19,4 +19,20 @@ public static class VectorExtensions
             return Vector2.Transform(vector, matrix);
         }
     }
+
+    extension(ref Vector2 vector)
+    {
+        public float Magnitude
+        {
+            get => vector.Length();
+
+            set
+            {
+                var newVector = vector.Normalized * value;
+
+                vector.X = newVector.X;
+                vector.Y = newVector.Y;
+            }
+        }
+    }
 }

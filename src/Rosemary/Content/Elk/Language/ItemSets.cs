@@ -162,7 +162,7 @@ public static class ElkLangItemSets
                         var offset = (size * 0.2f) * Rand.Next(-1f, 1f);
                         offset.X = 0f;
 
-                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
+                        ElkParticles.Sparks += new ElkParticles.Spark(
                             position + offset,
                             velocity,
                             Rand.Next(0.8f, 2f),
@@ -178,7 +178,7 @@ public static class ElkLangItemSets
 
                         var offset = Vector2.Normalize(velocity) * 17f;
 
-                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
+                        ElkParticles.Sparks += new ElkParticles.Spark(
                             position + offset,
                             velocity,
                             Main.rand.NextFloat(2f, 4f),
@@ -232,7 +232,7 @@ public static class ElkLangItemSets
 
                         var color = Color.FromHsl(0.65f + Rand.Next(0.2f), 1f, 0.65f);
 
-                        ElkForegroundParticles.Sparks += new ElkForegroundParticles.Spark(
+                        ElkParticles.Sparks += new ElkParticles.Spark(
                             position + offset,
                             velocity,
                             Main.rand.NextFloat(3f, 4.5f),

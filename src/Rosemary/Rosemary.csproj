@@ -5,7 +5,7 @@
 
     <!-- Daybreak -->
     <ItemGroup>
-        <Analyzer Include="libanalyzer\Daybreak.CodeAnalysis.dll"/>
+        <Analyzer Include="libanalyzer\Daybreak.CodeAnalysis.dll" />
     </ItemGroup>
 
     <!-- Source Generators -->

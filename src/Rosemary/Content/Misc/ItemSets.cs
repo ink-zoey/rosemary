@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace Rosemary.Content;
+namespace Rosemary.Content.Misc;
 
 public static class MiscItemSets
 {

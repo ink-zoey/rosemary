@@ -57,6 +57,12 @@ public static class RandomExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 NextSquare(float min, float max)
+        {
+            return new Vector2(Rand.Next(min, max), Rand.Next(min, max));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 NextUnitVector(float radius = 1f)
         {
             return Rand.Instance.NextVector2Unit() * radius;

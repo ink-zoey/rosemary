@@ -1,18 +1,15 @@
 ﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoMod.Cil;
 using Rosemary.Core;
 using System;
-using System.Reflection;
 using Terraria;
-using Terraria.Graphics.Renderers;
 using Terraria.ModLoader;
 
 namespace Rosemary.Content.Elk;
 
 [Autoload(Side = ModSide.Client)]
-public static class ElkForegroundParticles
+public static class ElkParticles
 {
     public record struct Spark(Vector2 Position, Vector2 Velocity, float Scale, Color Color, byte Style) : IUpdatingParticle
     {
@@ -34,45 +31,14 @@ public static class ElkForegroundParticles
 
     public static UpdatingParticleHandler<Spark> Sparks { get; set; } = new(512);
 
-    [OnLoad]
-    private static void Load()
-    {
-        IL_Main.DoDraw += DoDraw_DrawParticles;
-    }
-
-    private static void DoDraw_DrawParticles(ILContext il)
-    {
-        var c = new ILCursor(il);
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchLdsfld<Main>(nameof(Main.ParticleSystem_World_OverPlayers)),
-            i => i.MatchLdsfld<Main>(nameof(Main.spriteBatch)),
-            i => i.MatchCallvirt<ParticleRenderer>(nameof(ParticleRenderer.Draw))
-        );
-
-        c.GotoNext(
-            MoveType.After,
-            i => i.MatchLdsfld<Main>(nameof(Main.spriteBatch)),
-            i => i.MatchCallvirt<SpriteBatch>(nameof(SpriteBatch.End))
-        );
-
-        c.EmitLdsfld(
-            typeof(Main).GetField(
-                nameof(Main.spriteBatch),
-                BindingFlags.Static | BindingFlags.Public
-            )!
-        );
-        c.EmitDelegate(DrawForegroundParticles);
-    }
-
     [ModSystemHooks.PostUpdateDusts]
     private static void UpdateParticles()
     {
         Sparks.Update();
     }
 
-    private static void DrawForegroundParticles(SpriteBatch sb)
+    [ParticleLayers.OverPlayers]
+    private static void DrawParticlesOverPlayers(SpriteBatch sb)
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
