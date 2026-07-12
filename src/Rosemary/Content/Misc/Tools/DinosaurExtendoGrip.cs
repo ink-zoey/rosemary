@@ -617,6 +617,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 }
 
                 index = Item.NewItem(Entity.GetSource_DropAsItem(), Projectile.Center, item);
+                Main.item[index].whoAmI = index;
                 item.TurnToAir();
 
                 if (Main.netMode == NetmodeID.MultiplayerClient)
