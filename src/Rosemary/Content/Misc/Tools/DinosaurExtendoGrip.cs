@@ -1,4 +1,5 @@
 ﻿using Daybreak.Rendering;
+using Microsoft.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -61,6 +62,94 @@ public sealed class DinosaurExtendoGrip : ModItem
                 BindingFlags.Static | BindingFlags.NonPublic
             ),
             TryInteractingWith_HideProjectileIcons
+        );
+
+        IL_NPC.CatchNPC += CatchNPC_ForceDinoGrabberPickup;
+
+        On_NPC.ReleaseNPC += ReleaseNPC_ApplyVelocity;
+    }
+
+    private int ReleaseNPC_ApplyVelocity(On_NPC.orig_ReleaseNPC orig, int x, int y, int type, int style, int who)
+    {
+        var index = orig(x, y, type, style, who);
+
+        if (index == -1)
+        {
+            return index;
+        }
+
+        var player = Main.player[who];
+
+        if (player.heldProj == -1)
+        {
+            return index;
+        }
+
+        var projectile = Main.projectile[player.heldProj];
+
+        if (projectile.ModProjectile is not DinosaurExtendoGripHoldout)
+        {
+            return index;
+        }
+
+        var npc = Main.npc[index];
+
+        var center = player.RotatedRelativePoint(player.MountedCenter, true);
+
+        npc.velocity = projectile.Center - center;
+        npc.velocity.Magnitude = 4f;
+
+        var offset = projectile.velocity * 1.2f;
+
+        offset.Y *= 0.6f;
+
+        offset.Magnitude = MathF.Min(offset.Length(), 15f);
+
+        npc.velocity += offset;
+
+        return index;
+    }
+
+    private void CatchNPC_ForceDinoGrabberPickup(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var whoIndex = -1;        // arg
+        var itemWhoAmIIndex = -1; // loc
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdsfld<Main>(nameof(Main.myPlayer)),
+            i => i.MatchStarg(out whoIndex)
+        );
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchCall<Item>(nameof(Item.NewItem)),
+            i => i.MatchStloc(out itemWhoAmIIndex)
+        );
+
+        c.EmitLdarg(whoIndex);
+        c.EmitLdloc(itemWhoAmIIndex);
+        c.EmitDelegate(
+            static (int whoAmI, int itemIndex) =>
+            {
+                var player = Main.player[whoAmI];
+
+                if (player.heldProj == -1)
+                {
+                    return;
+                }
+
+                var projectile = Main.projectile[player.heldProj];
+
+                if (projectile.ModProjectile is not DinosaurExtendoGripHoldout holdout)
+                {
+                    return;
+                }
+
+                holdout.PickupItem(itemIndex, player);
+            }
         );
     }
 
@@ -570,18 +659,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         if (HeldItem == -1 && hitCooldown <= 0 && TryFindItem(out var index))
         {
-            HeldItem = index;
-
-            InitialRotation = rotation - Main.item[HeldItem].Rotation;
-
-            SoundEngine.PlaySound(
-                SoundID.Item168 with
-                {
-                    Pitch = -0.8f,
-                    PitchRange = (-0.1f, 0.2f),
-                },
-                Projectile.Center
-            );
+            PickupItem(index, player);
         }
 
         if (HeldItem == -1)
@@ -593,13 +671,18 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         return;
 
-        bool TryFindItem(out int index)
+        bool TryFindItem(out int index, bool checking = false)
         {
             index = -1;
 
             if (WorldItems(out index))
             {
                 return true;
+            }
+
+            if (Critters())
+            {
+                return checking;
             }
 
             if (!WorldChests(out var chest, out var chestIndex) && !PersonalStorage(out chest, out chestIndex))
@@ -686,6 +769,28 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
                 return true;
             }
+
+            bool Critters()
+            {
+                foreach (var npc in Main.ActiveNPCs)
+                {
+                    if (npc.catchItem <= 0)
+                    {
+                        continue;
+                    }
+
+                    var hitbox = Projectile.Hitbox;
+
+                    hitbox.Inflate(8, 8);
+
+                    if (checking ? hitbox.Intersects(npc.Hitbox) : NPC.CheckCatchNPC(npc, hitbox, player.HeldItem, player, true))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         void HoldItem()
@@ -742,7 +847,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             if (!hoveringChest
              && !GetPersonalStorageType(player, out _, out _)
-             && !(!hasItem && TryFindItem(out _)))
+             && !(!hasItem && TryFindItem(out _, true)))
             {
                 OwnerInteraction = false;
                 return;
@@ -760,6 +865,26 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             OwnerInteraction = true;
         }
+    }
+
+    public void PickupItem(int index, Player player)
+    {
+        var center = player.RotatedRelativePoint(player.MountedCenter, true);
+
+        var rotation = (Projectile.Center - center).ToRotation();
+
+        HeldItem = index;
+
+        InitialRotation = rotation - Main.item[HeldItem].Rotation;
+
+        SoundEngine.PlaySound(
+            SoundID.Item168 with
+            {
+                Pitch = -0.8f,
+                PitchRange = (-0.1f, 0.2f),
+            },
+            Projectile.Center
+        );
     }
 
     private void LetGoOfItem(Player player, bool deposit = true)
@@ -793,6 +918,19 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         void DropItem()
         {
+            if (item.makeNPC > 0)
+            {
+                var position = Projectile.Center;
+
+                NPC.ReleaseNPC((int)position.X, (int)position.Y, item.makeNPC, item.placeStyle, player.whoAmI);
+
+                item.TurnToAir();
+                item.Hidden = false;
+                HeldItem = -1;
+
+                return;
+            }
+
             item.velocity = Projectile.Center - center;
             item.velocity.Magnitude = 3.4f;
 
