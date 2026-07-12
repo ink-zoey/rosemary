@@ -518,10 +518,7 @@ public static class ChestExtensions
         {
             var tile = Framing.GetTileSafely(position);
 
-            // For whatever reason trapped containers aren't considered under IsAContainer?
-            if (!TileID.Sets.IsAContainer[tile.TileType]
-             && tile.TileType != TileID.FakeContainers
-             && tile.TileType != TileID.FakeContainers2)
+            if (!TileID.Sets.IsAContainer[tile.TileType])
             {
                 return -1;
             }
