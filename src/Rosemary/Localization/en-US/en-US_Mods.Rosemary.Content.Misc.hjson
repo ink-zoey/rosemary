@@ -1,10 +1,12 @@
-DinosaurExtendoGrip: {
+﻿DinosaurExtendoGrip: {
 	DisplayName: Dino Grabber
 	Tooltip:
 		'''
 		Can be used to safely grab items from a distance
 		Grab items with {InputTrigger_InteractWithTile}
+        Deposit items by releasing {InputTrigger_InteractWithTile}
 		'''
+	GrabItems: Press {InputTrigger_InteractWithTile} to grab item
 	DepositItems: Release {InputTrigger_InteractWithTile} to deposit item
 }
 
