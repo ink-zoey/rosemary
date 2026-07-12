@@ -6,6 +6,7 @@ using Rosemary.Common;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Daybreak.Hooks;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -184,8 +185,8 @@ public sealed class DinosaurExtendoGrip : ModItem
         };
 
         Item.useStyle = ItemUseStyleID.Shoot;
-        Item.useAnimation = 10;
-        Item.useTime = 10;
+        Item.useAnimation = 3;
+        Item.useTime = 3;
         Item.reuseDelay = 5;
         Item.autoReuse = true;
         Item.noUseGraphic = true;
@@ -216,7 +217,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         Projectile.penetrate = -1;
 
-        Projectile.friendly = false;
+        Projectile.friendly = true;
         Projectile.hostile = false;
 
         Projectile.tileCollide = true;
@@ -226,6 +227,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Projectile.manualDirectionChange = true;
     }
 
+    /// <summary>
+    ///     Index of the <see cref="WorldItem"/> in <see cref="Main.item"/> that the grabber is holding;<br/>
+    ///     <![CDATA[-1]]> if no item is being held.
+    /// </summary>
     public int HeldItem
     {
         get => (int)Projectile.ai[0];
@@ -245,6 +250,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
     }
 
     private float clawInterpolator;
+
+    private float hitCooldown;
 
     private float GetReach()
     {
@@ -266,6 +273,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         }
     }
 
+    public override bool? CanCutTiles() => false;
+
     public override void OnSpawn(IEntitySource source)
     {
         HeldItem = -1;
@@ -280,11 +289,136 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Projectile.netUpdate = true;
     }
 
+    private bool? CanHitWithItem(Rectangle targetHitbox)
+    {
+        if (HeldItem == -1)
+        {
+            return false;
+        }
+
+        var item = Main.item[HeldItem];
+        if (item.damage <= 0)
+        {
+            return false;
+        }
+
+        // Likely not wholely accurate.
+        var size = new Vector2(
+            Math.Max(Projectile.height, Math.Max(item.inner.height, item.inner.width))
+        );
+
+        size *= 0.9f;
+
+        var hitbox = Utils.CenteredRectangle(Projectile.Center, size);
+
+        return Colliding(hitbox, targetHitbox);
+    }
+
+    public override bool CanHitPvp(Player target)
+    {
+        return CanHitWithItem(target.Hitbox) is true;
+    }
+
+    public override bool? CanHitNPC(NPC target)
+    {
+        return CanHitWithItem(target.Hitbox);
+    }
+
+    public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
+    {
+        modifiers.SourceDamage /= 10;
+    }
+
+    public override void ModifyHitPlayer(Player target, ref Player.HurtModifiers modifiers)
+    {
+        modifiers.SourceDamage /= 4;
+    }
+
+    private void HitEffects(Entity target, int damage)
+    {
+        var player = Main.player[Projectile.owner];
+
+        Projectile.velocity += (Projectile.Center - target.Center).WithLength(damage * 2f);
+
+        Projectile.velocity += -Vector2.UnitY * 6f;
+
+        if (!Rand.NextBoolean(3))
+        {
+            return;
+        }
+
+        hitCooldown = 30;
+        if (HeldItem != -1)
+        {
+            var item = Main.item[HeldItem];
+
+            if (item.IsACoin)
+            {
+                CoinDust(item.type);
+                item.TurnToAir();
+            }
+
+            LetGoOfItem(player, false);
+        }
+
+        return;
+
+        void CoinDust(int type)
+        {
+            var darkDustType = type switch
+            {
+                ItemID.CopperCoin => DustID.Copper,
+                ItemID.SilverCoin => DustID.Silver,
+                ItemID.GoldCoin => DustID.Gold,
+                _ => DustID.Platinum,
+            };
+
+            var brightDustType = type switch
+            {
+                ItemID.CopperCoin => DustID.CopperCoin,
+                ItemID.SilverCoin => DustID.SilverCoin,
+                ItemID.GoldCoin => DustID.GoldCoin,
+                _ => DustID.PlatinumCoin,
+            };
+
+            for (var i = 0; i < 20; i++)
+            {
+                var dust = Dust.NewDust(Projectile.Center, 1, 1, darkDustType);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity *= 2.3f;
+                Main.dust[dust].scale *= 1.3f;
+            }
+
+            for (var i = 0; i < 10; i++)
+            {
+                var dust = Dust.NewDust(Projectile.Center, 1, 1, brightDustType);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity *= 3.3f;
+                Main.dust[dust].scale *= 2.3f;
+            }
+        }
+    }
+
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
+    {
+        HitEffects(target, damageDone);
+    }
+
+    public override void OnHitPlayer(Player target, Player.HurtInfo info)
+    {
+        HitEffects(target, info.Damage);
+    }
+
     public override void AI()
     {
         var player = Main.player[Projectile.owner];
 
         var stillInUse = player is { channel: true, noItems: false, CCed: false, dead: false };
+
+        if (hitCooldown > 0)
+        {
+            hitCooldown--;
+        }
 
         UpdatePlayerHoldout(player);
 
@@ -295,7 +429,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             clawInterpolator += 0.3f;
             clawInterpolator = MathF.Min(clawInterpolator, 1f);
         }
-        else if (player.AltChannel && stillInUse)
+        else if (player.AltChannel && hitCooldown <= 0 && stillInUse)
         {
             clawInterpolator -= 0.05f;
             clawInterpolator = MathF.Max(clawInterpolator, -0.6f);
@@ -404,6 +538,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
     private void GrabBehaviour(Player player)
     {
+        Projectile.damage = 0;
+
         var center = player.RotatedRelativePoint(player.MountedCenter, true);
 
         var rotation = (Projectile.Center - center).ToRotation();
@@ -427,7 +563,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             return;
         }
 
-        if (HeldItem == -1 && TryFindItem(out var index))
+        if (HeldItem == -1 && hitCooldown <= 0 && TryFindItem(out var index))
         {
             HeldItem = index;
 
@@ -472,6 +608,15 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                 return true;
             }
 
+            /*
+            var hoveringChest = Chest.GetFreeChest(Projectile.Center.ToTileCoordinates()) != -1;
+
+            if (!hoveringChest
+             && !GetPersonalStorageType(player, out _, out _))
+            {
+                return;
+            }*/
+
             return false;
         }
 
@@ -485,6 +630,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
                 return;
             }
+
+            Projectile.damage = item.damage;
 
             item.noGrabDelay = 30;
 
@@ -533,7 +680,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         }
     }
 
-    private void LetGoOfItem(Player player)
+    private void LetGoOfItem(Player player, bool deposit = true)
     {
         const float pickup_distance = 90f;
 
@@ -546,14 +693,14 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             return;
         }
 
-        if (TryPlacingItemInContainers(Projectile.Center.ToTileCoordinates()))
+        if (deposit && TryPlacingItemInContainers(Projectile.Center.ToTileCoordinates()))
         {
             return;
         }
 
         var length = (Projectile.Center - center).Length();
 
-        if (length > pickup_distance)
+        if (length > pickup_distance || !deposit)
         {
             DropItem();
 
@@ -578,6 +725,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
             item.velocity += offset;
             item.Hidden = false;
+
+            HeldItem = -1;
         }
 
         bool TryPlacingItemInContainers(Point position)
