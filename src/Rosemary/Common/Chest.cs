@@ -6,6 +6,7 @@ using MonoMod.Cil;
 using Rosemary.Core;
 using System;
 using System.IO;
+using System.Linq;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -318,112 +319,169 @@ public static class ChestExtensions
         /// <param name="whoAmI">
         ///     The index of this chest either in <see cref="Main.chest"/> or a negative value for personal storage.
         /// </param>
-        /// <param name="silent">
-        ///     Disables the grab sound effect.
-        /// </param>
         /// <returns>
         ///     <see langword="true"/> if any part of <paramref name="item"/> was placed into the chest;<br/>
         ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
         /// </returns>
-        public bool TryAddingItem(Item item, int whoAmI, bool silent = true)
+        public bool TryAddingItem(Item item, int whoAmI)
         {
             Item[] inv = chest.item;
 
-            if (ChestUI.IsBlockedFromTransferIntoChest(item, inv))
+            // Lifted from Wiring.TryToPutItemInChest.
+            if (item.IsACoin)
             {
-                return false;
+                return TryMoveCoinsInChest();
             }
 
-            if (item.maxStack > 1 && StackItems())
+            for (var i = 0; i < chest.maxItems; i++)
             {
-                return true;
-            }
-            
-            // Shouldn't really run unless there's some item with a maxStack of 1.
-            return StackSingleItem();
-
-            bool StackSingleItem()
-            {
-                for (var i = 0; i < chest.maxItems; i++)
+                if (TryAddingToStack(i))
                 {
-                    if (!inv[i].IsAir)
+                    return true;
+                }
+                if (TryAddingToEmptySlot(i))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+
+            bool TryMoveCoinsInChest()
+            {
+                var currentValue = Utils.CoinsCount(out _, inv);
+                var itemValue = item.value / 5;
+                itemValue *= item.stack;
+
+                var coins = Utils.CoinsSplit(currentValue + itemValue);
+                var coinSlots = new int[coins.Length];
+
+                var slot = 0;
+
+                for (var i = coins.Length - 1; i >= 0; i--)
+                {
+                    if (coins[i] == 0)
                     {
                         continue;
                     }
 
-                    if (!silent)
+                    for (; slot < chest.maxItems; slot++)
                     {
-                        SoundEngine.PlaySound(in SoundID.Grab);
+                        if (!inv[slot].IsAir
+                         && !inv[slot].IsACoin)
+                        {
+                            continue;
+                        }
+
+                        slot++;
+
+                        coinSlots[i] = slot;
+
+                        break;
                     }
 
-                    inv[i] = item.Clone();
-                    item.SetDefaults(ItemID.None);
+                    if (slot >= chest.maxItems)
+                    {
+                        return false;
+                    }
+                }
+
+                foreach (var coin in inv.Where(i => i.IsACoin))
+                {
+                    coin.TurnToAir();
+                }
+
+                for (var i = coins.Length - 1; i >= 0; i--)
+                {
+                    if (coins[i] == 0)
+                    {
+                        continue;
+                    }
+
+                    // Unsure if there's a most respectful method to use.
+                    var type = ItemID.CopperCoin + i;
+
+                    var stack = Math.Min(ContentSamples.ItemsByType[type].maxStack, coins[i]);
+
+                    var coin = inv[coinSlots[i]];
+
+                    coin.SetDefaults(type);
+                    coin.stack = stack;
+
+                    coins[i] -= stack;
 
                     if (Main.netMode == NetmodeID.MultiplayerClient)
                     {
                         NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
                     }
+                }
 
+                item.TurnToAir();
+                return true;
+            }
+
+            bool TryAddingToStack(int index)
+            {
+                var priorStack = item.stack;
+
+                var current = inv[index];
+
+                if (current.stack >= current.maxStack || !Item.CanStack(item, current))
+                {
+                    return false;
+                }
+
+                var stack = item.stack;
+                if (item.stack + current.stack > current.maxStack)
+                {
+                    stack = current.maxStack - current.stack;
+                }
+
+                item.stack -= stack;
+                current.stack += stack;
+
+                if (item.stack <= 0)
+                {
+                    item.TurnToAir();
                     return true;
                 }
 
-                return false;
+                if (current.type != ItemID.None)
+                {
+                    return item.stack < priorStack;
+                }
+
+                inv[index] = item.Clone();
+                inv[index].newAndShiny = false;
+
+                item.TurnToAir();
+
+                if (Main.netMode == NetmodeID.MultiplayerClient)
+                {
+                    NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, index);
+                }
+
+                return true;
             }
 
-            bool StackItems()
+            bool TryAddingToEmptySlot(int index)
             {
-                var returnValue = false;
-
-                for (var i = 0; i < chest.maxItems; i++)
+                if (inv[index].stack != 0)
                 {
-                    // Empty slot, just deposit the remainder of the item.
-                    if (inv[i].IsAir)
-                    {
-                        returnValue = true;
-
-                        inv[i] = item.Clone();
-                        item.SetDefaults(ItemID.None);
-
-                        if (Main.netMode == NetmodeID.MultiplayerClient)
-                        {
-                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
-                        }
-
-                        break;
-                    }
-
-                    if (inv[i].stack >= inv[i].maxStack
-                     || !Item.CanStack(item, inv[i])
-                     || !ItemLoader.CanStack(item, inv[i]))
-                    {
-                        continue;
-                    }
-
-                    returnValue = true;
-
-                    ItemLoader.StackItems(inv[i], item, out _);
-
-                    if (item.stack <= 0)
-                    {
-                        item.SetDefaults(ItemID.None);
-
-                        if (Main.netMode == NetmodeID.MultiplayerClient)
-                        {
-                            NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, i);
-                        }
-
-                        break;
-                    }
-
-                    // Item was not fully deposited, loop.
+                    return false;
                 }
 
-                if (!silent && returnValue)
+                inv[index] = item.Clone();
+                inv[index].newAndShiny = false;
+
+                item.TurnToAir();
+
+                if (Main.netMode == NetmodeID.MultiplayerClient)
                 {
-                    SoundEngine.PlaySound(in SoundID.Grab);
+                    NetMessage.SendData(MessageID.SyncChestItem, -1, -1, null, whoAmI, index);
                 }
 
-                return returnValue;
+                return true;
             }
         }
     }
@@ -590,8 +648,7 @@ public static class ChestExtensions
         public static bool TransferWorldItem(
             int worldItemIndex,
             int chestIndex,
-            bool sort,
-            bool silent = true
+            bool sort
         )
         {
             if (chestIndex == -1)
@@ -608,7 +665,7 @@ public static class ChestExtensions
 
             if (!item.active
              || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]
-             || !chest.TryAddingItem(item.inner, chestIndex, silent))
+             || !chest.TryAddingItem(item.inner, chestIndex))
             {
                 return false;
             }
@@ -649,8 +706,7 @@ public static class ChestExtensions
         public static bool TransferWorldItemPersonalStorage(
             int worldItemIndex,
             PersonalStorageType storageType,
-            bool sort,
-            bool silent = true
+            bool sort
         )
         {
             var player = Main.LocalPlayer;
@@ -664,7 +720,7 @@ public static class ChestExtensions
 
             if (!item.active
              || ItemID.Sets.ItemsThatShouldNotBeInInventory[type]
-             || !chest.TryAddingItem(item.inner, (int)storageType, silent))
+             || !chest.TryAddingItem(item.inner, (int)storageType))
             {
                 return false;
             }

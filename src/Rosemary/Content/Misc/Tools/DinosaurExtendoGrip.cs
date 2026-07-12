@@ -585,7 +585,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             var type = item.type;
 
             if (GetPersonalStorageType(player, out var storageType, out var targetPosition)
-                && Chest.TransferWorldItemPersonalStorage(
+             && Chest.TransferWorldItemPersonalStorage(
                     HeldItem,
                     storageType.Value,
                     false
@@ -595,7 +595,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                     type,
                     Projectile.Center,
                     targetPosition,
-                    Rand.Next(11, 18),
+                    Rand.Next(12, 18),
                     randomizeEndPosition: true
                 );
 
@@ -630,7 +630,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
                     type,
                     item.Center,
                     chestCenter,
-                    Rand.Next(8, 12),
+                    Rand.Next(12, 18),
                     randomizeEndPosition: true,
                     animateChest: true
                 );
