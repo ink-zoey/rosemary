@@ -26,5 +26,19 @@ Mods: {
 				}
 			}
 		}
+
+		Buffs: {
+			SiffrinHoverBuff: {
+				DisplayName: Siffrin Hover Buff
+				Description: Mods.Rosemary.Buffs.SiffrinHoverBuff.Description
+			}
+		}
+
+		Items: {
+			SiffrinHover: {
+				DisplayName: Siffrin Hover
+				Tooltip: ""
+			}
+		}
 	}
 }
