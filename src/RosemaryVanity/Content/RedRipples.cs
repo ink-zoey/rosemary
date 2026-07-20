@@ -1,15 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using Daybreak.Hooks;
 using Daybreak.Models;
-using Daybreak.Rendering.Buffers;
-using Rosemary.Vanity.Core;
-using Daybreak.Hooks;
 using Daybreak.Rendering;
+using Daybreak.Rendering.Buffers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using Rosemary.Core;
+using Rosemary.Vanity.Core;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.ModLoader;
+using static tModPorter.ProgressUpdate;
 
 namespace Rosemary.Vanity.Content;
 
@@ -165,6 +166,14 @@ public static class RedRipples
 
         sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
+            shader.Parameters.Texture = new HlslSampler
+            {
+                Sampler = SamplerState.LinearClamp,
+                Texture = target,
+            };
+
+            shader.Parameters.StepSize = 4f * target_size;
+
             shader.Apply();
 
             sb.Draw(target, Main.graphics.GraphicsDevice.Viewport.Bounds, Color.White);
