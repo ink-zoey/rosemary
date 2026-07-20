@@ -57,7 +57,7 @@ public static class ParticleLayers
                 i => i.MatchCallvirt<SpriteBatch>(nameof(SpriteBatch.End))
             );
 
-            c.EmitLdsfld(
+            c2.EmitLdsfld(
                 typeof(Main).GetField(
                     nameof(Main.spriteBatch),
                     BindingFlags.Static | BindingFlags.Public

@@ -1,4 +1,4 @@
-﻿SiffrinHover: {
+SiffrinHover: {
 	DisplayName: A
 	Tooltip: ""
 }
@@ -6,4 +6,5 @@
 SiffrinHoverBuff: {
 	DisplayName: B
 	Tooltip: ""
+	Description: Mods.RosemaryVanity.Content.SiffrinHoverBuff.Description
 }

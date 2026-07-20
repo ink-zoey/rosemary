@@ -15,7 +15,7 @@ namespace Rosemary.Vanity.Content;
 
 public sealed class SiffrinHover : ModItem
 {
-    public override string Texture => Assets.Hat.KEY;
+    public override string Texture => Assets.Vanity.Hat.KEY;
 
     public override string LocalizationCategory => "Content";
 
@@ -27,7 +27,7 @@ public sealed class SiffrinHover : ModItem
 
 public sealed class SiffrinHoverBuff : ModBuff
 {
-    public override string Texture => Assets.Hat.KEY;
+    public override string Texture => Assets.Vanity.Hat.KEY;
 
     public override string LocalizationCategory => "Content";
 
@@ -87,7 +87,7 @@ public sealed class SiffrinHoverMount : ModMount
             return;
         }
 
-        var effect = Assets.InvertPlayer.CreateInvertPlayerShader();
+        var effect = Assets.Vanity.InvertPlayer.CreateInvertPlayerShader();
 
         var sb = Main.spriteBatch;
 
@@ -193,5 +193,15 @@ public sealed class SiffrinHoverMount : ModMount
     public override void SetMount(Player player, ref bool skipDust)
     {
         skipDust = true;
+    }
+
+    public override void UpdateEffects(Player player)
+    {
+        if (Main.GameUpdateCount % 10 != 0)
+        {
+            return;
+        }
+
+        RedRipples.QueueRipple(new RedRipples.Info(player.Center, 20f));
     }
 }

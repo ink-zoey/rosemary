@@ -47,6 +47,12 @@ file static class HotReloading
 
         for (var i = 0; i < updatedTypes.Length; i++)
         {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (updatedTypes[i] is null)
+            {
+                return;
+            }
+
             updatedTypes[i] = assembly.GetType(updatedTypes[i].FullName!)!;
         }
 

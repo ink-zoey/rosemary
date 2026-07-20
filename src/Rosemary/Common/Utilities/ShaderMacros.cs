@@ -7,7 +7,7 @@ using Terraria;
 // ReSharper disable UnusedMember.Global
 namespace Rosemary.Common;
 
-internal static class ShaderMacros
+public static class ShaderMacros
 {
     public static Vector2 TextureSize(int register)
     {
