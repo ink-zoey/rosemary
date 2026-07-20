@@ -18,13 +18,13 @@ public static class RedRipples
 {
     private const float target_size = 0.5f;
 
-    public record struct Info(Vector2 Position, float Size);
+    public record struct Info(Vector2 Position, float Size, float Intensity);
 
     private sealed class Data : IStatic<Data>
     {
         public required WrapperShaderData<Assets.Vanity.RippleCompute.Parameters> RippleComputeShader { get; init; }
 
-        public required WrapperShaderData<Assets.Vanity.RippleProcessor.Parameters> RippleNegativeShader { get; init; }
+        public required WrapperShaderData<Assets.Vanity.RippleProcessor.Parameters> RippleRedShader { get; init; }
 
         public required RenderTargetLease RippleTarget { get; init; }
 
@@ -36,7 +36,7 @@ public static class RedRipples
                 () => new Data
                 {
                     RippleComputeShader = Assets.Vanity.RippleCompute.CreateRippleComputeShader(),
-                    RippleNegativeShader = Assets.Vanity.RippleProcessor.CreateRippleNegativeShader(),
+                    RippleRedShader = Assets.Vanity.RippleProcessor.CreateRippleRedShader(),
                     RippleTarget = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
                     RippleTargetSwap = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
                 }
@@ -109,11 +109,15 @@ public static class RedRipples
 
                     while (ripples.TryDequeue(out var info))
                     {
+                        var position = info.Position - Main.screenPosition;
+
+                        position *= target_size;
+
                         sb.Draw(
                             new DrawParameters(texture)
                             {
-                                Position = info.Position - Main.screenPosition,
-                                Color = new Color(0f, 0f, 1f, 0f),
+                                Position = position,
+                                Color = new Color(0f, 0f, info.Intensity, 0f),
                                 Size = new Vector2(info.Size) * target_size,
                                 Origin = Origin.Center,
                             }
@@ -133,13 +137,15 @@ public static class RedRipples
                         Texture = targetSwap,
                     };
 
-                    compute.Parameters.Decay = 0.94f;
-                    compute.Parameters.Strength = 2f;
+                    compute.Parameters.Decay = 0.95f;
+                    compute.Parameters.Strength = 5f;
                     compute.Parameters.StepSize = 4f * target_size;
 
                     compute.Apply();
 
                     var position = Main.screenPosition - lastScreenPosition;
+
+                    position *= target_size;
 
                     sb.Draw(targetSwap, -position, Color.White);
                 }
@@ -155,18 +161,13 @@ public static class RedRipples
     {
         var target = Data.Instance.RippleTarget.Target;
 
-        var negative = Data.Instance.RippleNegativeShader;
-
-        sb.Begin(SpriteSortMode.Immediate, BlendState.Multiplicative, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
-        {
-            negative.Apply();
-
-            sb.Draw(target, Vector2.Zero, Color.White);
-        }
-        sb.End();
+        var shader = Data.Instance.RippleRedShader;
 
         sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
+            shader.Apply();
+
+            sb.Draw(target, Main.graphics.GraphicsDevice.Viewport.Bounds, Color.White);
         }
         sb.End();
     }

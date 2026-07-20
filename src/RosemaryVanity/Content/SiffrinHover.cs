@@ -10,6 +10,7 @@ using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.Utilities;
 
 namespace Rosemary.Vanity.Content;
 
@@ -197,12 +198,14 @@ public sealed class SiffrinHoverMount : ModMount
 
     public override void UpdateEffects(Player player)
     {
-        if (Main.GameUpdateCount % 10 != 0
-         && player.velocity.Length() < 5f)
+        if (Rand.NextBoolean(13))
         {
-            return;
+            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 1f));
         }
 
-        RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f));
+        if (player.velocity.Length() > 5f)
+        {
+            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 0.2f));
+        }
     }
 }

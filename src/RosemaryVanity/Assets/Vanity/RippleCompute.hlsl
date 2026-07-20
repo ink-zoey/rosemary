@@ -20,7 +20,7 @@ float4 RippleComputeShaderFragment(float2 uv : TEXCOORD0) : COLOR0
     float up = tex2D(Texture, uv - float2(0, pixel.y)).x;
     float down = tex2D(Texture, uv + float2(0, pixel.y)).x;
     
-    float d = Strength * smoothstep(0, 5, center.z);
+    float d = Strength * smoothstep(0, 3.5, center.z);
     d -= (center.y - 0.5) * 2;
     d += left + right + up + down - 2;
     d *= Decay;
