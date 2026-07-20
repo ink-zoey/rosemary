@@ -16,6 +16,8 @@ namespace Rosemary.Vanity.Content;
 [Autoload(Side = ModSide.Client)]
 public static class RedRipples
 {
+    private const float target_size = 0.5f;
+
     public record struct Info(Vector2 Position, float Size);
 
     private sealed class Data : IStatic<Data>
@@ -35,10 +37,15 @@ public static class RedRipples
                 {
                     RippleComputeShader = Assets.Vanity.RippleCompute.CreateRippleComputeShader(),
                     RippleNegativeShader = Assets.Vanity.RippleProcessor.CreateRippleNegativeShader(),
-                    RippleTarget = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector2 }),
-                    RippleTargetSwap = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector2 }),
+                    RippleTarget = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
+                    RippleTargetSwap = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
                 }
             ).GetAwaiter().GetResult();
+
+            static (int w, int h) GetTargetSize(int width, int height, int targetWidth, int targetHeight)
+            {
+                return ((int)(width * target_size), (int)(height * target_size));
+            }
         }
 
         public static void UnloadData(Data data)
@@ -78,6 +85,11 @@ public static class RedRipples
 
         static void Render()
         {
+            if (!FocusHelper.UpdateVisualEffects)
+            {
+                return;
+            }
+
             var sb = Main.spriteBatch;
 
             var target = Data.Instance.RippleTarget.Target;
@@ -101,8 +113,8 @@ public static class RedRipples
                             new DrawParameters(texture)
                             {
                                 Position = info.Position - Main.screenPosition,
-                                Color = new Color(0f, 1f, 0f, 0f),
-                                Size = new Vector2(info.Size),
+                                Color = new Color(0f, 0f, 1f, 0f),
+                                Size = new Vector2(info.Size) * target_size,
                                 Origin = Origin.Center,
                             }
                         );
@@ -121,9 +133,9 @@ public static class RedRipples
                         Texture = targetSwap,
                     };
 
-                    compute.Parameters.Decay = 0.93f;
-                    compute.Parameters.Strength = 0.2f;
-                    compute.Parameters.StepSize = 4f;
+                    compute.Parameters.Decay = 0.94f;
+                    compute.Parameters.Strength = 2f;
+                    compute.Parameters.StepSize = 4f * target_size;
 
                     compute.Apply();
 
@@ -145,7 +157,7 @@ public static class RedRipples
 
         var negative = Data.Instance.RippleNegativeShader;
 
-        sb.Begin(SpriteSortMode.Immediate, BlendState.Subtractive, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        sb.Begin(SpriteSortMode.Immediate, BlendState.Multiplicative, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
             negative.Apply();
 
@@ -155,7 +167,6 @@ public static class RedRipples
 
         sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
-            sb.Draw(target, Vector2.Zero, Color.White);
         }
         sb.End();
     }

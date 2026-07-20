@@ -197,11 +197,12 @@ public sealed class SiffrinHoverMount : ModMount
 
     public override void UpdateEffects(Player player)
     {
-        if (Main.GameUpdateCount % 10 != 0)
+        if (Main.GameUpdateCount % 10 != 0
+         && player.velocity.Length() < 5f)
         {
             return;
         }
 
-        RedRipples.QueueRipple(new RedRipples.Info(player.Center, 20f));
+        RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f));
     }
 }

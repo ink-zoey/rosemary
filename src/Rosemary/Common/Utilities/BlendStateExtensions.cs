@@ -7,7 +7,7 @@ namespace Rosemary.Common;
 
 public static class BlendStateExtensions
 {
-    private static readonly BlendState subtractive = new BlendState
+    private static readonly BlendState multiplicative = new BlendState
     {
         ColorBlendFunction = BlendFunction.ReverseSubtract,
         ColorDestinationBlend = Blend.One,
@@ -19,6 +19,6 @@ public static class BlendStateExtensions
 
     extension(BlendState)
     {
-        public static BlendState Subtractive => subtractive;
+        public static BlendState Multiplicative => multiplicative;
     }
 }
