@@ -1,0 +1,24 @@
+﻿<Project Sdk="Tomat.Terraria.ModLoader.Sdk">
+
+    <!-- ProjectBuild -->
+    <Import Project="ProjectBuild.targets" />
+
+    <!-- Daybreak -->
+    <ItemGroup>
+        <Analyzer Include="libanalyzer\Daybreak.CodeAnalysis.dll" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TmlBuildUseDefaultModImpl>true</TmlBuildUseDefaultModImpl>
+        <TargetFramework>net10.0</TargetFramework>
+        <TmlVersion>dev</TmlVersion>
+        <RootNamespace>Rosemary.Vanity</RootNamespace>
+    </PropertyGroup>
+
+    <!-- Publicizer -->
+    <ItemGroup>
+        <ProjectReference Include="..\Rosemary\Rosemary.csproj" />
+        <Publicize Include="FNA;ReLogic;MonoMod.RuntimeDetour" IncludeCompilerGeneratedMembers="false" IncludeVirtualMembers="false" />
+    </ItemGroup>
+
+</Project>

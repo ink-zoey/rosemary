@@ -1,0 +1,7 @@
+﻿displayName = rosemary vanity slop
+author = Zoey
+version = 1.0.0
+side = Both
+modReferences = Rosemary
+dllReferences = Daybreak.Contracts, Daybreak.EarlyLoader, Daybreak.Hooks, Daybreak.Mathematics, Daybreak.Models, Daybreak.MonoMod, Daybreak.Networking, Daybreak.Rendering, Daybreak.Rendering.Buffers, Daybreak.Resources
+buildIgnore = .idea\*, .vs\*, *.tmp, Properties\*, *.csproj, *.user, obj\*, bin\*, *.config, .editorconfig, TemplateEngineHost\*, *\ElkAtlas.json

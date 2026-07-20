@@ -1,0 +1,11 @@
+<Project>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <DefineConstants>PROJECT_BUILD</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(DefineConstants.Contains(PROJECT_BUILD))'">
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+</Project>

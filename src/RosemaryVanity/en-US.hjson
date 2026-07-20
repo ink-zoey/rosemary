@@ -1,0 +1,17 @@
+Mods: {
+	RosemaryVanity: {
+		Buffs: {
+			SiffrinHoverBuff: {
+				DisplayName: Siffrin Hover Buff
+				Description: Mods.RosemaryVanity.Buffs.SiffrinHoverBuff.Description
+			}
+		}
+
+		Items: {
+			SiffrinHover: {
+				DisplayName: Siffrin Hover
+				Tooltip: ""
+			}
+		}
+	}
+}

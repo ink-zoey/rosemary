@@ -13,6 +13,16 @@ namespace Rosemary.Core;
 public static class ParticleLayers
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    [HookMetadata(TypeContainingEvent = typeof(ParticleLayers), EventName = nameof(UnderPlayers), DelegateName = nameof(UnderPlayersDefinition))]
+    public sealed class UnderPlayersAttribute : SubscribesToAttribute;
+
+    public delegate void UnderPlayersDefinition(
+        SpriteBatch sb
+    );
+
+    public static event UnderPlayersDefinition? UnderPlayers;
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     [HookMetadata(TypeContainingEvent = typeof(ParticleLayers), EventName = nameof(OverPlayers), DelegateName = nameof(OverPlayersDefinition))]
     public sealed class OverPlayersAttribute : SubscribesToAttribute;
 
@@ -39,6 +49,23 @@ public static class ParticleLayers
             i => i.MatchCallvirt<ParticleRenderer>(nameof(ParticleRenderer.Draw))
         );
 
+        var c2 = c.Clone();
+        {
+            c2.GotoPrev(
+                MoveType.After,
+                i => i.MatchLdsfld<Main>(nameof(Main.spriteBatch)),
+                i => i.MatchCallvirt<SpriteBatch>(nameof(SpriteBatch.End))
+            );
+
+            c.EmitLdsfld(
+                typeof(Main).GetField(
+                    nameof(Main.spriteBatch),
+                    BindingFlags.Static | BindingFlags.Public
+                )!
+            );
+            c2.EmitDelegate(DrawUnderPlayers);
+        }
+
         c.GotoNext(
             MoveType.After,
             i => i.MatchLdsfld<Main>(nameof(Main.spriteBatch)),
@@ -51,10 +78,15 @@ public static class ParticleLayers
                 BindingFlags.Static | BindingFlags.Public
             )!
         );
-        c.EmitDelegate(DrawParticles);
+        c.EmitDelegate(DrawOverPlayers);
     }
 
-    private static void DrawParticles(SpriteBatch sb)
+    private static void DrawUnderPlayers(SpriteBatch sb)
+    {
+        UnderPlayers?.Invoke(sb);
+    }
+
+    private static void DrawOverPlayers(SpriteBatch sb)
     {
         OverPlayers?.Invoke(sb);
     }

@@ -1,27 +1,23 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Graphics.PackedVector;
-using ReLogic.Content;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Daybreak.Rendering;
 using Daybreak.Rendering.Buffers;
 using Rosemary.Common;
 using Terraria;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace Rosemary.Content.Dev;
+namespace Rosemary.Vanity.Content;
 
 public sealed class SiffrinHover : ModItem
 {
-    public override string Texture => Assets.Elk.TestItem.KEY;
+    public override string Texture => Assets.Hat.KEY;
+
+    public override string LocalizationCategory => "Content";
 
     public override void SetDefaults()
     {
@@ -31,7 +27,9 @@ public sealed class SiffrinHover : ModItem
 
 public sealed class SiffrinHoverBuff : ModBuff
 {
-    public override string Texture => Assets.Elk.TestItem.KEY;
+    public override string Texture => Assets.Hat.KEY;
+
+    public override string LocalizationCategory => "Content";
 
     public override void SetStaticDefaults()
     {
@@ -89,7 +87,7 @@ public sealed class SiffrinHoverMount : ModMount
             return;
         }
 
-        var effect = Assets.Dev.InvertPlayer.CreateInvertPlayerShader();
+        var effect = Assets.InvertPlayer.CreateInvertPlayerShader();
 
         var sb = Main.spriteBatch;
 
@@ -117,8 +115,15 @@ public sealed class SiffrinHoverMount : ModMount
             sb.Draw(lease.Target, offset, Color.Black);
         }
 
-        effect.Parameters.PlayerTop = drawInfo.drawPlayer.Top.Y - Main.screenPosition.Y;
-        effect.Parameters.PlayerBottom = drawInfo.drawPlayer.Bottom.Y - Main.screenPosition.Y;
+        var player = drawInfo.drawPlayer;
+
+        var top = new Vector2(player.Center.X, player.Top.Y) - Main.screenPosition;
+        var bottom = new Vector2(player.Center.X, player.Bottom.Y) - Main.screenPosition;
+        top = top.Transform(ss.TransformMatrix);
+        bottom = bottom.Transform(ss.TransformMatrix);
+
+        effect.Parameters.PlayerTop = top.Y;
+        effect.Parameters.PlayerBottom = bottom.Y;
 
         effect.Apply();
 

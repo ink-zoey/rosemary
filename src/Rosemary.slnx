@@ -16,6 +16,7 @@
         <Project Path="daybreak-mod/src/Daybreak/Daybreak.csproj" />
     </Folder>
     <Project Path="Rosemary/Rosemary.csproj" />
+    <Project Path="RosemaryVanity/RosemaryVanity.csproj" />
     <Folder Name="/generators/">
         <Project Path="generators/ElkLanguageAtlas/ElkLanguageAtlas.csproj" />
         <Project Path="generators/ElkLanguageReferences/ElkLanguageReferences.csproj" />

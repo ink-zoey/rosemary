@@ -1,4 +1,4 @@
-﻿using Rosemary.Common;
+﻿using Rosemary.Vanity.Common;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -7,13 +7,14 @@ using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 using MonoMod.RuntimeDetour.HookGen;
+using Rosemary.Common;
 using Terraria;
 using Terraria.ModLoader;
 
 #if PROJECT_BUILD && DEBUG
 [assembly: MetadataUpdateHandler(typeof(HotReloading))]
 
-namespace Rosemary.Common;
+namespace Rosemary.Vanity.Common;
 
 file static class HotReloading
 {

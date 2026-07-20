@@ -1,13 +1,9 @@
 ﻿using Daybreak.Hooks;
-using Rosemary.Content.Elk;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace Rosemary.Content.Dev;
+namespace Rosemary.Vanity.Content;
 
 public static class DevMountSets
 {
