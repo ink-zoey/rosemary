@@ -1,14 +1,17 @@
 ﻿#include "../common.h"
 
 sampler Texture : register(s0);
+sampler Mask : register(s1);
 
 float StepSize;
 
 TEXTURE_SIZE(TextureSize, 0)
 
-float4 RippleRedShaderFragment(float2 uv : TEXCOORD0) : COLOR0
+float4 RippleRedShaderFragment(float2 uv : TEXCOORD0, float4 baseColor : COLOR0) : COLOR0
 {
     float2 pixel = float2(StepSize / TextureSize);
+    
+    float mask = tex2D(Mask, uv).a;
     
     float center = tex2D(Texture, uv).x;
     
@@ -23,11 +26,15 @@ float4 RippleRedShaderFragment(float2 uv : TEXCOORD0) : COLOR0
     value -= 0.5;
     value *= 2;
     
-    float4 black = float4(0, 0, 0, abs(value));
+    float4 black = saturate(value) + pow(saturate(-value), 6);
     
-    float4 red = float4(pow(value, 2.1), 0, 0, value);
+    black *= (1 - mask);
     
-    return black + red;
+    black *= baseColor;
+    
+    // float4 red = float4(pow(value, 2.1), 0, 0, value);
+    
+    return black;
 }
 
 BEGIN_TECHNIQUE(Technique1)

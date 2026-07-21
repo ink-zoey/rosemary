@@ -9,6 +9,7 @@ using Rosemary.Core;
 using Rosemary.Vanity.Core;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.Graphics.Effects;
 using Terraria.ModLoader;
 using static tModPorter.ProgressUpdate;
 
@@ -31,6 +32,8 @@ public static class RedRipples
 
         public required RenderTargetLease RippleTargetSwap { get; init; }
 
+        public required RenderTargetLease RippleMaskTarget { get; init; }
+
         public static Data LoadData(Mod mod)
         {
             return Main.RunOnMainThread(
@@ -40,6 +43,7 @@ public static class RedRipples
                     RippleRedShader = Assets.Vanity.RippleProcessor.CreateRippleRedShader(),
                     RippleTarget = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
                     RippleTargetSwap = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, GetTargetSize, RenderTargetDescriptor.Default with { Format = SurfaceFormat.HalfVector4 }),
+                    RippleMaskTarget = ScreenspaceTargetProvider.Shared.Create(Main.instance.GraphicsDevice, RenderTargetDescriptor.Default with { Format = SurfaceFormat.Alpha8 }),
                 }
             ).GetAwaiter().GetResult();
 
@@ -56,10 +60,27 @@ public static class RedRipples
                 {
                     data.RippleTarget.Dispose();
                     data.RippleTargetSwap.Dispose();
+                    data.RippleMaskTarget.Dispose();
                 }
             );
         }
     }
+
+    public sealed class RippleRenderer : IScreenFilterStep
+    {
+        public EffectPriority Priority => EffectPriority.Low;
+
+        public bool Apply(in ScreenFilterRendererContext ctx)
+        {
+            return ApplyShader(ctx.ScreenTarget, ctx.ScreenTargetSwap, ctx.Color);
+        }
+    }
+
+    public static RenderTargetLease RippleTarget => Data.Instance.RippleTarget;
+
+    public static RenderTargetLease RippleTargetSwap => Data.Instance.RippleTargetSwap;
+
+    public static RenderTargetLease RippleMaskTarget => Data.Instance.RippleMaskTarget;
 
     private static readonly Queue<Info> ripples = [];
 
@@ -71,20 +92,20 @@ public static class RedRipples
     [OnLoad]
     private static void Load()
     {
-        On_Main.DoDraw += DoDraw_RenderRipples;
+        On_Main.DoDraw += DoDraw_ComputeRipples;
     }
 
     private static Vector2 lastScreenPosition;
 
-    private static void DoDraw_RenderRipples(On_Main.orig_DoDraw orig, Main self, GameTime gameTime)
+    private static void DoDraw_ComputeRipples(On_Main.orig_DoDraw orig, Main self, GameTime gameTime)
     {
-        Render();
+        Compute();
 
         orig(self, gameTime);
 
         return;
 
-        static void Render()
+        static void Compute()
         {
             if (!FocusHelper.UpdateVisualEffects)
             {
@@ -93,8 +114,8 @@ public static class RedRipples
 
             var sb = Main.spriteBatch;
 
-            var target = Data.Instance.RippleTarget.Target;
-            var targetSwap = Data.Instance.RippleTargetSwap.Target;
+            var target = RippleTarget.Target;
+            var targetSwap = RippleTargetSwap.Target;
 
             var compute = Data.Instance.RippleComputeShader;
 
@@ -138,7 +159,7 @@ public static class RedRipples
                         Texture = targetSwap,
                     };
 
-                    compute.Parameters.Decay = 0.95f;
+                    compute.Parameters.Decay = 0.9f;
                     compute.Parameters.Strength = 5f;
                     compute.Parameters.StepSize = 4f * target_size;
 
@@ -157,27 +178,49 @@ public static class RedRipples
         }
     }
 
-    [ParticleLayers.UnderPlayers]
-    private static void DrawRipples(SpriteBatch sb)
+    private static bool ApplyShader(RenderTarget2D screen, RenderTarget2D screenSwap, Color color)
     {
-        var target = Data.Instance.RippleTarget.Target;
+        var sb = Main.spriteBatch;
+
+        var device = Main.graphics.GraphicsDevice;
+
+        var target = RippleTarget.Target;
 
         var shader = Data.Instance.RippleRedShader;
 
-        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        shader.Parameters.Texture = new HlslSampler
         {
-            shader.Parameters.Texture = new HlslSampler
-            {
-                Sampler = SamplerState.LinearClamp,
-                Texture = target,
-            };
+            Sampler = SamplerState.LinearClamp,
+            Texture = target,
+        };
 
-            shader.Parameters.StepSize = 4f * target_size;
+        shader.Parameters.Mask = new HlslSampler
+        {
+            Sampler = SamplerState.PointClamp,
+            Texture = RippleMaskTarget.Target,
+        };
 
-            shader.Apply();
+        shader.Parameters.StepSize = 4f * target_size;
 
-            sb.Draw(target, Main.graphics.GraphicsDevice.Viewport.Bounds, Color.White);
+        shader.Apply();
+
+        sb.Begin(SpriteSortMode.Immediate, BlendState.Multiplicative, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, shader.Shader, Main.Transform);
+        {
+            sb.Draw(target, device.Viewport.Bounds, Color.DarkGreen);
         }
         sb.End();
+
+        sb.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, shader.Shader, Main.Transform);
+        {
+            sb.Draw(target, device.Viewport.Bounds, Color.Red);
+        }
+        sb.End();
+
+        device.SetRenderTarget(RippleMaskTarget.Target);
+        device.Clear(Color.Transparent);
+
+        device.SetRenderTargets(screenSwap);
+
+        return false;
     }
 }

@@ -100,14 +100,23 @@ public sealed class SiffrinHoverMount : ModMount
 
         using (lease.Scope(clearColor: Color.Transparent))
         {
-            sb.Begin(ss);
+            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
 
             orig(ref drawInfo);
 
             sb.End();
         }
 
-        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
+        using (RedRipples.RippleMaskTarget.Scope(clearColor: Color.Transparent))
+        {
+            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
+
+            sb.Draw(lease.Target, Vector2.Zero, Color.White);
+
+            sb.End();
+        }
+
+        sb.Begin(ss with { SortMode = SpriteSortMode.Immediate });
 
         for (var i = 0; i < 4; i++)
         {
@@ -120,8 +129,6 @@ public sealed class SiffrinHoverMount : ModMount
 
         var top = new Vector2(player.Center.X, player.Top.Y) - Main.screenPosition;
         var bottom = new Vector2(player.Center.X, player.Bottom.Y) - Main.screenPosition;
-        top = top.Transform(ss.TransformMatrix);
-        bottom = bottom.Transform(ss.TransformMatrix);
 
         effect.Parameters.PlayerTop = top.Y;
         effect.Parameters.PlayerBottom = bottom.Y;
@@ -200,14 +207,15 @@ public sealed class SiffrinHoverMount : ModMount
     {
         var moving = player.velocity.Length() > 5f;
 
-        if (Rand.NextBoolean(13))
-        {
-            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, moving ? 0.5f : 1f));
-        }
-
         if (moving)
         {
-            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 0.2f));
+            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 0.4f));
+            return;
+        }
+
+        if (Main.timeForVisualEffects % 10 == 0)
+        {
+            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 1f));
         }
     }
 }
