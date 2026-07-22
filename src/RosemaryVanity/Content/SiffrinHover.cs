@@ -62,7 +62,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
         bool IUpdatingParticle.Update()
         {
-            Scale += 0.2f;
+            Scale += 0.03f * (Scale * 2f);
 
             return Scale < max_scale;
         }
