@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Terraria;
 
 namespace Rosemary.Core;
 
@@ -89,7 +88,7 @@ public class ParticleHandler<T>(int max) : IEnumerable<int>
     {
         var index = GetFirstInactive();
 
-        if (index < 0)
+        if (index < 0 || index >= max)
         {
             return false;
         }
