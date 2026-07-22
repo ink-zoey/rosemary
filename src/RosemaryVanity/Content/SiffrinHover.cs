@@ -2,16 +2,18 @@
 using Daybreak.Rendering.Buffers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Core;
+using SteelSeries.GameSense;
 using System;
-using MonoMod.Cil;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Rosemary.Vanity.Content.OutlineAfterImagesPlayer;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Rosemary.Vanity.Content;
@@ -105,17 +107,6 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
     public override void PostUpdate()
     {
         AfterImages.Update();
-
-        if (!Player.mount.Active
-         || Player.mount.Type != ModContent.MountType<SiffrinHoverMount>())
-        {
-            return;
-        }
-
-        if (Main.timeForVisualEffects % 6 == 0)
-        {
-            AfterImages += AfterImageInfo.FromPlayer(Player);
-        }
     }
 
     public override void DrawPlayer(Camera camera)
@@ -154,7 +145,8 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
         effect.Parameters.StepSize = 2f;
         effect.Parameters.MaxScale = max_scale;
 
-        effect.Parameters.BaseColor = Color.Red.ToVector4();
+        var color = Color.Red with { A = 70 };
+        effect.Parameters.BaseColor = color.ToVector4();
 
         effect.Apply();
 
@@ -171,12 +163,12 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
                 var interpolator = image.Scale / max_scale;
 
                 // Pass the scale in as a color to have everything batch nicely.
-                var color = new Color(new Vector4(interpolator));
+                var inputColor = new Color(new Vector4(interpolator));
 
                 var effects = image.Direction == Player.direction ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
                 effects |= image.GravityDirection == (int)Player.gravDir ? SpriteEffects.None : SpriteEffects.FlipVertically;
 
-                sb.Draw(lease.Target, position, null, color, image.Rotation, origin, image.Scale, effects, 0f);
+                sb.Draw(lease.Target, position, null, inputColor, image.Rotation, origin, image.Scale, effects, 0f);
             }
 
             sb.Draw(lease.Target, new Vector2(90, 2), null, Color.White);
@@ -242,6 +234,17 @@ public sealed class SiffrinHoverMount : ModMount
 
         var device = Main.graphics.GraphicsDevice;
 
+        const float max_velocity = 18f;
+
+        var amplitude = 2.5f * MathF.Saturate((max_velocity - drawInfo.drawPlayer.velocity.Length()) / max_velocity);
+
+        var position = Vector2.Zero;
+
+        if (drawInfo.drawPlayer.velocity.Y != 0f)
+        {
+            position.Y += MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * amplitude;
+        }
+
         sb.End(out var ss);
 
         using var lease = RenderTargetPool.Shared.Rent(device, device.Viewport.Width, device.Viewport.Height);
@@ -261,7 +264,7 @@ public sealed class SiffrinHoverMount : ModMount
         {
             var offset = new Vector2(2, 0).RotatedBy((i / 4f) * MathF.Tau) * Main.GameZoomTarget;
 
-            sb.Draw(lease.Target, offset, Color.Black);
+            sb.Draw(lease.Target, position + offset, Color.Black);
         }
 
         var player = drawInfo.drawPlayer;
@@ -274,7 +277,7 @@ public sealed class SiffrinHoverMount : ModMount
 
         effect.Apply();
 
-        sb.Draw(lease.Target, Vector2.Zero, Color.White);
+        sb.Draw(lease.Target, position, Color.White);
 
         sb.Restart(in ss);
     }
@@ -300,7 +303,7 @@ public sealed class SiffrinHoverMount : ModMount
 
         MountData.runSpeed = 9f;
         MountData.dashSpeed = 9f;
-        MountData.acceleration = 0.36f;
+        MountData.acceleration = 0f;
         MountData.jumpHeight = 10;
         MountData.jumpSpeed = 4f;
 
@@ -337,8 +340,13 @@ public sealed class SiffrinHoverMount : ModMount
         MountData.swimFrameStart = 0;
     }
 
-    public override void SetMount(Player player, ref bool skipDust)
+    public override void UpdateEffects(Player player)
     {
-        skipDust = true;
+        var effectsPlayer = player.GetModPlayer<OutlineAfterImagesPlayer>();
+
+        if (Main.timeForVisualEffects % 6 == 0)
+        {
+            effectsPlayer.AfterImages += AfterImageInfo.FromPlayer(player);
+        }
     }
 }
