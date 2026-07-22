@@ -14,6 +14,8 @@ public class UpdatingParticleHandler<T>(int count) : ParticleHandler<T>(count)
 
     public void Update()
     {
+        count = 0;
+
         foreach (var index in this)
         {
             ref var particle = ref this[index];

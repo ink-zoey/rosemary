@@ -1,16 +1,17 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
-using Daybreak.Rendering;
+﻿using Daybreak.Rendering;
 using Daybreak.Rendering.Buffers;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
+using Rosemary.Core;
+using System;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.Utilities;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Rosemary.Vanity.Content;
 
@@ -35,6 +36,116 @@ public sealed class SiffrinHoverBuff : ModBuff
     public override void SetStaticDefaults()
     {
         BuffID.Sets.MountType[Type] = ModContent.MountType<SiffrinHoverMount>();
+    }
+}
+
+[Autoload(Side = ModSide.Client)]
+file sealed class OutlineAfterImagesPlayer : ModPlayer
+{
+    private const float max_scale = 5f;
+
+    public record struct AfterImageInfo(Vector2 Position, float Rotation, Vector2 Origin, float Scale, int Direction, int GravityDirection) : IUpdatingParticle
+    {
+        public static AfterImageInfo FromPlayer(Player player)
+        {
+            return new AfterImageInfo
+            {
+                Position = player.position,
+                Rotation = player.fullRotation,
+                Origin = player.fullRotationOrigin,
+                Scale = 1f,
+                Direction = player.direction,
+                GravityDirection = (int)player.gravDir,
+            };
+        }
+
+        bool IUpdatingParticle.Update()
+        {
+            Scale += 0.2f;
+
+            return Scale < max_scale;
+        }
+    }
+
+    public UpdatingParticleHandler<AfterImageInfo> AfterImages = new(10);
+
+    public override void PostUpdate()
+    {
+        AfterImages.Update();
+
+        if (!Player.mount.Active
+         || Player.mount.Type != ModContent.MountType<SiffrinHoverMount>())
+        {
+            return;
+        }
+
+        if (Main.timeForVisualEffects % 10 == 0)
+        {
+            AfterImages += AfterImageInfo.FromPlayer(Player);
+        }
+    }
+
+    public override void DrawPlayer(Camera camera)
+    {
+        if (AfterImages.ActiveParticleCount <= 0)
+        {
+            return;
+        }
+
+        var sb = Main.spriteBatch;
+
+        var device = Main.graphics.GraphicsDevice;
+
+        var effect = Assets.Vanity.PlayerOutline.CreatePlayerOutlineShader();
+
+        using var lease = RenderTargetPool.Shared.Rent(device, device.Viewport.Width, device.Viewport.Height);
+
+        sb.End(out var ss);
+
+        using (lease.Scope(clearColor: Color.Transparent))
+        {
+            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
+            {
+                var prior = Main.GameViewMatrix._transformationMatrix;
+                Main.GameViewMatrix._transformationMatrix = Matrix.Identity;
+
+                Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, Player.fullRotation, Player.fullRotationOrigin, 0.001f);
+
+                Main.GameViewMatrix._transformationMatrix = prior;
+            }
+            sb.End();
+        }
+
+        effect.Parameters.StepSize = 2f;
+        effect.Parameters.MaxScale = max_scale;
+
+        effect.Parameters.BaseColor = Color.Red.ToVector4();
+
+        // effect.Apply();
+
+        sb.Begin(ss with { SortMode = SpriteSortMode.Deferred, SamplerState = SamplerState.PointClamp, CustomEffect = null });
+        {
+            foreach (var index in AfterImages)
+            {
+                var image = AfterImages[index];
+
+                var position = image.Position - Main.screenPosition;
+
+                var origin = (lease.Target.Size() * 0.5f) + image.Origin;
+
+                var interpolator = image.Scale / max_scale;
+
+                var color = new Color(new Vector4(interpolator));
+
+                var effects = image.Direction == Player.direction ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+                effects |= image.GravityDirection == (int)Player.gravDir ? SpriteEffects.None : SpriteEffects.FlipVertically;
+
+                sb.Draw(lease.Target, position, null, Color.White, image.Rotation, origin, 2f, effects, 0f);
+            }
+
+            sb.Draw(lease.Target, new Vector2(90, 2), null, Color.White);
+        }
+        sb.Restart(in ss);
     }
 }
 
@@ -81,7 +192,8 @@ public sealed class SiffrinHoverMount : ModMount
     {
         if (!drawInfo.drawPlayer.mount.Active
          || drawInfo.drawPlayer.mount.Type != ModContent.MountType<SiffrinHoverMount>()
-         || drawInfo.headOnlyRender)
+         || drawInfo.headOnlyRender
+         || drawInfo.shadow > 0)
         {
             orig(ref drawInfo);
 
@@ -103,15 +215,6 @@ public sealed class SiffrinHoverMount : ModMount
             sb.Begin(ss with { TransformMatrix = Matrix.Identity });
 
             orig(ref drawInfo);
-
-            sb.End();
-        }
-
-        using (RedRipples.RippleMaskTarget.Scope(clearColor: Color.Transparent))
-        {
-            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
-
-            sb.Draw(lease.Target, Vector2.Zero, Color.White);
 
             sb.End();
         }
@@ -201,21 +304,5 @@ public sealed class SiffrinHoverMount : ModMount
     public override void SetMount(Player player, ref bool skipDust)
     {
         skipDust = true;
-    }
-
-    public override void UpdateEffects(Player player)
-    {
-        var moving = player.velocity.Length() > 5f;
-
-        if (moving)
-        {
-            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 0.4f));
-            return;
-        }
-
-        if (Main.timeForVisualEffects % 10 == 0)
-        {
-            RedRipples.QueueRipple(new RedRipples.Info(player.Center, 40f, 1f));
-        }
     }
 }
