@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using Rosemary.Core;
 using System;
+using MonoMod.Cil;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Graphics;
@@ -42,7 +43,7 @@ public sealed class SiffrinHoverBuff : ModBuff
 [Autoload(Side = ModSide.Client)]
 file sealed class OutlineAfterImagesPlayer : ModPlayer
 {
-    private const float max_scale = 5f;
+    private const float max_scale = 3.5f;
 
     public record struct AfterImageInfo(Vector2 Position, float Rotation, Vector2 Origin, float Scale, int Direction, int GravityDirection) : IUpdatingParticle
     {
@@ -50,7 +51,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
         {
             return new AfterImageInfo
             {
-                Position = player.position,
+                Position = player.Center,
                 Rotation = player.fullRotation,
                 Origin = player.fullRotationOrigin,
                 Scale = 1f,
@@ -69,6 +70,38 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
     public UpdatingParticleHandler<AfterImageInfo> AfterImages = new(10);
 
+    private static bool drawingAfterImage;
+
+    public override void Load()
+    {
+        IL_PlayerDrawSet.BoringSetup_2 += BoringSetup_2_ShowSkin;
+    }
+
+    private static void BoringSetup_2_ShowSkin(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdsfld<Main>(nameof(Main.mouseTextColor)),
+            i => i.MatchConvR4(),
+            i => i.MatchLdcR4(200f),
+            i => i.MatchDiv()
+        );
+
+        for (var j = 0; j < 3; j++)
+        {
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchLdfld<PlayerDrawSet>(nameof(PlayerDrawSet.shadow))
+            );
+
+            c.EmitDelegate(
+                static (float shadow) => drawingAfterImage ? 0f : shadow
+            );
+        }
+    }
+
     public override void PostUpdate()
     {
         AfterImages.Update();
@@ -79,7 +112,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
             return;
         }
 
-        if (Main.timeForVisualEffects % 10 == 0)
+        if (Main.timeForVisualEffects % 6 == 0)
         {
             AfterImages += AfterImageInfo.FromPlayer(Player);
         }
@@ -104,13 +137,15 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
         using (lease.Scope(clearColor: Color.Transparent))
         {
-            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
+            sb.Begin(ss with { TransformMatrix = Matrix.Identity, SamplerState = SamplerState.LinearClamp });
             {
                 var prior = Main.GameViewMatrix._transformationMatrix;
                 Main.GameViewMatrix._transformationMatrix = Matrix.Identity;
-
-                Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, Player.fullRotation, Player.fullRotationOrigin, 0.001f);
-
+                drawingAfterImage = true;
+                {
+                    Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, Player.fullRotation, Player.fullRotationOrigin, float.Epsilon);
+                }
+                drawingAfterImage = false;
                 Main.GameViewMatrix._transformationMatrix = prior;
             }
             sb.End();
@@ -121,9 +156,9 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
         effect.Parameters.BaseColor = Color.Red.ToVector4();
 
-        // effect.Apply();
+        effect.Apply();
 
-        sb.Begin(ss with { SortMode = SpriteSortMode.Deferred, SamplerState = SamplerState.PointClamp, CustomEffect = null });
+        sb.Begin(ss with { SortMode = SpriteSortMode.Deferred, SamplerState = SamplerState.LinearClamp, CustomEffect = effect.Shader });
         {
             foreach (var index in AfterImages)
             {
@@ -131,16 +166,17 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
                 var position = image.Position - Main.screenPosition;
 
-                var origin = (lease.Target.Size() * 0.5f) + image.Origin;
+                var origin = Player.Center - Main.screenPosition + image.Origin;
 
                 var interpolator = image.Scale / max_scale;
 
+                // Pass the scale in as a color to have everything batch nicely.
                 var color = new Color(new Vector4(interpolator));
 
                 var effects = image.Direction == Player.direction ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
                 effects |= image.GravityDirection == (int)Player.gravDir ? SpriteEffects.None : SpriteEffects.FlipVertically;
 
-                sb.Draw(lease.Target, position, null, Color.White, image.Rotation, origin, 2f, effects, 0f);
+                sb.Draw(lease.Target, position, null, color, image.Rotation, origin, image.Scale, effects, 0f);
             }
 
             sb.Draw(lease.Target, new Vector2(90, 2), null, Color.White);
