@@ -1,10 +1,23 @@
+SiffrinHat: {
+	DisplayName: Traveler's hat
+	Tooltip: "[Looks remarkably like a wizard's hat]"
+}
+
+SiffrinTransform: {
+	DisplayName: Traveler's Carrybag
+	Tooltip: "[…]"
+}
+
 SiffrinHover: {
-	DisplayName: A
-	Tooltip: ""
+	DisplayName: Lost Stardust
+	Tooltip:
+		'''
+		Grants the user unlimited flight
+		[Careful not to lose your hat on the way down!]
+		'''
 }
 
 SiffrinHoverBuff: {
-	DisplayName: B
-	Tooltip: ""
-	Description: Mods.RosemaryVanity.Content.SiffrinHoverBuff.Description
+	DisplayName: Forgotten Starfield
+	Description: Attuned with what was lost
 }

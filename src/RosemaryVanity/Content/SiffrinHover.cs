@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Core;
-using SteelSeries.GameSense;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -13,8 +12,6 @@ using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static Rosemary.Vanity.Content.OutlineAfterImagesPlayer;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Rosemary.Vanity.Content;
 
@@ -26,6 +23,9 @@ public sealed class SiffrinHover : ModItem
 
     public override void SetDefaults()
     {
+        Item.width = 20;
+        Item.height = 20;
+
         Item.mountType = ModContent.MountType<SiffrinHoverMount>();
     }
 }
@@ -70,7 +70,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
         }
     }
 
-    public UpdatingParticleHandler<AfterImageInfo> AfterImages = new(10);
+    public UpdatingParticleHandler<AfterImageInfo> AfterImages = new(15);
 
     private static bool drawingAfterImage;
 
@@ -262,7 +262,7 @@ public sealed class SiffrinHoverMount : ModMount
 
         for (var i = 0; i < 4; i++)
         {
-            var offset = new Vector2(2, 0).RotatedBy((i / 4f) * MathF.Tau) * Main.GameZoomTarget;
+            var offset = new Vector2(2, 0).RotatedBy((i / 4f) * MathF.Tau);
 
             sb.Draw(lease.Target, position + offset, Color.Black);
         }
@@ -303,7 +303,7 @@ public sealed class SiffrinHoverMount : ModMount
 
         MountData.runSpeed = 9f;
         MountData.dashSpeed = 9f;
-        MountData.acceleration = 0f;
+        MountData.acceleration = 0.91f;
         MountData.jumpHeight = 10;
         MountData.jumpSpeed = 4f;
 
@@ -346,7 +346,7 @@ public sealed class SiffrinHoverMount : ModMount
 
         if (Main.timeForVisualEffects % 6 == 0)
         {
-            effectsPlayer.AfterImages += AfterImageInfo.FromPlayer(player);
+            effectsPlayer.AfterImages += OutlineAfterImagesPlayer.AfterImageInfo.FromPlayer(player);
         }
     }
 }

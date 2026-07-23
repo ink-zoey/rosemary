@@ -12,6 +12,16 @@ Mods: {
 				DisplayName: Siffrin Hover
 				Tooltip: ""
 			}
+
+			SiffrinHat: {
+				DisplayName: Siffrin Hat
+				Tooltip: ""
+			}
+
+			SiffrinTransform: {
+				DisplayName: Siffrin Transform
+				Tooltip: ""
+			}
 		}
 	}
 }
