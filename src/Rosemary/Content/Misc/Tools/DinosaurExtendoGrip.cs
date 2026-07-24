@@ -605,7 +605,7 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         void CompositeArm()
         {
-            var rotation = GetArmRotation(player);
+            var rotation = GetArmRotation(player, (int)player.gravDir);
 
             var offset = Utils.Remap(clawInterpolator, 0f, 1f, 0f, 0.4f, clamped: false);
 
@@ -1249,8 +1249,10 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         }
     }
 
-    private float GetArmRotation(Player player)
+    private float GetArmRotation(Player player, int yDir = 1)
     {
-        return (Projectile.Center - player.MountedCenter).ToRotation() - MathF.PiOver2 - player.fullRotation;
+        var diff = (Projectile.Center - player.MountedCenter);
+        diff.Y *= yDir;
+        return diff.ToRotation() - MathF.PiOver2 - player.fullRotation;
     }
 }
