@@ -90,26 +90,28 @@ public sealed class SiffrinHat : ModItem
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {
-            var dir = drawInfo.drawPlayer.Directions;
+            var player = drawInfo.drawPlayer;
 
-            var headOffset = Main.OffsetsPlayerHeadgear[drawInfo.drawPlayer.bodyFrame.Y / drawInfo.drawPlayer.bodyFrame.Height].Y;
+            var dir = player.Directions;
+
+            var headOffset = Main.OffsetsPlayerHeadgear[player.bodyFrame.Y / player.bodyFrame.Height].Y;
 
             var helmetOffset = Vector2.Zero;
-            drawInfo.drawPlayer.ApplyHeadOffsetFromMount(ref helmetOffset);
+            player.ApplyHeadOffsetFromMount(ref helmetOffset);
             helmetOffset += drawInfo.helmetOffset;
 
             var headPosition = helmetOffset
                              + new Vector2(
-                                   (int)(drawInfo.Position.X - Main.screenPosition.X - (drawInfo.drawPlayer.bodyFrame.Width * 0.5f) + (drawInfo.drawPlayer.width * 0.5f)),
-                                   (int)(drawInfo.Position.Y - Main.screenPosition.Y + drawInfo.drawPlayer.height - (drawInfo.drawPlayer.bodyFrame.Height + 4f)))
+                                   (int)(drawInfo.Position.X - Main.screenPosition.X - (player.bodyFrame.Width * 0.5f) + (player.width * 0.5f)),
+                                   (int)(drawInfo.Position.Y - Main.screenPosition.Y + player.height - (player.bodyFrame.Height + 4f)))
                              + drawInfo.drawPlayer.headPosition
                              + drawInfo.headVect;
 
             var position = headPosition + new Vector2(4, (headOffset + 4) * dir.Y);
 
-            if ((int)drawInfo.drawPlayer.gravDir == -1)
+            if ((int)player.gravDir == -1)
             {
-                position.Y += drawInfo.drawPlayer.height - drawInfo.drawPlayer.headPosition.Y + 14;
+                position.Y += player.height - player.headPosition.Y + 14;
             }
 
             var texture = Assets.Vanity.Hat_Equip.Asset.Value;
@@ -122,7 +124,7 @@ public sealed class SiffrinHat : ModItem
                 position,
                 frame,
                 drawInfo.colorArmorHead,
-                drawInfo.drawPlayer.headRotation,
+                player.headRotation,
                 drawInfo.headVect,
                 1f,
                 drawInfo.playerEffect
