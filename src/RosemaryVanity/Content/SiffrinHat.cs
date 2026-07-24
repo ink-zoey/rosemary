@@ -1,5 +1,6 @@
 ﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -89,21 +90,32 @@ public sealed class SiffrinHat : ModItem
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {
+            var dir = drawInfo.drawPlayer.Directions;
+
             var headOffset = Main.OffsetsPlayerHeadgear[drawInfo.drawPlayer.bodyFrame.Y / drawInfo.drawPlayer.bodyFrame.Height].Y;
 
-            var headPosition = drawInfo.drawPlayer.GetHelmetDrawOffset()
-                             + new Vector2(
-                                   (int)(drawInfo.Position.X - Main.screenPosition.X - drawInfo.drawPlayer.bodyFrame.Width * 0.5f + drawInfo.drawPlayer.width * 0.5f),
-                                   (int)(drawInfo.Position.Y - Main.screenPosition.Y + drawInfo.drawPlayer.height - drawInfo.drawPlayer.bodyFrame.Height + 4f))
-                             + drawInfo.drawPlayer.headPosition
-                             + drawInfo.headVect
-                             + drawInfo.helmetOffset;
+            var helmetOffset = Vector2.Zero;
+            drawInfo.drawPlayer.ApplyHeadOffsetFromMount(ref helmetOffset);
+            helmetOffset += drawInfo.helmetOffset;
 
-            var position = headPosition + new Vector2(4, headOffset - 4);
+            var headPosition = helmetOffset
+                             + new Vector2(
+                                   (int)(drawInfo.Position.X - Main.screenPosition.X - (drawInfo.drawPlayer.bodyFrame.Width * 0.5f) + (drawInfo.drawPlayer.width * 0.5f)),
+                                   (int)(drawInfo.Position.Y - Main.screenPosition.Y + drawInfo.drawPlayer.height - (drawInfo.drawPlayer.bodyFrame.Height + 4f)))
+                             + drawInfo.drawPlayer.headPosition
+                             + drawInfo.headVect;
+
+            var position = headPosition + new Vector2(4, (headOffset + 4) * dir.Y);
+
+            if ((int)drawInfo.drawPlayer.gravDir == -1)
+            {
+                position.Y += drawInfo.drawPlayer.height - drawInfo.drawPlayer.headPosition.Y + 14;
+            }
 
             var texture = Assets.Vanity.Hat_Equip.Asset.Value;
 
             var frame = texture.Frame(2, 1, FrameX, 0);
+            frame.Width -= 2;
 
             var hatData = new DrawData(
                 texture,
