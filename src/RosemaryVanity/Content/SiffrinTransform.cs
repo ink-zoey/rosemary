@@ -1,9 +1,11 @@
 ﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
-using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Rosemary.Common;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -117,6 +119,42 @@ public sealed class SiffrinTransform : ModItem
         player.legs = EquipLoader.GetEquipSlot(Mod, Name, EquipType.Legs);
     }
 
+    private sealed class CloakRotationPlayer : ModPlayer
+    {
+        public float Rotation;
+        private float rotationVelocity;
+
+        public override void PostUpdate()
+        {
+            const float spring_strength = 0.02f;
+            const float min_dampening = 0.98f;
+            const float max_dampening = 0.92f;
+
+            var maxSpeed = Player.maxRunSpeed;
+            if (Player.mount.Active)
+            {
+                maxSpeed = Player.mount.RunSpeed;
+            }
+            maxSpeed += 4f;
+
+            rotationVelocity += MathF.Pow(MathF.Abs(Player.velocity.X) / maxSpeed, 5) * 0.07f * MathF.Sign(Player.velocity.X);
+
+            var displacement = -Rotation;
+
+            var dist = Math.Abs(Rotation);
+            var t = MathF.Saturate(dist / MathF.PiOver4);
+            var dampening = MathF.Lerp(min_dampening, max_dampening, MathF.Pow(t, 2));
+
+            rotationVelocity += displacement * spring_strength;
+            rotationVelocity *= dampening;
+
+            Rotation += rotationVelocity;
+
+            Rotation = MathF.Clamp(Rotation, -MathF.PiOver4, MathF.PiOver4);
+            rotationVelocity = MathF.Clamp(rotationVelocity, -0.05f, 0.05f);
+        }
+    }
+
     private sealed class CloakDrawLayer : PlayerDrawLayer
     {
         [OnLoad]
@@ -124,6 +162,7 @@ public sealed class SiffrinTransform : ModItem
         {
             IL_Player.PlayerFrame += PlayerFrame_ForceBodyFrame_SiffrinHover;
             On_PlayerDrawLayers.DrawPlayer_28_ArmOverItem += DrawPlayer_28_ArmOverItem_ArmVisuals;
+            IL_PlayerDrawLayers.DrawPlayer_28_ArmOverItemComposite += DrawPlayer_28_ArmOverItem_OffsetArmHack;
             On_PlayerDrawLayers.DrawPlayer_12_SkinComposite_BackArmShirt += DrawPlayer_12_SkinComposite_BackArmShirt_HideArms;
         }
 
@@ -192,6 +231,46 @@ public sealed class SiffrinTransform : ModItem
             orig(ref drawInfo);
         }
 
+        private static void DrawPlayer_28_ArmOverItem_OffsetArmHack(ILContext il)
+        {
+            var c = new ILCursor(il);
+
+            var baseVectorIndex = -1; // loc
+            var drawInfoIndex = -1;   // arg
+
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchCall(typeof(PlayerDrawLayers), nameof(PlayerDrawLayers.GetCompositeOffset_FrontArm)),
+                i => i.MatchStloc(out _)
+            );
+
+            c.GotoNext(
+                MoveType.Before,
+                i => i.MatchLdloc(out baseVectorIndex),
+                i => i.MatchLdarg(out drawInfoIndex)
+            );
+
+            c.EmitLdloca(baseVectorIndex);
+            c.EmitLdarg(drawInfoIndex);
+            c.EmitDelegate(
+                static (ref Vector2 vector, ref PlayerDrawSet drawInfo) =>
+                {
+                    if (IsVisible(drawInfo) && !ShowsArm(drawInfo))
+                    {
+                        return;
+                    }
+
+                    var armFrame = drawInfo.compFrontArmFrame;
+                    var (frameX, _) = new Point(armFrame.X / 40, armFrame.Y / 56);
+
+                    if (frameX == 7)
+                    {
+                        vector.Y += 6 * drawInfo.drawPlayer.gravDir;
+                    }
+                }
+            );
+        }
+
         private static void DrawPlayer_28_ArmOverItem_ArmVisuals(On_PlayerDrawLayers.orig_DrawPlayer_28_ArmOverItem orig, ref PlayerDrawSet drawInfo)
         {
             if (!IsVisible(drawInfo))
@@ -207,9 +286,17 @@ public sealed class SiffrinTransform : ModItem
 
             const float offset = -4;
 
+            var armFrame = drawInfo.compFrontArmFrame;
+            var (frameX, _) = new Point(armFrame.X / 40, armFrame.Y / 56);
+
             var dir = drawInfo.playerEffect.HasFlag(SpriteEffects.FlipVertically) ? -1f : 1f;
 
             var pos = new Vector2(0, offset * dir);
+
+            if (frameX == 7)
+            {
+                pos = Vector2.Zero;
+            }
 
             var prior = drawInfo.bodyVect;
             drawInfo.bodyVect += pos;
@@ -258,6 +345,7 @@ public sealed class SiffrinTransform : ModItem
 
             var position = bodyPosition + new Vector2(8, (bodyOffset + 24) * dir.Y);
 
+            // Cannot be assed to properly acc for gravDir.
             if ((int)drawInfo.drawPlayer.gravDir == -1)
             {
                 position.Y += player.height - player.bodyPosition.Y - 2;
@@ -265,24 +353,31 @@ public sealed class SiffrinTransform : ModItem
 
             var texture = Assets.Vanity.Cloak_Equip.Asset.Value;
 
-            var cloakFrame = new Rectangle(ShowsArm(drawInfo) ? 26 : 0, 0, 24, 22);
-
-            var cloakData = new DrawData(
-                texture,
-                position,
-                cloakFrame,
-                drawInfo.colorArmorBody,
-                drawInfo.drawPlayer.bodyRotation,
-                drawInfo.bodyVect,
-                1f,
-                drawInfo.playerEffect
-            )
+            if (false && MathF.Abs(player.velocity.X) <= 2f)
             {
-                shader = drawInfo.cBody,
-            };
-            drawInfo.DrawDataCache.Add(cloakData);
+                var cloakFrame = new Rectangle(ShowsArm(drawInfo) ? 26 : 0, 0, 24, 22);
 
-            var collarFrame = new Rectangle(52, 0, 22, 22);
+                var cloakData = new DrawData(
+                    texture,
+                    position,
+                    cloakFrame,
+                    drawInfo.colorArmorBody,
+                    drawInfo.drawPlayer.bodyRotation,
+                    drawInfo.bodyVect,
+                    1f,
+                    drawInfo.playerEffect
+                )
+                {
+                    shader = drawInfo.cBody,
+                };
+                drawInfo.DrawDataCache.Add(cloakData);
+            }
+            else
+            {
+                DrawRotatingCloak(ref drawInfo);
+            }
+
+            var collarFrame = new Rectangle(52, 0, 24, 22);
 
             var collarData = new DrawData(
                 texture,
@@ -298,6 +393,34 @@ public sealed class SiffrinTransform : ModItem
                 shader = drawInfo.cBody,
             };
             drawInfo.DrawDataCache.Add(collarData);
+
+            return;
+
+            void DrawRotatingCloak(ref PlayerDrawSet drawInfo)
+            {
+                var cloakFrame = new Rectangle(78, 0, 36, 22);
+
+                var cloakOrigin = new Vector2(18, 6);
+
+                var rotation = player.GetModPlayer<CloakRotationPlayer>().Rotation + player.bodyRotation;
+
+                var offset = new Vector2(0, 10).RotatedBy(player.bodyRotation);
+
+                var cloakData = new DrawData(
+                    texture,
+                    position + offset,
+                    cloakFrame,
+                    drawInfo.colorArmorBody,
+                    rotation,
+                    cloakOrigin,
+                    1f,
+                    drawInfo.playerEffect
+                )
+                {
+                    shader = drawInfo.cBody,
+                };
+                drawInfo.DrawDataCache.Add(cloakData);
+            }
         }
     }
 }
