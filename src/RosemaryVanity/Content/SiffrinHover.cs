@@ -342,6 +342,16 @@ public sealed class SiffrinHoverMount : ModMount
         MountData.swimFrameStart = 0;
     }
 
+    public override void SetMount(Player player, ref bool skipDust)
+    {
+        skipDust = true;
+    }
+
+    public override void Dismount(Player player, ref bool skipDust)
+    {
+        skipDust = true;
+    }
+
     public override void UpdateEffects(Player player)
     {
         var effectsPlayer = player.GetModPlayer<OutlineAfterImagesPlayer>();
@@ -349,6 +359,24 @@ public sealed class SiffrinHoverMount : ModMount
         if (Main.timeForVisualEffects % 6 == 0)
         {
             effectsPlayer.AfterImages += OutlineAfterImagesPlayer.AfterImageInfo.FromPlayer(player);
+        }
+
+        if (Rand.NextBoolean(7))
+        {
+            var range = player.Hitbox;
+
+            range.Inflate(24, 18);
+
+            var position = Rand.Next(range);
+
+            var difference = position - player.Center;
+
+            if (difference.Length() <= 17)
+            {
+                position = player.Center + difference.WithLength(Rand.Next(18f, 33f));
+            }
+
+            SiffrinParticles.BlackStars += new SiffrinParticles.BlackStar(position, Rand.Next((byte)4), 0, 0);
         }
     }
 }
