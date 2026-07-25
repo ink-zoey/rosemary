@@ -251,26 +251,28 @@ public sealed class SiffrinHoverMount : ModMount
 
         using (lease.Scope(clearColor: Color.Transparent))
         {
-            sb.Begin(ss with { TransformMatrix = Matrix.Identity });
+            sb.Begin(in ss);
 
             orig(ref drawInfo);
 
             sb.End();
         }
 
-        sb.Begin(ss with { SortMode = SpriteSortMode.Immediate });
+        sb.Begin(ss with { SortMode = SpriteSortMode.Immediate, TransformMatrix = Matrix.Identity });
 
         for (var i = 0; i < 4; i++)
         {
-            var offset = new Vector2(2, 0).RotatedBy((i / 4f) * MathF.Tau);
+            var offset = new Vector2(2, 0).RotatedBy((i / 4f) * MathF.Tau) * Main.GameZoomTarget;
 
             sb.Draw(lease.Target, position + offset, Color.Black);
         }
 
         var player = drawInfo.drawPlayer;
 
-        var top = new Vector2(player.Center.X, player.Top.Y) - Main.screenPosition;
-        var bottom = new Vector2(player.Center.X, player.Bottom.Y) - Main.screenPosition;
+        var top = player.Top - Main.screenPosition;
+        var bottom = player.Bottom - Main.screenPosition;
+        top = top.Transform(ss.TransformMatrix);
+        bottom = bottom.Transform(ss.TransformMatrix);
 
         effect.Parameters.PlayerTop = top.Y;
         effect.Parameters.PlayerBottom = bottom.Y;

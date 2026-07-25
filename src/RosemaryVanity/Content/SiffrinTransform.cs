@@ -126,23 +126,32 @@ public sealed class SiffrinTransform : ModItem
 
         public override void PostUpdate()
         {
-            const float spring_strength = 0.02f;
+            if (!Player.mount.Active
+             || Player.mount.Type != ModContent.MountType<SiffrinHoverMount>()
+             || !IsVisible(Player)
+            )
+            {
+                return;
+            }
+
+            const float max_rotation = MathF.PI * 0.132f;
+            const float spring_strength = 0.01f;
             const float min_dampening = 0.98f;
             const float max_dampening = 0.92f;
+            const float wind_freq = 0.06f;
 
-            var maxSpeed = Player.maxRunSpeed;
-            if (Player.mount.Active)
-            {
-                maxSpeed = Player.mount.RunSpeed;
-            }
-            maxSpeed += 4f;
+            rotationVelocity += MathF.Pow(MathF.Abs(Player.velocity.X) / 16f, 6) * 0.07f * MathF.Sign(Player.velocity.X);
 
-            rotationVelocity += MathF.Pow(MathF.Abs(Player.velocity.X) / maxSpeed, 5) * 0.07f * MathF.Sign(Player.velocity.X);
+            var windInterpolator = MathF.Sin((float)Main.timeForVisualEffects * wind_freq);
+            windInterpolator += 1f;
+            windInterpolator *= 0.5f;
+
+            rotationVelocity += -Main.WindForVisuals * MathF.Lerp(0.002f, 0.0045f, windInterpolator);
 
             var displacement = -Rotation;
 
             var dist = Math.Abs(Rotation);
-            var t = MathF.Saturate(dist / MathF.PiOver4);
+            var t = MathF.Saturate(dist / max_rotation);
             var dampening = MathF.Lerp(min_dampening, max_dampening, MathF.Pow(t, 2));
 
             rotationVelocity += displacement * spring_strength;
@@ -150,7 +159,7 @@ public sealed class SiffrinTransform : ModItem
 
             Rotation += rotationVelocity;
 
-            Rotation = MathF.Clamp(Rotation, -MathF.PiOver4, MathF.PiOver4);
+            Rotation = MathF.Clamp(Rotation, -max_rotation, max_rotation);
             rotationVelocity = MathF.Clamp(rotationVelocity, -0.05f, 0.05f);
         }
     }
@@ -353,9 +362,15 @@ public sealed class SiffrinTransform : ModItem
 
             var texture = Assets.Vanity.Cloak_Equip.Asset.Value;
 
-            if (false && MathF.Abs(player.velocity.X) <= 2f)
+            var showsArms = ShowsArm(drawInfo);
+
+            if (!player.mount.Active
+             || player.mount.Type != ModContent.MountType<SiffrinHoverMount>()
+             || showsArms
+             || (int)player.gravDir == -1
+            )
             {
-                var cloakFrame = new Rectangle(ShowsArm(drawInfo) ? 26 : 0, 0, 24, 22);
+                var cloakFrame = new Rectangle(showsArms ? 26 : 0, 0, 24, 22);
 
                 var cloakData = new DrawData(
                     texture,
@@ -400,11 +415,11 @@ public sealed class SiffrinTransform : ModItem
             {
                 var cloakFrame = new Rectangle(78, 0, 36, 22);
 
-                var cloakOrigin = new Vector2(18, 6);
+                var cloakOrigin = new Vector2(18, 4);
 
                 var rotation = player.GetModPlayer<CloakRotationPlayer>().Rotation + player.bodyRotation;
 
-                var offset = new Vector2(0, 10).RotatedBy(player.bodyRotation);
+                var offset = new Vector2(-8, -20).RotatedBy(player.bodyRotation);
 
                 var cloakData = new DrawData(
                     texture,

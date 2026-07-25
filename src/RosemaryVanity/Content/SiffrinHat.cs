@@ -107,9 +107,9 @@ public sealed class SiffrinHat : ModItem
                              + drawInfo.drawPlayer.headPosition
                              + drawInfo.headVect;
 
-            var position = headPosition + new Vector2(4, (headOffset + 4) * dir.Y);
+            var position = headPosition + new Vector2(4, (headOffset + 4) * (drawInfo.headOnlyRender ? 1f : dir.Y));
 
-            if ((int)player.gravDir == -1)
+            if ((int)player.gravDir == -1 && !drawInfo.headOnlyRender)
             {
                 position.Y += player.height - player.headPosition.Y + 14;
             }
