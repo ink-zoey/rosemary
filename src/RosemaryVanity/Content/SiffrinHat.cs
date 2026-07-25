@@ -90,6 +90,8 @@ public sealed class SiffrinHat : ModItem
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {
+            var texture = Assets.Vanity.Hat_Equip.Asset.Value;
+
             var player = drawInfo.drawPlayer;
 
             var dir = player.Directions;
@@ -105,27 +107,27 @@ public sealed class SiffrinHat : ModItem
                                    (int)(drawInfo.Position.X - Main.screenPosition.X - (player.bodyFrame.Width * 0.5f) + (player.width * 0.5f)),
                                    (int)(drawInfo.Position.Y - Main.screenPosition.Y + player.height - (player.bodyFrame.Height + 4f)))
                              + drawInfo.drawPlayer.headPosition
-                             + drawInfo.headVect;
+                             + drawInfo.headVect.Floor();
 
-            var position = headPosition + new Vector2(4, (headOffset + 4) * (drawInfo.headOnlyRender ? 1f : dir.Y));
+            var position = headPosition + new Vector2(0, headOffset * (drawInfo.headOnlyRender ? 1f : dir.Y));
 
             if ((int)player.gravDir == -1 && !drawInfo.headOnlyRender)
             {
-                position.Y += player.height - player.headPosition.Y + 14;
+                position.Y += player.height - player.headPosition.Y + 8;
             }
 
-            var texture = Assets.Vanity.Hat_Equip.Asset.Value;
-
-            var frame = texture.Frame(2, 1, FrameX, 0);
+            var frame = texture.Frame(2, 5, FrameX, 0);
             frame.Width -= 2;
+
+            var origin = new Vector2(40, 26);
 
             var hatData = new DrawData(
                 texture,
                 position,
                 frame,
                 drawInfo.colorArmorHead,
-                player.headRotation,
-                drawInfo.headVect,
+                0f, // Unlikely to play nicely with rotation anyway.
+                origin,
                 1f,
                 drawInfo.playerEffect
             )

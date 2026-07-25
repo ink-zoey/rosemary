@@ -14,7 +14,7 @@ public static partial class SiffrinParticles
         {
             FrameCounter++;
 
-            if (FrameCounter >= 7)
+            if (FrameCounter >= 4)
             {
                 Frame++;
                 FrameCounter = 0;

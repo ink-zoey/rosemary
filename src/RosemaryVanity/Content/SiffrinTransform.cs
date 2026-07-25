@@ -350,15 +350,9 @@ public sealed class SiffrinTransform : ModItem
                                    (int)(drawInfo.Position.Y - Main.screenPosition.Y + player.height - player.bodyFrame.Height + 4f)
                                )
                              + drawInfo.drawPlayer.bodyPosition
-                             + (drawInfo.drawPlayer.bodyFrame.Size() * 0.5f);
+                             + (drawInfo.drawPlayer.bodyFrame.Size() * 0.5f).Floor();
 
-            var position = bodyPosition + new Vector2(8, (bodyOffset + 24) * dir.Y);
-
-            // Cannot be assed to properly acc for gravDir.
-            if ((int)drawInfo.drawPlayer.gravDir == -1)
-            {
-                position.Y += player.height - player.bodyPosition.Y - 2;
-            }
+            var position = bodyPosition + new Vector2(0, (bodyOffset + 7) * dir.Y);
 
             var texture = Assets.Vanity.Cloak_Equip.Asset.Value;
 
@@ -366,7 +360,6 @@ public sealed class SiffrinTransform : ModItem
 
             if (!player.mount.Active
              || player.mount.Type != ModContent.MountType<SiffrinHoverMount>()
-             || showsArms
              || (int)player.gravDir == -1
             )
             {
@@ -377,8 +370,8 @@ public sealed class SiffrinTransform : ModItem
                     position,
                     cloakFrame,
                     drawInfo.colorArmorBody,
-                    drawInfo.drawPlayer.bodyRotation,
-                    drawInfo.bodyVect,
+                    0f,
+                    cloakFrame.Size() * 0.5f,
                     1f,
                     drawInfo.playerEffect
                 )
@@ -399,8 +392,8 @@ public sealed class SiffrinTransform : ModItem
                 position,
                 collarFrame,
                 drawInfo.colorArmorBody,
-                drawInfo.drawPlayer.bodyRotation,
-                drawInfo.bodyVect,
+                0f,
+                collarFrame.Size() * 0.5f,
                 1f,
                 drawInfo.playerEffect
             )
@@ -417,9 +410,9 @@ public sealed class SiffrinTransform : ModItem
 
                 var cloakOrigin = new Vector2(18, 4);
 
-                var rotation = player.GetModPlayer<CloakRotationPlayer>().Rotation + player.bodyRotation;
+                var rotation = player.GetModPlayer<CloakRotationPlayer>().Rotation;
 
-                var offset = new Vector2(-8, -20).RotatedBy(player.bodyRotation);
+                var offset = new Vector2(0, -2);
 
                 var cloakData = new DrawData(
                     texture,
@@ -435,7 +428,84 @@ public sealed class SiffrinTransform : ModItem
                     shader = drawInfo.cBody,
                 };
                 drawInfo.DrawDataCache.Add(cloakData);
+
+                if (showsArms)
+                {
+                    var overlayFrame = new Rectangle(116, 0, 24, 28);
+
+                    var overlayData = new DrawData(
+                        texture,
+                        position,
+                        overlayFrame,
+                        drawInfo.colorArmorBody,
+                        0f,
+                        new Vector2(12, 11),
+                        1f,
+                        drawInfo.playerEffect
+                    )
+                    {
+                        shader = drawInfo.cBody,
+                    };
+                    drawInfo.DrawDataCache.Add(overlayData);
+                }
             }
+        }
+    }
+
+    private sealed class EyePatchDrawLayer : PlayerDrawLayer
+    {
+        public override bool GetDefaultVisibility(PlayerDrawSet drawInfo) => IsVisible(drawInfo);
+
+        public override Position GetDefaultPosition() => new BeforeParent(PlayerDrawLayers.FaceAcc);
+
+        protected override void Draw(ref PlayerDrawSet drawInfo)
+        {
+            var player = drawInfo.drawPlayer;
+
+            if (player.direction != -1)
+            {
+                return;
+            }
+
+            var dir = player.Directions;
+
+            var headOffset = Main.OffsetsPlayerHeadgear[player.bodyFrame.Y / player.bodyFrame.Height].Y;
+
+            var helmetOffset = Vector2.Zero;
+            player.ApplyHeadOffsetFromMount(ref helmetOffset);
+            helmetOffset += drawInfo.helmetOffset;
+
+            var headPosition = helmetOffset
+                             + new Vector2(
+                                   (int)(drawInfo.Position.X - Main.screenPosition.X - (player.bodyFrame.Width * 0.5f) + (player.width * 0.5f)),
+                                   (int)(drawInfo.Position.Y - Main.screenPosition.Y + player.height - (player.bodyFrame.Height + 4f)))
+                             + drawInfo.drawPlayer.headPosition
+                             + drawInfo.headVect.Floor();
+
+            var position = headPosition + new Vector2(-2, (headOffset + 6) * (drawInfo.headOnlyRender ? 1f : dir.Y));
+
+            if ((int)player.gravDir == -1 && !drawInfo.headOnlyRender)
+            {
+                position.Y += player.height - player.headPosition.Y - 8;
+            }
+
+            var texture = Assets.Vanity.EyePatch_Equip.Asset.Value;
+
+
+            var hatData = new DrawData(
+                texture,
+                position,
+                null,
+                drawInfo.colorArmorHead,
+                player.headRotation,
+                texture.Size() * 0.5f,
+                1f,
+                drawInfo.playerEffect
+            )
+            {
+                shader = drawInfo.cHead,
+            };
+            drawInfo.DrawDataCache.Add(hatData);
         }
     }
 }
