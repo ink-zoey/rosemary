@@ -1,7 +1,11 @@
-﻿using Daybreak.Hooks;
+﻿using System.Diagnostics;
+using Daybreak.Hooks;
+using Microsoft.Xna.Framework;
+using MonoMod.Cil;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Vanity.Content;
 
@@ -9,12 +13,15 @@ public static class DevMountSets
 {
     private static bool[] ignoresHoverFatigue = [];
 
+    private static bool[] allowsStepUp = [];
+
     private static Mod Mod => ModContent.GetInstance<ModImpl>();
 
     [ModSystemHooks.ResizeArrays]
     private static void ResizeArrays()
     {
         ignoresHoverFatigue = CreateSet(nameof(ignoresHoverFatigue), false);
+        allowsStepUp = CreateSet(nameof(allowsStepUp), false);
 
         return;
 
@@ -28,14 +35,71 @@ public static class DevMountSets
     extension(MountID.Sets)
     {
         public static bool[] IgnoresHoverFatigue => ignoresHoverFatigue;
+
+        public static bool[] AllowsStepUp => allowsStepUp;
     }
 
     [OnLoad]
     private static void Load()
     {
+        // ignoresHoverFatigue
         On_Mount.DoesHoverIgnoresFatigue += DoesHoverIgnoresFatigue_IgnoresHoverFatigue;
         IL_Mount.Hover += _ => { };
         IL_Mount.TryBeginningFlight += _ => { };
+
+        // allowsStepUp
+        On_Player.DryCollision += DryCollision_AllowsStepUp;
+        IL_Player.Update += Update_AllowsStepUp;
+    }
+
+    private static void Update_AllowsStepUp(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var playerIndex = -1; // arg
+
+        for (var j = 0; j < 2; j++)
+        {
+            c.GotoNext(
+                MoveType.After,
+                i => i.MatchCall<Collision>(nameof(Collision.StepUp))
+            );
+
+            var c2 = c.Clone();
+            {
+                ILLabel? jumpCheckTarget = null;
+
+                c2.GotoPrev(
+                    MoveType.After,
+                    i => i.MatchLdarg(out playerIndex),
+                    i => i.MatchLdfld<Player>(nameof(Player.carpetFrame)),
+                    i => i.MatchLdcI4(-1),
+                    i => i.MatchBneUn(out jumpCheckTarget)
+                );
+
+                Debug.Assert(jumpCheckTarget is not null);
+
+                c2.EmitLdarg(playerIndex);
+                c2.EmitDelegate(
+                    static (Player player) => player.mount.Active && MountID.Sets.AllowsStepUp[player.mount.Type]
+                );
+                c2.EmitBrtrue(jumpCheckTarget);
+            }
+        }
+    }
+
+    private static void DryCollision_AllowsStepUp(On_Player.orig_DryCollision orig, Player self, bool fallThrough, bool ignorePlats)
+    {
+        if (!self.mount.Active || !MountID.Sets.AllowsStepUp[self.mount.Type])
+        {
+            orig(self, fallThrough, ignorePlats);
+            return;
+        }
+
+        var prior = self.carpetFrame;
+        self.carpetFrame = 0;
+        orig(self, fallThrough, ignorePlats);
+        self.carpetFrame = prior;
     }
 
     private static bool DoesHoverIgnoresFatigue_IgnoresHoverFatigue(On_Mount.orig_DoesHoverIgnoresFatigue orig, Mount self)

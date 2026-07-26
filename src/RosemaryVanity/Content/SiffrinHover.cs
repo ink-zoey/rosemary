@@ -271,6 +271,8 @@ public sealed class SiffrinHoverMount : ModMount
 
         var top = player.Top - Main.screenPosition;
         var bottom = player.Bottom - Main.screenPosition;
+        top.Y += player.gfxOffY;
+        bottom.Y += player.gfxOffY;
         top = top.Transform(ss.TransformMatrix);
         bottom = bottom.Transform(ss.TransformMatrix);
 
@@ -291,6 +293,7 @@ public sealed class SiffrinHoverMount : ModMount
         MountID.Sets.DoesNotOverrideLegFrames[Type] = true;
         MountID.Sets.IgnoresHoverFatigue[Type] = true;
         MountID.Sets.CanUseHooks[Type] = true;
+        MountID.Sets.AllowsStepUp[Type] = true;
 
         MountData.buff = ModContent.BuffType<SiffrinHoverBuff>();
 
