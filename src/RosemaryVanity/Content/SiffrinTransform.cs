@@ -2,10 +2,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using Rosemary.Common;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Rosemary.Common;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -30,6 +30,7 @@ public sealed class SiffrinTransform : ModItem
         EquipLoader.AddEquipTexture(Mod, Assets.Vanity.Leggings_Equip.KEY, EquipType.Legs, this);
 
         On_PlayerDrawSet.BoringSetup_2 += BoringSetup_2_SkinColor;
+        On_PlayerDrawSet.HeadOnlySetup += HeadOnlySetup_SkinColor;
         On_PlayerDrawLayers.DrawPlayer_21_Head += DrawPlayer_21_Head_HairStyle;
     }
 
@@ -49,6 +50,41 @@ public sealed class SiffrinTransform : ModItem
         drawInfo.drawPlayer.hair = prior;
     }
 
+    private static void HeadOnlySetup_SkinColor(
+        On_PlayerDrawSet.orig_HeadOnlySetup orig,
+        ref PlayerDrawSet self,
+        Player player,
+        List<DrawData> drawData,
+        List<int> dust,
+        List<int> gore,
+        float x,
+        float y,
+        float alpha,
+        float scale
+    )
+    {
+        if (!IsVisible(player))
+        {
+            orig(ref self, player, drawData, dust, gore, x, y, alpha, scale);
+            return;
+        }
+
+        var priorEye = player.eyeColor;
+        var priorSkin = player.skinColor;
+        var priorHair = player.hairColor;
+        player.eyeColor = Color.Black;
+        player.skinColor = new Color(210, 210, 210, byte.MaxValue);
+        player.hairColor = Color.White;
+        {
+            orig(ref self, player, drawData, dust, gore, x, y, alpha, scale);
+        }
+        player.hairColor = priorHair;
+        player.skinColor = priorSkin;
+        player.eyeColor = priorEye;
+
+        self.hairDyePacked = 0;
+    }
+
     private static void BoringSetup_2_SkinColor(
         On_PlayerDrawSet.orig_BoringSetup_2 orig,
         ref PlayerDrawSet self,
@@ -62,7 +98,7 @@ public sealed class SiffrinTransform : ModItem
         Vector2 rotationOrigin
     )
     {
-        if (!IsVisible(self))
+        if (!IsVisible(player))
         {
             orig(ref self, player, drawData, dust, gore, drawPosition, shadowOpacity, rotation, rotationOrigin);
             return;
@@ -166,7 +202,7 @@ public sealed class SiffrinTransform : ModItem
 
     private sealed class CloakDrawLayer : PlayerDrawLayer
     {
-        [OnLoad]
+        [OnLoad(Side = ModSide.Client)]
         private new static void Load()
         {
             IL_Player.PlayerFrame += PlayerFrame_ForceBodyFrame_SiffrinHover;

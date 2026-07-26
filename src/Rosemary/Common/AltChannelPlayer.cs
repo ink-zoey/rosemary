@@ -11,6 +11,9 @@ file sealed class AltChannelPlayer : ModPlayer
 {
     private record struct Packet(int WhoAmI) : IPacket<Packet>
     {
+        public Packet() : this(-1)
+        { }
+
         public void Write(BinaryWriter writer)
         {
             writer.Write(WhoAmI);

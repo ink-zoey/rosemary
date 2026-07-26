@@ -1,4 +1,6 @@
-﻿using System;
+﻿global using Player = Terraria.Player; // Terraria.ModLoader.BackupIO+Player
+
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
