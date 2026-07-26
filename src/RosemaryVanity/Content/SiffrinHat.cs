@@ -124,7 +124,7 @@ public sealed class SiffrinHat : ModItem
 
                 SoundEngine.PlaySound(in SoundID.MenuTick);
 
-                if (Main.netMode == NetmodeID.MultiplayerClient || true)
+                if (Main.netMode == NetmodeID.MultiplayerClient)
                 {
                     modPlayer.SyncPlayer(-1, player.whoAmI, false);
                 }
