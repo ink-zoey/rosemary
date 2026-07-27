@@ -6,6 +6,11 @@ using System.Numerics;
 
 namespace Rosemary.Core;
 
+/// <summary>
+///     Wraps an array of the given <see langword="struct"/>, and provides a
+///     bitmask to determine which particles should be considered active.<br/>
+///     Use <see cref="ActiveParticleEnumerator"/> to enumerate over active particles.
+/// </summary>
 public class ParticleHandler<T>(int max) : IEnumerable<int>
     where T : struct
 {

@@ -44,6 +44,11 @@ public static class ElkLangItemSets
 
     extension(ItemID.Sets)
     {
+        /// <summary>
+        ///     If not <see langword="null"/> for a given item, the item will use the given Elklang
+        ///     phrase inplace of all covered cases of the item's name.<br/>
+        ///     Additionally, reforging will be slower and have extra spark particles as to feel more foreign.
+        /// </summary>
         public static ElkPhrase?[] UsesElkName => usesElkName;
     }
 

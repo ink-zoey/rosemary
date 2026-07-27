@@ -133,6 +133,9 @@ public static class WorldItemExtensions
 {
     extension(WorldItem item)
     {
+        /// <summary>
+        ///     Extra rotation above the x velocity based rotation, interpolates back to 0 over time.
+        /// </summary>
         public float Rotation
         {
             get => WorldItemBehavior.rotations[item.whoAmI];

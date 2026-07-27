@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Vanity.Common;
 using System.IO;
+using Rosemary.Common;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

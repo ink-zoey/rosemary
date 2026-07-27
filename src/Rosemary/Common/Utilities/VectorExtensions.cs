@@ -7,7 +7,8 @@ public static class VectorExtensions
 {
     extension(Vector2 vector)
     {
-        // Gross but no other way of going about this really.
+        // Gross but no other way of going about this really,
+        // as the base Vector2.Normalize takes priority, restricting our naming options.
         public Vector2 Normalized => Vector2.Normalize(vector);
 
         public Vector2 WithLength(float value)
@@ -25,6 +26,7 @@ public static class VectorExtensions
             return new Vector2(MathF.Round(vector.X), MathF.Round(vector.Y));
         }
 
+        // Provided by Terraria.Utils
         /*
         public Vector2 Floor()
         {

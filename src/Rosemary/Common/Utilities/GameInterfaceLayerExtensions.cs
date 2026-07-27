@@ -53,6 +53,15 @@ public static class GameInterfaceLayers
 	public const string INTERACT_ITEM_ICON          = "Vanilla: Interact Item Icon";
 	public const string INTERFACE_LOGIC_4           = "Vanilla: Interface Logic 4";
 
+    /// <summary>
+    ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> before/after the target layer.
+    /// </summary>
+    /// <param name="targetLayer">
+    ///     Name of the target <see cref="GameInterfaceLayer"/>, constants are provided for vanilla layers in <see cref="GameInterfaceLayers"/>.
+    /// </param>
+    /// <param name="scaleType">
+    ///     Changes how the cursor/screen is scaled, along with what matrix is used in the given SpriteBatch.
+    /// </param>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]
@@ -64,6 +73,10 @@ public static class GameInterfaceLayers
 
         public readonly bool After = after;
 
+        /// <summary>
+        ///     Identifier of this layer, usually <c>"ModName: UIName"</c>,
+        ///     leave <see langword="null"/> to use default identifier based on <c>"AssemblyName: MethodName"</c>.
+        /// </summary>
         public string? Name { get; set; }
 
         public override void Apply(MethodInfo bindingMethod, object? instance)
@@ -82,12 +95,20 @@ public static class GameInterfaceLayers
         }
     }
 
+    /// <summary>
+    ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> before the target layer.
+    /// </summary>
+    /// <inheritdoc cref="InsertAttribute"/>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]
     public sealed class BeforeAttribute(string targetLayer, InterfaceScaleType scaleType)
         : InsertAttribute(targetLayer, scaleType, false);
 
+    /// <summary>
+    ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> after the target layer.
+    /// </summary>
+    /// <inheritdoc cref="InsertAttribute"/>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]

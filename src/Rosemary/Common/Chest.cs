@@ -508,9 +508,11 @@ public static class ChestExtensions
         }
 
         /// <summary>
-        /// Tries to find the index of the <see cref="Chest"/> at <paramref name="position"/> (in tile coordinates.)<br/>
+        ///     Tries to find the index of the <see cref="Chest"/> at <paramref name="position"/> (in tile coordinates.)<br/>
         /// </summary>
-        /// <param name="position">Target position in tile coordinates, does not have to be the top left of the tile.</param>
+        /// <param name="position">
+        ///     Target position in tile coordinates, does not have to be the top left of the tile.
+        /// </param>
         /// <returns>
         ///     The index of the <see cref="Chest"/>, <![CDATA[-1]]> if not found.
         /// </returns>
@@ -635,12 +637,9 @@ public static class ChestExtensions
         /// <param name="sort">
         ///     Whether to sort the chest after adding the item.
         /// </param>
-        /// <param name="silent">
-        ///     Disables the grab sound from placing the item into storage.
-        /// </param>
         /// <returns>
-        ///     <see langword="true"/> if any part of the item was placed into the chest;<br/>
-        ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
+        ///     <see langword="true"/> if any part of the item was placed into the chest.<br/>
+        ///     Check <![CDATA[item.stack]]> to make sure the item was fully deposited.
         /// </returns>
         public static bool TransferWorldItem(
             int worldItemIndex,
@@ -684,22 +683,7 @@ public static class ChestExtensions
         ///     Transfers the <see cref="WorldItem"/> to the specified personal storage.<br/>
         ///     Should only be called on the client whose storage the item should be deposited to.
         /// </summary>
-        /// <param name="worldItemIndex">
-        ///     The index of the <see cref="WorldItem"/>.
-        /// </param>
-        /// <param name="storageType">
-        ///     The type of personal storage to add to.
-        /// </param>
-        /// <param name="sort">
-        ///     Whether to sort the storage after adding the item.
-        /// </param>
-        /// <param name="silent">
-        ///     Disables the grab sound from placing the item into storage.
-        /// </param>
-        /// <returns>
-        ///     <see langword="true"/> if any part of the item was placed into the storage;<br/>
-        ///     check <![CDATA[item.stack]]> to make sure the item was fully deposited.
-        /// </returns>
+        /// <inheritdoc cref="TransferWorldItem"/>
         public static bool TransferWorldItemPersonalStorage(
             int worldItemIndex,
             PersonalStorageType storageType,
@@ -712,7 +696,7 @@ public static class ChestExtensions
 
             var chest = Chest.GetPersonalStorage(storageType, player);
 
-            // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir.'
+            // Cache the item type as 'Wiring.TryToPutItemInChest' will run 'TurnToAir'
             var type = item.type;
 
             if (!item.active
@@ -747,7 +731,7 @@ public static class ChestExtensions
         }
 
         /// <summary>
-        /// Broadcasts an item transfer particle to all clients.
+        ///     Broadcasts an item transfer particle to all clients.
         /// </summary>
         /// <param name="type">
         ///     The item's type.

@@ -66,7 +66,7 @@ public static partial class SiffrinParticles
         sb.End();
     }
 
-    [GameInterfaceLayers.After(GameInterfaceLayers.MOUSE_TEXT, InterfaceScaleType.UI, Name = $"{nameof(RosemaryVanity)}: Siffrin UI Particles")]
+    [GameInterfaceLayers.After(GameInterfaceLayers.MOUSE_ITEM_NPC_HEAD, InterfaceScaleType.UI, Name = $"{nameof(RosemaryVanity)}: Siffrin UI Particles")]
     private static bool DrawParticlesUI()
     {
         DrawStars(Main.spriteBatch, UIStars, Vector2.Zero);

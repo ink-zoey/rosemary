@@ -41,12 +41,19 @@ public static class Oklab
             return new Color(Vector3.Transform(oklab, LmsToCone));
         }
 
+        /// <inheritdoc cref="Lerp" />
         public static Color OklabLerp(Color colorA, Color colorB, float amount)
         {
             return Lerp(colorA, colorB, amount);
         }
     }
 
+    /// <summary>
+    ///     Interpolates between <paramref name="colorA"/>, and <paramref name="colorB"/>
+    ///     by converting both color's RGB into the <see href="https://en.wikipedia.org/wiki/Oklab_color_space">Oklab color space</see>,<br/>
+    ///     interpolating between them as a <see cref="Vector3"/>, then converting back into RGB.<br/>
+    ///     Alpha is interpolated separately.
+    /// </summary>
     public static Color Lerp(Color colorA, Color colorB, float amount)
     {
         var oklabA = Color.ToOklab(colorA);

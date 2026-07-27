@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Daybreak.Networking;
+﻿using Daybreak.Networking;
 
 namespace Rosemary.Common;
 
-internal static class PacketDestinationExtensions
+public static class PacketDestinationExtensions
 {
     extension(PacketDestination)
     {

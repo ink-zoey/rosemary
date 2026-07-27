@@ -1,11 +1,9 @@
 ﻿using System.Diagnostics;
 using Daybreak.Hooks;
-using Microsoft.Xna.Framework;
 using MonoMod.Cil;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Vanity.Content;
 
@@ -36,6 +34,10 @@ public static class DevMountSets
     {
         public static bool[] IgnoresHoverFatigue => ignoresHoverFatigue;
 
+        /// <summary>
+        /// If <see langword="true"/> for a given mount, the mount will allow the
+        /// player to "step up" tiles similarly to the Magic Carpet. 
+        /// </summary>
         public static bool[] AllowsStepUp => allowsStepUp;
     }
 

@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace Rosemary.Common;
 
-// Certain logic requires having Player,heldProj without being reset at the very start of Player.Update.
+// Certain logic requires having Player,heldProj without being reset at the very start of Player.Update
 file sealed class HeldProjPlayer : ModPlayer
 {
     public int PriorHeldProj { get; private set; }
@@ -14,7 +14,7 @@ file sealed class HeldProjPlayer : ModPlayer
         On_Player.Update += Update_PriorHeldProj;
     }
 
-    // PreUpdate is not early enough.
+    // PreUpdate is not early enough
     [StackTraceHidden]
     private static void Update_PriorHeldProj(On_Player.orig_Update orig, Player self, int i)
     {

@@ -15,7 +15,7 @@ public static class RandomExtensions
         public static Rand Instance => Main.rand;
 
         /// <summary>
-        /// Generates a random value of type <typeparamref name="T"/> between 0 (inclusive) and <paramref name="max"/> (exclusive).<br/>
+        /// Generates a random value of <typeparamref name="T"/> between 0 (inclusive) and <paramref name="max"/> (exclusive.)<br/>
         /// It will not return <paramref name="max"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,7 +28,7 @@ public static class RandomExtensions
         }
 
         /// <summary>
-        /// Generates a random value of type <typeparamref name="T"/> between <paramref name="min"/> (inclusive) and <paramref name="max"/> (exclusive).<br/>
+        /// Generates a random value of <typeparamref name="T"/> between <paramref name="min"/> (inclusive) and <paramref name="max"/> (exclusive.)<br/>
         /// It will not return <paramref name="max"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,12 +62,18 @@ public static class RandomExtensions
             return new Vector2(Rand.Next(min, max), Rand.Next(min, max));
         }
 
+        /// <summary>
+        /// Generates a random unit vector with the given radius.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 NextUnitVector(float radius = 1f)
         {
             return Rand.Instance.NextVector2Unit() * radius;
         }
 
+        /// <summary>
+        /// Generates a random vector in the bounds of <paramref name="rect"/>.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Next(Rectangle rect)
         {

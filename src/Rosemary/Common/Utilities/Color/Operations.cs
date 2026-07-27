@@ -7,6 +7,9 @@ public static class ColorOperations
 {
     extension(Color)
     {
+        /// <summary>
+        /// Raises each component of <paramref name="color"/> to the specified power as a normalized <see langword="float"/>.
+        /// </summary>
         public static Color Pow(Color color, float amount)
         {
             color.R = PowComponent(color.R);
