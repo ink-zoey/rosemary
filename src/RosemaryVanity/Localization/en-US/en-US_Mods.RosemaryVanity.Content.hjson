@@ -1,6 +1,19 @@
 SiffrinHat: {
 	DisplayName: Traveler's hat
 	Tooltip: "[Looks remarkably like a wizard's hat]"
+
+	Name: {
+		0: Standard
+		1: ... Hat expansion. That can't be good.
+		2: Wide (Foward)
+		3: Wide (Backward)
+		4: Standard
+		5: Standard
+		6: Standard
+		7: Standard
+		8: Standard
+		9: Standard
+	}
 }
 
 SiffrinTransform: {

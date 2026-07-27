@@ -117,10 +117,14 @@ public sealed class SiffrinHat : ModItem
         {
             player.mouseInterface = true;
 
-            if (Main.mouseLeft && Main.mouseLeftRelease)
+            if ((Main.mouseLeft && Main.mouseLeftRelease) || (Main.mouseRight && Main.mouseRightRelease))
             {
-                modPlayer.Style++;
+                modPlayer.Style += Main.mouseRight ? -1 : 1;
                 modPlayer.Style %= HatStylePlayer.MAX_STYLE;
+                if (modPlayer.Style < 0)
+                {
+                    modPlayer.Style = HatStylePlayer.MAX_STYLE - 1;
+                }
 
                 SoundEngine.PlaySound(in SoundID.MenuTick);
 
@@ -131,7 +135,7 @@ public sealed class SiffrinHat : ModItem
             }
 
             Main.HoverItem = new Item();
-            Main.hoverItemName = $"{modPlayer.Style}";
+            Main.hoverItemName = Mods.RosemaryVanity.Content.SiffrinHat.Name.GetChildTextValue(modPlayer.Style.ToString());
         }
 
         sb.Draw(texture, buttonPosition, Color.White * 0.7f);
@@ -295,7 +299,7 @@ file sealed class HatStylePlayer : ModPlayer
         }
     }
 
-    public const int MAX_STYLE = 5;
+    public const int MAX_STYLE = 10;
 
     public int Style;
 
