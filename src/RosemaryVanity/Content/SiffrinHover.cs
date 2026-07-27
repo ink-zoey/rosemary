@@ -18,21 +18,37 @@ namespace Rosemary.Vanity.Content;
 
 public sealed class SiffrinHover : ModItem
 {
-    public override string Texture => Assets.Vanity.Hat.KEY;
+    public override string Texture => Assets.Vanity.SiffrinHover.KEY;
 
     public override string LocalizationCategory => "Content";
 
+    public override void SetStaticDefaults()
+    {
+        ItemID.Sets.ItemIconPulse[Type] = true;
+        ItemID.Sets.ItemNoGravity[Type] = true;
+    }
+
     public override void SetDefaults()
     {
-        Item.width = 20;
-        Item.height = 20;
+        Item.width = 32;
+        Item.height = 32;
 
         Item.mountType = ModContent.MountType<SiffrinHoverMount>();
     }
 
     public override void PostDrawInInventory(SpriteBatch sb, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
     {
-        if (!Rand.NextBoolean(7))
+        if (Main.mouseItem == Item)
+        {
+            if (Rand.NextBoolean())
+            {
+                SiffrinParticles.UIStars += new SiffrinParticles.Star(Main.MouseScreen, Rand.NextBoolean() ? Color.White : Color.Black, Rand.Next((byte)4), 0, 0);
+            }
+
+            return;
+        }
+
+        if (!Rand.NextBoolean(6))
         {
             return;
         }
@@ -42,6 +58,18 @@ public sealed class SiffrinHover : ModItem
         var spawnPositon = Rand.Next(texture.Size() * scale) + position - (origin * scale);
 
         SiffrinParticles.UIStars += new SiffrinParticles.Star(spawnPositon, Rand.NextBoolean() ? Color.White : Color.Black, Rand.Next((byte)4), 0, 0);
+    }
+
+    public override void PostDrawInWorld(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale, int whoAmI)
+    {
+        if (!Rand.NextBoolean(6))
+        {
+            return;
+        }
+
+        var spawnPositon = Rand.Next(item.Hitbox);
+
+        SiffrinParticles.ForegroundStars += new SiffrinParticles.Star(spawnPositon, Rand.NextBoolean() ? Color.White : Color.Black, Rand.Next((byte)4), 0, 0);
     }
 }
 

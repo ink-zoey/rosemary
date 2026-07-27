@@ -1,4 +1,4 @@
-SiffrinHat: {
+﻿SiffrinHat: {
 	DisplayName: Traveler's hat
 	Tooltip: "[Looks remarkably like a wizard's hat]"
 
@@ -22,7 +22,7 @@ SiffrinTransform: {
 }
 
 SiffrinHover: {
-	DisplayName: Lost Stardust
+	DisplayName: Memory of Emptiness
 	Tooltip:
 		'''
 		Grants the user unlimited flight
