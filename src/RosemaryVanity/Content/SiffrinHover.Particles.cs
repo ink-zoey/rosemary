@@ -2,13 +2,16 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Core;
+using System.Collections.Generic;
+using Rosemary.Common;
 using Terraria;
+using Terraria.UI;
 
 namespace Rosemary.Vanity.Content;
 
 public static partial class SiffrinParticles
 {
-    public record struct BlackStar(Vector2 Position, byte Style, byte Frame, int FrameCounter) : IUpdatingParticle
+    public record struct Star(Vector2 Position, Color Color, byte Style, byte Frame, int FrameCounter) : IUpdatingParticle
     {
         bool IUpdatingParticle.Update()
         {
@@ -24,12 +27,23 @@ public static partial class SiffrinParticles
         }
     }
 
-    public static UpdatingParticleHandler<BlackStar> BlackStars { get; set; } = new(128);
+    public static UpdatingParticleHandler<Star> BackgroundStars { get; set; } = new(128);
+
+    public static UpdatingParticleHandler<Star> ForegroundStars { get; set; } = new(256);
+
+    public static UpdatingParticleHandler<Star> UIStars { get; set; } = new(256);
 
     [ModSystemHooks.PostUpdateDusts]
-    private static void UpdateParticles()
+    private static void UpdateParticlesPostDust()
     {
-        BlackStars.Update();
+        BackgroundStars.Update();
+        ForegroundStars.Update();
+    }
+
+    [ModSystemHooks.UpdateUI]
+    private static void UpdateParticlesUI(GameTime gameTime)
+    {
+        UIStars.Update();
     }
 
     [ParticleLayers.UnderPlayers]
@@ -37,31 +51,47 @@ public static partial class SiffrinParticles
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
-            DrawStars();
+            DrawStars(sb, BackgroundStars, Main.screenPosition);
         }
         sb.End();
+    }
 
-        return;
-
-        void DrawStars()
+    [ParticleLayers.OverPlayers]
+    private static void DrawParticlesOverPlayers(SpriteBatch sb)
+    {
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
-            if (BlackStars.ActiveParticleCount <= 0)
-            {
-                return;
-            }
+            DrawStars(sb, ForegroundStars, Main.screenPosition);
+        }
+        sb.End();
+    }
 
-            var texture = Assets.Vanity.Star.Asset.Value;
+    [GameInterfaceLayers.After(GameInterfaceLayers.MOUSE_TEXT, InterfaceScaleType.UI, Name = $"{nameof(RosemaryVanity)}: Siffrin UI Particles")]
+    private static bool DrawParticlesUI()
+    {
+        DrawStars(Main.spriteBatch, UIStars, Vector2.Zero);
 
-            var origin = new Vector2(9f);
+        return true;
+    }
 
-            foreach (var index in BlackStars)
-            {
-                var star = BlackStars[index];
+    private static void DrawStars(SpriteBatch sb, ParticleHandler<Star> stars, Vector2 offset)
+    {
+        if (stars.ActiveParticleCount <= 0)
+        {
+            return;
+        }
 
-                var frame = texture.Frame(6, 4, star.Frame, star.Style);
+        var texture = Assets.Vanity.Star.Asset.Value;
 
-                sb.Draw(texture, star.Position - Main.screenPosition, frame, Color.Black, 0f, origin, 1f, SpriteEffects.None, 0f);
-            }
+        var origin = new Vector2(9f);
+
+        foreach (var index in stars)
+        {
+            var star = stars[index];
+
+            var frame = texture.Frame(6, 4, star.Frame, star.Style);
+
+            sb.Draw(texture, star.Position - offset, frame, star.Color, 0f, origin, 1f, SpriteEffects.None, 0f);
         }
     }
 }

@@ -8,6 +8,7 @@ using Rosemary.Core;
 using System;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.Graphics;
 using Terraria.Graphics.Renderers;
 using Terraria.ID;
@@ -27,6 +28,20 @@ public sealed class SiffrinHover : ModItem
         Item.height = 20;
 
         Item.mountType = ModContent.MountType<SiffrinHoverMount>();
+    }
+
+    public override void PostDrawInInventory(SpriteBatch sb, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+    {
+        if (!Rand.NextBoolean(7))
+        {
+            return;
+        }
+
+        var texture = TextureAssets.Item[Type].Value;
+
+        var spawnPositon = Rand.Next(texture.Size() * scale) + position - (origin * scale);
+
+        SiffrinParticles.UIStars += new SiffrinParticles.Star(spawnPositon, Rand.NextBoolean() ? Color.White : Color.Black, Rand.Next((byte)4), 0, 0);
     }
 }
 
@@ -379,7 +394,7 @@ public sealed class SiffrinHoverMount : ModMount
                 position = player.Center + difference.WithLength(Rand.Next(18f, 33f));
             }
 
-            SiffrinParticles.BlackStars += new SiffrinParticles.BlackStar(position, Rand.Next((byte)4), 0, 0);
+            SiffrinParticles.BackgroundStars += new SiffrinParticles.Star(position, Color.Black, Rand.Next((byte)4), 0, 0);
         }
     }
 }

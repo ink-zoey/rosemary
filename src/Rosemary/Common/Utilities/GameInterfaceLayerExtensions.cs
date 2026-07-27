@@ -3,7 +3,6 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Terraria;
 using Terraria.UI;
 
 namespace Rosemary.Common;
