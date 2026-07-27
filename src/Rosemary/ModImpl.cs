@@ -1,11 +1,14 @@
 ﻿global using Player = Terraria.Player; // Terraria.ModLoader.BackupIO+Player
-
+using Daybreak.Networking;
+using log4net;
+using log4net.Appender;
+using log4net.Config;
+using log4net.Layout;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using Daybreak.Networking;
 
 namespace Rosemary;
 
@@ -23,24 +26,50 @@ partial class ModImpl
     }
 }
 
+/*
+ * "ProjectBuild" is a launch profile that allows MetadataUpdateHandler to work correctly in Visual Studio,
+ * based on LolXD's impl https://discord.com/channels/103110554649894912/534215632795729922/1347395989559967815 (tModLoader Discord)
+ * revised slightly to work correctly with tml-build's bootstrapper.
+ * ProjectBuild compiles the mod as an executable and launches it, hence the need of an entrypoint.
+ * Currently, uses a personal branch of daybreak-mod/assembly-split (assembly-split/rosemary) to prevent loading issues.
+ * TODO:
+ * - Fix side effects caused by two "instances" of the project being active at once (see Common/Utilities/HotReloading.cs.)
+ * - Fix issues with child project RosemaryVanity.
+ */
 #if PROJECT_BUILD && DEBUG
 // ReSharper disable once ClassNeverInstantiated.Local
 file class Program
 {
+    private const string id = "ProjectBuild";
+
+    private static readonly ILog logger = LogManager.GetLogger(id);
+
     public static void Main(string[] args)
     {
+        var layout = new PatternLayout
+        {
+            ConversionPattern = "[%d{HH:mm:ss.fff}] [%t/%level] [%logger]: %m%n",
+        };
+
+        layout.ActivateOptions();
+
+        BasicConfigurator.Configure(
+            new ConsoleAppender
+            {
+                Name = "ConsoleAppender",
+                Layout = layout,
+            }
+        );
+
         var file = args[0];
 
         var arguments = args.Skip(1).ToArray();
 
         if (!File.Exists(file))
         {
-            Console.WriteLine($"File {file} was not found!");
+            logger.Error($"File {file} was not found!");
             return;
         }
-
-        Console.WriteLine($"ProjectBuild forwarding to: {file} with arguments: {string.Join(' ', arguments)}");
-        Console.WriteLine();
 
         var assembly = Assembly.LoadFile(file);
 
@@ -52,16 +81,18 @@ file class Program
         {
             try
             {
-                Console.WriteLine($"Attempting to force resolve assembly: {name.Name}...");
+                logger.Info($"Attempting to force resolve assembly: {name.Name}...");
 
                 AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(directory, name.Name + ".dll"));
+
+                logger.Info($"Successfully force resolved assembly: {name.Name}!");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Could not force resolve assembly: {name.Name}! {e.Message}");
+                logger.Warn($"Could not force resolve assembly: {name.Name}! \n{e.Message}");
             }
         }
-        Console.WriteLine();
+        logger.Info($"Forwarding to: {file} with arguments: {string.Join(' ', arguments)}");
 
         var entryPointInfo = assembly.EntryPoint;
         entryPointInfo?.Invoke(null, [arguments]);

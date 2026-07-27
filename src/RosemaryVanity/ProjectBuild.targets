@@ -8,4 +8,12 @@
         <OutputType>Exe</OutputType>
     </PropertyGroup>
 
+    <ItemGroup>
+        <PackageReference Include="log4net" Version="3.3.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MonoMod.Utils" Version="25.0.12.0" />
+    </ItemGroup>
+
 </Project>
