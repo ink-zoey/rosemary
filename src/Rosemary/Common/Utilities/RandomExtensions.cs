@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Utilities;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Rosemary.Common;
@@ -88,6 +89,15 @@ public static class RandomExtensions
         public static int NextDirection()
         {
             return Rand.NextBoolean() ? 1 : -1;
+        }
+    }
+
+    extension(FastRandom random)
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float NextFloat(float min, float max)
+        {
+            return random.NextFloat() * (max - min) + min;
         }
     }
 }

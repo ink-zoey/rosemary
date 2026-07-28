@@ -2,6 +2,7 @@
     <Folder Name="/daybreak-mod/">
         <File Path="daybreak-mod/src/DaybreakModuleAttribute.cs" />
         <File Path="daybreak-mod/src/Module.props" />
+        <Project Path="daybreak-mod/src/Daybreak.ChatTags/Daybreak.ChatTags.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.CodeAnalysis/Daybreak.CodeAnalysis.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.Contracts/Daybreak.Contracts.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.EarlyLoader/Daybreak.EarlyLoader.csproj" />
