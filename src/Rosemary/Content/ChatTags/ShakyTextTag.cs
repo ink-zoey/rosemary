@@ -102,7 +102,7 @@ public sealed class ShakyTextTag : ChatTag
 
                 var time = Main.GlobalTimeWrappedHourly * time_multiplier * strength;
 
-                var spike = Utils.Remap(MathF.Sin(time * random.NextFloat(0.2f, 0.9f) + timeOffset * random.NextFloat(-3f, 2f)), spike_start, 1f, 0f, 1f);
+                var spike = Utils.Remap(MathF.Sin(time * random.NextFloat(0.2f, 1.7f) + random.NextFloat(-3f, 9f)), spike_start, 1f, 0f, 1f);
 
                 spike *= MathF.Sin(Main.GlobalTimeWrappedHourly * spike_frequency) * spike_amplitude * strength;
 
@@ -114,6 +114,8 @@ public sealed class ShakyTextTag : ChatTag
                 sb.DrawString(font, character, curPosition + offset, color, curRotation, characterSize * 0.5f, scale, SpriteEffects.None, 0f);
 
                 sum += characterSize.X;
+
+                random.NextSeed();
             }
         }
 
