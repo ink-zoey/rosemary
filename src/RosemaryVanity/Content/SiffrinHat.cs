@@ -259,7 +259,7 @@ public sealed class SiffrinHat : ModItem
 
     private sealed class HatFrontDrawLayer : HatBehindDrawLayer
     {
-        public override Position GetDefaultPosition() => new AfterParent(PlayerDrawLayers.Head);
+        public override Position GetDefaultPosition() => new AfterParent(PlayerDrawLayers.FaceAcc);
 
         protected override int FrameX => 1;
     }
@@ -300,7 +300,7 @@ file sealed class HatStylePlayer : ModPlayer
         }
     }
 
-    public const int MAX_STYLE = 10;
+    public const int MAX_STYLE = 7;
 
     public int Style;
 

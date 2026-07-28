@@ -492,7 +492,7 @@ public sealed class SiffrinTransform : ModItem
     {
         public override bool GetDefaultVisibility(PlayerDrawSet drawInfo) => IsVisible(drawInfo);
 
-        public override Position GetDefaultPosition() => new BeforeParent(PlayerDrawLayers.FaceAcc);
+        public override Position GetDefaultPosition() => new AfterParent(PlayerDrawLayers.Head);
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {

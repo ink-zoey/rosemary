@@ -4,15 +4,12 @@
 
 	Name: {
 		0: Standard
-		1: ... Hat expansion. That can't be good.
+		1: … Hat expansion. That can't be good.
 		2: Wide (Foward)
 		3: Wide (Backward)
-		4: Standard
-		5: Standard
-		6: Standard
-		7: Standard
-		8: Standard
-		9: Standard
+		4: Obscurity
+		5: Hat expansion (Serious)
+		6: None
 	}
 }
 
@@ -22,15 +19,15 @@ SiffrinTransform: {
 }
 
 SiffrinHover: {
-	DisplayName: Memory of Emptiness
+	DisplayName: Lost Stardust
 	Tooltip:
 		'''
 		Grants the user unlimited flight
-		[Nothing comes to mind, hahahahaha!]
+		[Careful not to lose your hat on the way down!]
 		'''
 }
 
 SiffrinHoverBuff: {
-	DisplayName: Forgotten Starfield
-	Description: Attuned with what was lost
+	DisplayName: Memory of Emptiness
+	Description: "[Nothing comes to mind, hahahahaha!]"
 }

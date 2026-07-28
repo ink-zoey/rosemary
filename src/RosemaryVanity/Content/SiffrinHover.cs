@@ -75,7 +75,7 @@ public sealed class SiffrinHover : ModItem
 
 public sealed class SiffrinHoverBuff : ModBuff
 {
-    public override string Texture => Assets.Vanity.Hat.KEY;
+    public override string Texture => Assets.Vanity.SiffrinHover_Buff.KEY;
 
     public override string LocalizationCategory => "Content";
 
@@ -423,6 +423,17 @@ public sealed class SiffrinHoverMount : ModMount
             }
 
             SiffrinParticles.BackgroundStars += new SiffrinParticles.Star(position, Color.Black, Rand.Next((byte)4), 0, 0);
+        }
+
+        if (Rand.NextBoolean(12))
+        {
+            var range = player.Hitbox;
+
+            range.Inflate(8, 4);
+
+            var position = Rand.Next(range);
+
+            SiffrinParticles.ForegroundStars += new SiffrinParticles.Star(position, Color.White, Rand.Next((byte)4), 0, 0);
         }
     }
 }
