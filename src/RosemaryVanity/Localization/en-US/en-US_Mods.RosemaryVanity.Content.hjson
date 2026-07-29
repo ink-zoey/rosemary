@@ -31,3 +31,8 @@ SiffrinHoverBuff: {
 	DisplayName: Memory of Emptiness
 	Description: '''[rsmryshk/4.3:[Nothing comes to mind, hahahahaha!\]]'''
 }
+
+EmptinessDye: {
+	DisplayName: Emptiness Dye
+	Tooltip: '''[rsmryshk/4.3:[my truama is not your larp!\]]'''
+}

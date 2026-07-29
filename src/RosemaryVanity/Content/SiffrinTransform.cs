@@ -527,7 +527,6 @@ public sealed class SiffrinTransform : ModItem
 
             var texture = Assets.Vanity.EyePatch_Equip.Asset.Value;
 
-
             var hatData = new DrawData(
                 texture,
                 position,
