@@ -2,8 +2,8 @@
 using Daybreak.Networking;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.IO;
 using Rosemary.Common;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -13,6 +13,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
+using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Vanity.Content;
 
@@ -261,6 +262,15 @@ public sealed class SiffrinHat : ModItem
         public override Position GetDefaultPosition() => new AfterParent(PlayerDrawLayers.FaceAcc);
 
         protected override int FrameX => 1;
+
+        protected override void Draw(ref PlayerDrawSet drawInfo)
+        {
+            base.Draw(ref drawInfo);
+
+            var modPlayer = drawInfo.drawPlayer.GetModPlayer<HatStylePlayer>();
+
+            drawInfo.hatHair = modPlayer.Style != HatStylePlayer.MAX_STYLE - 1;
+        }
     }
 }
 
