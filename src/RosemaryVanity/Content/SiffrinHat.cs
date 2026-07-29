@@ -13,7 +13,6 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using Terraria.UI;
-using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Vanity.Content;
 
@@ -31,7 +30,7 @@ public sealed class SiffrinHat : ModItem
         }
 
         // Irrelevant, we'll be overriding this anyway.
-        EquipLoader.AddEquipTexture(Mod, Assets.Vanity.Hat.KEY, EquipType.Head, this);
+        EquipLoader.AddEquipTexture(Mod, Assets.Blank.KEY, EquipType.Head, this);
 
         On_ItemSlot.Draw_SpriteBatch_ItemArray_int_int_Vector2_Color += Draw_HatStyleToggle;
         On_ItemSlot.Handle_ItemArray_int_int_bool += Handle_BlockInput;
@@ -169,29 +168,6 @@ public sealed class SiffrinHat : ModItem
 
     private class HatBehindDrawLayer : PlayerDrawLayer
     {
-        [OnLoad(Side = ModSide.Client)]
-        private new static void Load()
-        {
-            On_PlayerDrawLayers.DrawPlayer_21_Head += DrawPlayer_21_Head_HideArmor;
-        }
-
-        private static void DrawPlayer_21_Head_HideArmor(On_PlayerDrawLayers.orig_DrawPlayer_21_Head orig, ref PlayerDrawSet drawInfo)
-        {
-            // Vanilla hat rendering should not take place.
-            if (!IsVisible(drawInfo))
-            {
-                orig(ref drawInfo);
-                return;
-            }
-
-            var prior = drawInfo.drawPlayer.head;
-            drawInfo.drawPlayer.head = -1;
-            {
-                orig(ref drawInfo);
-            }
-            drawInfo.drawPlayer.head = prior;
-        }
-
         private static bool IsVisible(PlayerDrawSet drawInfo)
         {
             return drawInfo.drawPlayer.head == EquipLoader.GetEquipSlot(ModContent.GetInstance<ModImpl>(), ModContent.GetInstance<SiffrinHat>().Name, EquipType.Head);
@@ -254,6 +230,11 @@ public sealed class SiffrinHat : ModItem
                 shader = drawInfo.cHead,
             };
             drawInfo.DrawDataCache.Add(hatData);
+
+            var modPlayer = drawInfo.drawPlayer.GetModPlayer<HatStylePlayer>();
+
+            drawInfo.hatHair = modPlayer.Style != HatStylePlayer.MAX_STYLE - 1;
+            drawInfo.fullHair = !drawInfo.hatHair;
         }
     }
 
@@ -262,15 +243,6 @@ public sealed class SiffrinHat : ModItem
         public override Position GetDefaultPosition() => new AfterParent(PlayerDrawLayers.FaceAcc);
 
         protected override int FrameX => 1;
-
-        protected override void Draw(ref PlayerDrawSet drawInfo)
-        {
-            base.Draw(ref drawInfo);
-
-            var modPlayer = drawInfo.drawPlayer.GetModPlayer<HatStylePlayer>();
-
-            drawInfo.hatHair = modPlayer.Style != HatStylePlayer.MAX_STYLE - 1;
-        }
     }
 }
 
