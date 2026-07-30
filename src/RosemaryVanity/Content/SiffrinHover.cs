@@ -390,16 +390,16 @@ public sealed class SiffrinHoverMount : ModMount
 
     public override void SetMount(Player player, ref bool skipDust)
     {
-        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0f);
+        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0f, 0);
 
-        player.velocity *= 0.3f;
+        player.velocity *= 0.1f;
 
         skipDust = true;
     }
 
     public override void Dismount(Player player, ref bool skipDust)
     {
-        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0.4f);
+        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0.6f, 0);
 
         skipDust = true;
     }

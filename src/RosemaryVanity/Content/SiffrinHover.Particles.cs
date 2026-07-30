@@ -30,11 +30,17 @@ public static partial class SiffrinParticles
         }
     }
 
-    public record struct TransformStar(Vector2 Position, float LifeTime) : IUpdatingParticle
+    public record struct TransformStar(Vector2 Position, float LifeTime, int FrameCounter) : IUpdatingParticle
     {
         bool IUpdatingParticle.Update()
         {
-            LifeTime += 0.065f;
+            FrameCounter++;
+
+            if (FrameCounter >= 3)
+            {
+                LifeTime += 0.1f;
+                FrameCounter = 0;
+            }
 
             return LifeTime <= 1f;
         }
@@ -92,17 +98,21 @@ public static partial class SiffrinParticles
         }
     }
 
+    private static Vector2 priorScreenPosition;
+
     private static bool DrawTransformStars(RenderTarget2D screen, RenderTarget2D screenSwap)
     {
         if (TransformAnimation.ActiveParticleCount <= 0)
         {
+            priorScreenPosition = Main.screenPosition;
+
             return false;
         }
 
         var sb = Main.spriteBatch;
         var device = Main.graphics.GraphicsDevice;
 
-        const float start_range = 0.1f;
+        const float start_range = 0.2f;
 
         var texture = Assets.Star.Asset.Value;
 
@@ -121,7 +131,7 @@ public static partial class SiffrinParticles
 
                 var scale = Utils.Remap(anim.LifeTime, 0f, start_range, 0f, 1f) * Utils.Remap(anim.LifeTime, start_range, 1f, 1f, 0f);
 
-                scale -= 0.2f;
+                scale -= 0.15f;
 
                 scale = MathF.Saturate(scale);
 
@@ -140,7 +150,7 @@ public static partial class SiffrinParticles
             sb.Draw(screen, Vector2.Zero, Color.White);
         }
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Multiplicative, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        sb.Begin(SpriteSortMode.Deferred, BlendState.Multiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.ZoomMatrix);
         {
             foreach (var index in TransformAnimation)
             {
@@ -152,11 +162,11 @@ public static partial class SiffrinParticles
 
                 DrawFlare(anim, new Color(0, 215, 215), scale, 0f);
                 DrawFlare(anim, new Color(40, 215, 215), scale, 4f);
-                DrawFlare(anim, new Color(110, 215, 215), scale, 16f);
+                DrawFlare(anim, new Color(80, 215, 215), scale, 16f);
             }
         }
         sb.End();
-        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.ZoomMatrix);
         {
             var effect = Assets.Vanity.TransformStarOutline.CreateTransformStarOutlineShader();
 
@@ -164,9 +174,14 @@ public static partial class SiffrinParticles
 
             effect.Apply();
 
-            sb.Draw(lease.Target, Vector2.Zero, Color.Red);
+            // Inaccuracy factor, looks worse without it as our eyes perceive the outline weirdly.
+            var position = -(Main.screenPosition - priorScreenPosition) * 0.15f;
+
+            sb.Draw(lease.Target, position, Color.Red);
         }
         sb.End();
+
+        priorScreenPosition = Main.screenPosition;
 
         return true;
 
