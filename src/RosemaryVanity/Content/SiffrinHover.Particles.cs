@@ -1,4 +1,6 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.Rendering;
+using Daybreak.Rendering.Buffers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
@@ -106,10 +108,34 @@ public static partial class SiffrinParticles
 
         var origin = texture.Size() * 0.5f;
 
+        var lease = ScreenspaceTargetProvider.Shared.Create(device);
+
+        device.SetRenderTarget(lease.Target);
+        device.Clear(Color.Transparent);
+
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+        {
+            foreach (var index in TransformAnimation)
+            {
+                var anim = TransformAnimation[index];
+
+                var scale = Utils.Remap(anim.LifeTime, 0f, start_range, 0f, 1f) * Utils.Remap(anim.LifeTime, start_range, 1f, 1f, 0f);
+
+                scale -= 0.2f;
+
+                scale = MathF.Saturate(scale);
+
+                scale = 1f - MathF.Pow(1f - scale, 3f);
+
+                DrawFlare(anim, Color.White, scale, 0f);
+            }
+        }
+        sb.End();
+
         device.SetRenderTarget(screenSwap);
         device.Clear(Color.Transparent);
 
-        sb.Begin();
+        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend);
         {
             sb.Draw(screen, Vector2.Zero, Color.White);
         }
@@ -130,6 +156,17 @@ public static partial class SiffrinParticles
             }
         }
         sb.End();
+        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        {
+            var effect = Assets.Vanity.TransformStarOutline.CreateTransformStarOutlineShader();
+
+            effect.Parameters.StepSize = 2f;
+
+            effect.Apply();
+
+            sb.Draw(lease.Target, Vector2.Zero, Color.Red);
+        }
+        sb.End();
 
         return true;
 
@@ -137,7 +174,7 @@ public static partial class SiffrinParticles
         {
             var position = anim.Position.Floor();
 
-            var flareScale = baseScale * ((texture.Width - (decrement * 4f)) / texture.Width);
+            var flareScale = baseScale - ((decrement * 4f) / texture.Width);
             sb.Draw(texture, position - Main.screenPosition, null, color, 0f, origin, flareScale, SpriteEffects.None, 0f);
         }
     }

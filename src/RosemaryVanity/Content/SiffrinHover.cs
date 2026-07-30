@@ -349,8 +349,8 @@ public sealed class SiffrinHoverMount : ModMount
 
         MountData.usesHover = true;
 
-        MountData.runSpeed = 7f;
-        MountData.dashSpeed = 7f;
+        MountData.runSpeed = 8.5f;
+        MountData.dashSpeed = 8.5f;
         MountData.acceleration = 0.91f;
         MountData.jumpHeight = 10;
         MountData.jumpSpeed = 4f;
