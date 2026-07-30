@@ -177,7 +177,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
                 Main.GameViewMatrix._transformationMatrix = Matrix.Identity;
                 drawingAfterImage = true;
                 {
-                    Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, Player.fullRotation, Player.fullRotationOrigin, float.Epsilon);
+                    Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, 0f, Player.fullRotationOrigin, float.Epsilon);
                 }
                 drawingAfterImage = false;
                 Main.GameViewMatrix._transformationMatrix = prior;
@@ -349,8 +349,8 @@ public sealed class SiffrinHoverMount : ModMount
 
         MountData.usesHover = true;
 
-        MountData.runSpeed = 9f;
-        MountData.dashSpeed = 9f;
+        MountData.runSpeed = 7f;
+        MountData.dashSpeed = 7f;
         MountData.acceleration = 0.91f;
         MountData.jumpHeight = 10;
         MountData.jumpSpeed = 4f;
@@ -390,11 +390,17 @@ public sealed class SiffrinHoverMount : ModMount
 
     public override void SetMount(Player player, ref bool skipDust)
     {
+        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0f);
+
+        player.velocity *= 0.3f;
+
         skipDust = true;
     }
 
     public override void Dismount(Player player, ref bool skipDust)
     {
+        SiffrinParticles.TransformAnimation += new SiffrinParticles.TransformStar(player.Center, 0.4f);
+
         skipDust = true;
     }
 
