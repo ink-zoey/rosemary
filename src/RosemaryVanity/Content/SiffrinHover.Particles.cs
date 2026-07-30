@@ -108,7 +108,7 @@ public static partial class SiffrinParticles
 
         var origin = texture.Size() * 0.5f;
 
-        var lease = ScreenspaceTargetProvider.Shared.Create(device);
+        using var lease = ScreenspaceTargetProvider.Shared.Create(device);
 
         device.SetRenderTarget(lease.Target);
         device.Clear(Color.Transparent);
