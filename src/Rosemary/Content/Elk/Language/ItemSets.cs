@@ -141,7 +141,7 @@ public static class ElkLangItemSets
                 }
                 else
                 {
-                    SoundEngine.PlaySound(in SoundID.Item37);
+                    SoundEngine.PlaySound(Assets.Elk.Reforge.Asset with { PitchRange = (-0.3f, 0.2f)});
                     Main.reforgeCooldown = 30;
 
                     SpawnSparks();
