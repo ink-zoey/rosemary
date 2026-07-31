@@ -127,7 +127,7 @@ public static partial class SiffrinParticles
         {
             foreach (var index in TransformAnimation)
             {
-                var anim = TransformAnimation[index];
+                ref var anim = ref TransformAnimation[index];
 
                 var scale = Utils.Remap(anim.LifeTime, 0f, start_range, 0f, 1f) * Utils.Remap(anim.LifeTime, start_range, 1f, 1f, 0f);
 
@@ -154,7 +154,7 @@ public static partial class SiffrinParticles
         {
             foreach (var index in TransformAnimation)
             {
-                var anim = TransformAnimation[index];
+                ref var anim = ref TransformAnimation[index];
 
                 var scale = Utils.Remap(anim.LifeTime, 0f, start_range, 0f, 1f) * Utils.Remap(anim.LifeTime, start_range, 1f, 1f, 0f);
 
@@ -215,7 +215,7 @@ public static partial class SiffrinParticles
 
         foreach (var index in stars)
         {
-            var star = stars[index];
+            ref var star = ref stars[index];
 
             var frame = texture.Frame(6, 4, star.Frame, star.Style);
 

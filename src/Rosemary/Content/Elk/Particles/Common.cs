@@ -65,7 +65,7 @@ public static class ElkParticles
 
             foreach (var index in Sparks)
             {
-                var spark = Sparks[index];
+                ref var spark = ref Sparks[index];
 
                 var position = spark.Position - Main.screenPosition;
 
