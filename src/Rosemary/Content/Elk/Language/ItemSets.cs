@@ -1,11 +1,12 @@
-﻿using Daybreak.MonoMod;
-using Daybreak.Hooks;
+﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
 using Daybreak.Rendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using ReLogic.Graphics;
 using Rosemary.Common;
+using Rosemary.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +16,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameContent.Drawing;
+using Terraria.GameContent.Liquid;
 using Terraria.GameContent.UI;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -26,12 +28,15 @@ public static class ElkLangItemSets
 {
     private static ElkPhrase?[] usesElkName = [];
 
+    private static bool[] violentShimmerReaction = [];
+
     private static Mod Mod => ModContent.GetInstance<ModImpl>();
 
     [ModSystemHooks.ResizeArrays]
     private static void ResizeArrays()
     {
         usesElkName = CreateSet<ElkPhrase?>(nameof(usesElkName), null);
+        violentShimmerReaction = CreateSet(nameof(violentShimmerReaction), false);
 
         return;
 
@@ -50,10 +55,16 @@ public static class ElkLangItemSets
         ///     Additionally, reforging will be slower and have extra spark particles as to feel more foreign.
         /// </summary>
         public static ElkPhrase?[] UsesElkName => usesElkName;
+
+        /// <summary>
+        ///     TODO
+        /// </summary>
+        public static bool[] ViolentShimmerReaction => violentShimmerReaction;
     }
 
+#region UsesElkName
     [OnLoad]
-    private static void Load()
+    private static void Load_UsesElkName()
     {
         IL_Main.MouseText_DrawItemTooltip += MouseText_DrawItemTooltip_UsesElkName;
         IL_Main.GUIHotbarDrawInner += GUIHotbarDrawInner_UsesElkName;
@@ -83,7 +94,6 @@ public static class ElkLangItemSets
         IL_Main.ReforgeItemInReforgeSlot += ReforgeItemInReforgeSlot_UsesElkName;
     }
 
-#region UsesElkName
     private const float elk_name_tooltip_scale = 1f;
     private const float elk_name_popup_scale = 1f;
 
@@ -1279,6 +1289,92 @@ public static class ElkLangItemSets
 
         return size * scale;
     }
-
 #endregion
+
+    private record struct ShimmerSpike(Vector2 Position, Vector2 Size, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    {
+        public bool Update()
+        {
+            LifeTime += LifeTimeIncrement;
+
+            return LifeTime <= 1f;
+        }
+    }
+
+    private static UpdatingParticleHandler<ShimmerSpike> spikes = new(128);
+
+    [ModSystemHooks.PostUpdateDusts]
+    private static void UpdateParticles_ViolentShimmerReaction()
+    {
+        spikes.Update();
+    }
+
+    [OnLoad]
+    private static void Load_ViolentShimmerReaction()
+    {
+        On_WorldItem.Shimmering += Shimmering_ViolentShimmerReaction;
+        IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
+        On_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
+    }
+
+    private static void DrawShimmer_ViolentShimmerReaction(On_LiquidRenderer.orig_DrawShimmer orig, LiquidRenderer self, SpriteBatch spriteBatch, Vector2 drawOffset, bool isBackgroundDraw)
+    {
+        if (!isBackgroundDraw || spikes.ActiveParticleCount <= 0)
+        {
+            orig(self, spriteBatch, drawOffset, isBackgroundDraw);
+            return;
+        }
+
+
+    }
+
+    private static void MoveInWorld_ViolentShimmerReaction(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var itemIndex = -1; // arg
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchCall(typeof(SoundEngine), nameof(SoundEngine.PlaySound)),
+            i => i.MatchPop()
+        );
+
+        c.FindPrev(
+            out _,
+            i => i.MatchLdarg(out itemIndex),
+            i => i.MatchLdflda<Entity>(nameof(Entity.position))
+        );
+
+        c.EmitLdarg(itemIndex);
+        c.EmitDelegate(
+            static (WorldItem item) =>
+            {
+                if (!ItemID.Sets.ViolentShimmerReaction[item.type])
+                {
+                    return;
+                }
+
+                spikes += new ShimmerSpike(item.Center, new Vector2(16f, 90f), 0f, 0.01f);
+            }
+        );
+    }
+
+    private static void Shimmering_ViolentShimmerReaction(On_WorldItem.orig_Shimmering orig, WorldItem self)
+    {
+        if (!ItemID.Sets.ViolentShimmerReaction[self.type])
+        {
+            orig(self);
+
+            return;
+        }
+
+        var velocity = -self.velocity;
+        velocity.Y = -9f;
+
+        self.velocity = velocity;
+
+        self.shimmerTime = 0;
+        self.shimmered = false;
+    }
 }

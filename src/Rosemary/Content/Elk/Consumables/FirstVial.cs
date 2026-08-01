@@ -31,6 +31,8 @@ public sealed class FirstVial : ModItem
                        .CurlB.UseHeight(15f)
                        .LargeRightSpike.UseOffset(new Vector2(0, -13f))
                        .FullStop;
+
+        ItemID.Sets.ViolentShimmerReaction[Type] = true;
     }
 
     public override void SetDefaults()
