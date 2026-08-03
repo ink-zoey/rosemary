@@ -88,19 +88,10 @@ public static partial class SiffrinParticles
         sb.End();
     }
 
-    private sealed class TransformStarRenderer : IScreenFilterStep
-    {
-        public EffectPriority Priority => EffectPriority.VeryLow;
-
-        public bool Apply(in ScreenFilterRendererContext ctx)
-        {
-            return DrawTransformStars(ctx.ScreenTarget, ctx.ScreenTargetSwap);
-        }
-    }
-
     private static Vector2 priorScreenPosition;
 
-    private static bool DrawTransformStars(RenderTarget2D screen, RenderTarget2D screenSwap)
+    [ScreenFilter(EffectPriority.VeryLow)]
+    private static bool DrawTransformStars(SpriteBatch sb, GraphicsDevice device, RenderTarget2D screen, RenderTarget2D screenSwap)
     {
         if (TransformAnimation.ActiveParticleCount <= 0)
         {
@@ -108,9 +99,6 @@ public static partial class SiffrinParticles
 
             return false;
         }
-
-        var sb = Main.spriteBatch;
-        var device = Main.graphics.GraphicsDevice;
 
         const float start_range = 0.2f;
 
