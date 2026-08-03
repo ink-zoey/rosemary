@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Terraria;
 using Terraria.Audio;
@@ -18,6 +19,7 @@ using Terraria.GameContent;
 using Terraria.GameContent.Drawing;
 using Terraria.GameContent.Liquid;
 using Terraria.GameContent.UI;
+using Terraria.Graphics;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
@@ -1291,7 +1293,7 @@ public static class ElkLangItemSets
     }
 #endregion
 
-    private record struct ShimmerSpike(Vector2 Position, Vector2 Size, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    private record struct ShimmerSpike(Point Position, float Height, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
         public bool Update()
         {
@@ -1314,18 +1316,107 @@ public static class ElkLangItemSets
     {
         On_WorldItem.Shimmering += Shimmering_ViolentShimmerReaction;
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
-        On_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
+        IL_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
     }
 
-    private static void DrawShimmer_ViolentShimmerReaction(On_LiquidRenderer.orig_DrawShimmer orig, LiquidRenderer self, SpriteBatch spriteBatch, Vector2 drawOffset, bool isBackgroundDraw)
+    private record struct ShimmerSpikeDrawItem(int Index, Vector2 Position, float Opacity);
+
+    private static void DrawShimmer_ViolentShimmerReaction(ILContext il)
     {
-        if (!isBackgroundDraw || spikes.ActiveParticleCount <= 0)
+        var c = new ILCursor(il);
+
+        var spikesByPositionReference = c.AddVariable<Dictionary<Point, int>>();
+        var spikesDrawCacheReference = c.AddVariable<List<ShimmerSpikeDrawItem>>();
+
+        var liquidRendererIndex = -1;  // arg
+        var sourceRectangleIndex = -1; // loc
+
+        var liquidCacheCurrentIndex = -1; // loc
+
+        var xIndex = -1; // loc
+        var yIndex = -1; // loc
+
+        var isBackgroundDrawIndex = -1; // arg
+
+        c.EmitStaticDelegateUnsafe(
+            static () => spikes.ToDictionary(index => spikes[index].Position)
+        );
+        c.EmitStloc(spikesByPositionReference);
+
+        c.EmitStaticDelegateUnsafe(
+            static () => new List<ShimmerSpikeDrawItem>()
+        );
+        c.EmitStloc(spikesDrawCacheReference);
+
+        c.GotoNext(i => i.MatchLdarg(out liquidRendererIndex));
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdloca(out sourceRectangleIndex),
+            i => i.MatchLdcI4(1280),
+            i => i.MatchStfld<Rectangle>(nameof(Rectangle.Y))
+        );
+
+        var c2 = c.Clone();
         {
-            orig(self, spriteBatch, drawOffset, isBackgroundDraw);
-            return;
+            c2.GotoNext(i => i.MatchCall<Lighting>(nameof(Lighting.GetCornerColors)));
+
+            c2.GotoPrev(
+                i => i.MatchLdloc(out xIndex),
+                i => i.MatchLdloc(out yIndex)
+            );
+
+            c2.GotoPrev(
+                i => i.MatchLdloc(out liquidCacheCurrentIndex),
+                i => i.MatchLdfld<LiquidRenderer.LiquidDrawCache>(nameof(LiquidRenderer.LiquidDrawCache.Opacity)),
+                i => i.MatchLdarg(out isBackgroundDrawIndex)
+            );
         }
 
+        c.EmitLdloc(liquidCacheCurrentIndex);
+        c.EmitLdarg(liquidRendererIndex);
+        c.EmitLdloc(xIndex);
+        c.EmitLdloc(yIndex);
+        c.EmitLdloca(sourceRectangleIndex);
+        c.EmitLdarg(isBackgroundDrawIndex);
+        c.EmitLdloc(spikesByPositionReference);
+        c.EmitLdloc(spikesDrawCacheReference);
+        c.EmitDelegate(
+            static (
+                LiquidRenderer.LiquidDrawCache liquidCache,
+                LiquidRenderer renderer,
+                Point tilePosition,
+                ref Rectangle source,
+                bool isBackgroundDraw,
+                Dictionary<Point, int> spikesByPosition,
+                List<ShimmerSpikeDrawItem> spikeCache
+            ) =>
+            {
+                if (!spikesByPosition.TryGetValue(tilePosition, out var index))
+                {
+                    return;
+                }
 
+                // Have the liquid use a non-surface frame
+                source.Y = 60 + renderer._animationFrame * 80;
+
+                // It can be safely assumed that the opacity at the surface is 1
+                var opacity = liquidCache.Opacity * (isBackgroundDraw ? 1f : 0.75f);
+
+                // drawOffset can be disregarded as it is a retro lighting relic
+                var position = tilePosition.ToWorldCoordinates(Vector2.Zero) + liquidCache.LiquidOffset;
+
+                spikeCache.Add(new ShimmerSpikeDrawItem(index, position, opacity));
+            }
+        );
+
+        c.GotoNext(
+            MoveType.Before,
+            i => i.MatchLdsfld<Main>(nameof(Main.tileBatch)),
+            i => i.MatchCallvirt<TileBatch>(nameof(TileBatch.End))
+        );
+
+        c.MoveAfterLabels();
     }
 
     private static void MoveInWorld_ViolentShimmerReaction(ILContext il)
@@ -1355,7 +1446,8 @@ public static class ElkLangItemSets
                     return;
                 }
 
-                spikes += new ShimmerSpike(item.Center, new Vector2(16f, 90f), 0f, 0.01f);
+                // Can be fairly reasonably assumed that the bottom of the item is the top tile of the shimmer
+                spikes += new ShimmerSpike(item.Bottom.ToTileCoordinates(), 80f, 0f, 0.01f);
             }
         );
     }
