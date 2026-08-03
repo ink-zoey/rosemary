@@ -64,7 +64,9 @@ public static class GameInterfaceLayers
     }
 
     // Identical to GameInterfaceDrawMethod
-    /// <returns><see langword="false"/> to stop all further <see cref="GameInterfaceLayer"/>s from drawing (permits <see langword="void"/>.)</returns>
+    /// <returns>
+    ///     <see langword="false"/> to stop all further <see cref="GameInterfaceLayer"/>s from drawing (permits <see langword="void"/>.)
+    /// </returns>
     [return: PermitsVoidWithTrue]
     private delegate bool InterfaceDrawDefinition();
 
