@@ -54,7 +54,9 @@ public static class GameInterfaceLayers
 	public const string INTERFACE_LOGIC_4           = "Vanilla: Interface Logic 4";
 
     /// <summary>
-    ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> before/after the target layer.
+    ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> before/after the target layer.<br/>
+    ///     The decorated method should return <see langword="true"/>,
+    ///     returning <see langword="false"/>, prevents all following <see cref="GameInterfaceLayer"/>'s from drawing
     /// </summary>
     /// <param name="targetLayer">
     ///     Name of the target <see cref="GameInterfaceLayer"/>, constants are provided for vanilla layers in <see cref="GameInterfaceLayers"/>.
