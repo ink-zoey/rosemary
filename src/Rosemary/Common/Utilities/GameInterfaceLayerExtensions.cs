@@ -55,7 +55,7 @@ public static class GameInterfaceLayers
 	public const string INTERFACE_LOGIC_4           = "Vanilla: Interface Logic 4";
 
     [AttributeUsage(AttributeTargets.ReturnValue)]
-    private sealed class PermitsVoidWithTrue : AbstractPermitsVoidAttribute
+    private sealed class PermitsVoidWithTrueAttribute : AbstractPermitsVoidAttribute
     {
         public override Expression ModifyExpression(HookSubscriber.ReturnExpressionContext ctx)
         {
