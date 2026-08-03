@@ -142,13 +142,24 @@ public static class WorldItemExtensions
 {
     extension(WorldItem item)
     {
+        private WorldItemData GetOrInitializeData()
+        {
+            item.Data ??= new WorldItemData
+            {
+                Hidden = false,
+                Rotation = 0f,
+            };
+
+            return item.Data;
+        }
+
         /// <summary>
         ///     Extra rotation above the x velocity based rotation, interpolates back to 0 over time.
         /// </summary>
         public float Rotation
         {
-            get => item.Data?.Rotation ?? 0f;
-            set => item.Data?.Rotation = value;
+            get => item.GetOrInitializeData().Rotation;
+            set => item.GetOrInitializeData().Rotation = value;
         }
 
         /// <summary>
@@ -156,8 +167,8 @@ public static class WorldItemExtensions
         /// </summary>
         public bool Hidden
         {
-            get => item.Data?.Hidden ?? false;
-            set => item.Data?.Hidden = value;
+            get => item.GetOrInitializeData().Hidden;
+            set => item.GetOrInitializeData().Hidden = value;
         }
     }
 }

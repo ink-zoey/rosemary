@@ -309,10 +309,20 @@ public static class ChestExtensions
 {
     extension(Chest chest)
     {
+        private ChestData GetOrInitializeData()
+        {
+            chest.Data ??= new ChestData
+            {
+                SilentOpenAnimationTime = 0,
+            };
+
+            return chest.Data;
+        }
+
         public int SilentOpenAnimationTime
         {
-            get => chest.Data?.SilentOpenAnimationTime ?? 0;
-            set => chest.Data?.SilentOpenAnimationTime = value;
+            get => chest.GetOrInitializeData().SilentOpenAnimationTime;
+            set => chest.GetOrInitializeData().SilentOpenAnimationTime = value;
         }
 
         /// <summary>
