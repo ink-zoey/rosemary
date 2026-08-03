@@ -1,19 +1,24 @@
-﻿using System;
-using Daybreak.Hooks;
+﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
+using System;
+using GoldMeridian.CodeAnalysis;
 using Terraria;
 using Terraria.DataStructures;
 
+// ReSharper disable InconsistentNaming
 namespace Rosemary.Common;
 
-// ReSharper disable InconsistentNaming
-file static class WorldItemBehavior
+[ExtensionDataFor<WorldItem>]
+internal sealed class WorldItemData
 {
-    internal static readonly float[] rotations = new float[Main.maxItems];
+    public required float Rotation { get; set; }
 
-    internal static readonly bool[] hidden = new bool[Main.maxItems];
+    public required bool Hidden { get; set; }
+}
 
+file static class WorldItemDataBehavior
+{
     [OnLoad]
     private static void Load()
     {
@@ -44,10 +49,14 @@ file static class WorldItemBehavior
     {
         var index = orig(source, x,y,width,height, itemToClone,type,stack, noBroadcast, prefix, noGrabDelay);
 
-        if (hidden.IndexInRange(index))
+        if (index == -1)
         {
-            hidden[index] = false;
+            return -1;
         }
+
+        var item = Main.item[index];
+
+        item.Hidden = false;
 
         return index;
     }
@@ -71,7 +80,7 @@ file static class WorldItemBehavior
 
         c.EmitLdloc(itemIndexIndex);
         c.EmitDelegate(
-            static (int index) => hidden[index]
+            static (int index) => Main.item[index].Hidden
         );
         c.EmitBrtrue(loopTarget);
 
@@ -138,8 +147,8 @@ public static class WorldItemExtensions
         /// </summary>
         public float Rotation
         {
-            get => WorldItemBehavior.rotations[item.whoAmI];
-            set => WorldItemBehavior.rotations[item.whoAmI] = value;
+            get => item.Data?.Rotation ?? 0f;
+            set => item.Data?.Rotation = value;
         }
 
         /// <summary>
@@ -147,8 +156,8 @@ public static class WorldItemExtensions
         /// </summary>
         public bool Hidden
         {
-            get => WorldItemBehavior.hidden[item.whoAmI];
-            set => WorldItemBehavior.hidden[item.whoAmI] = value;
+            get => item.Data?.Hidden ?? false;
+            set => item.Data?.Hidden = value;
         }
     }
 }

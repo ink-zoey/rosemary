@@ -7,6 +7,7 @@ using Rosemary.Core;
 using System;
 using System.IO;
 using System.Linq;
+using GoldMeridian.CodeAnalysis;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -19,10 +20,14 @@ using Terraria.UI;
 // ReSharper disable UseSymbolAlias
 namespace Rosemary.Common;
 
+[ExtensionDataFor<Chest>]
+internal sealed class ChestData
+{
+    public required int SilentOpenAnimationTime { get; set; }
+}
+
 file static class ChestBehavior
 {
-    internal static readonly int[] silentOpenAnimationTime = new int[Main.maxChests];
-
     [OnLoad]
     private static void Load()
     {
@@ -306,8 +311,8 @@ public static class ChestExtensions
     {
         public int SilentOpenAnimationTime
         {
-            get => ChestBehavior.silentOpenAnimationTime[chest.index];
-            set => ChestBehavior.silentOpenAnimationTime[chest.index] = value;
+            get => chest.Data?.SilentOpenAnimationTime ?? 0;
+            set => chest.Data?.SilentOpenAnimationTime = value;
         }
 
         /// <summary>
