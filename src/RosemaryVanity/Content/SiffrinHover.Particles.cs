@@ -183,11 +183,9 @@ public static partial class SiffrinParticles
     }
 
     [GameInterfaceLayers.Before(GameInterfaceLayers.CURSOR, InterfaceScaleType.UI, Name = $"{nameof(RosemaryVanity)}: Siffrin UI Particles")]
-    private static bool DrawParticlesUI()
+    private static void DrawParticlesUI()
     {
         DrawStars(Main.spriteBatch, UIStars, Vector2.Zero);
-
-        return true;
     }
 
     private static void DrawStars(SpriteBatch sb, ParticleHandler<Star> stars, Vector2 offset)

@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using Terraria.UI;
 
@@ -53,10 +54,22 @@ public static class GameInterfaceLayers
 	public const string INTERACT_ITEM_ICON          = "Vanilla: Interact Item Icon";
 	public const string INTERFACE_LOGIC_4           = "Vanilla: Interface Logic 4";
 
+    [AttributeUsage(AttributeTargets.ReturnValue)]
+    private sealed class PermitsVoidWithTrue : AbstractPermitsVoidAttribute
+    {
+        public override Expression ModifyExpression(HookSubscriber.ReturnExpressionContext ctx)
+        {
+            return Expression.Block(ctx.CallExpression, Expression.Constant(true));
+        }
+    }
+
+    // Identical to GameInterfaceDrawMethod
+    /// <returns><see langword="false"/> to stop all further <see cref="GameInterfaceLayer"/>s from drawing (permits <see langword="void"/>.)</returns>
+    [return: PermitsVoidWithTrue]
+    private delegate bool InterfaceDrawDefinition();
+
     /// <summary>
     ///     Inserts the decorated method as a <see cref="GameInterfaceLayer"/> before/after the target layer.<br/>
-    ///     The decorated method should return <see langword="true"/>,
-    ///     returning <see langword="false"/>, prevents all following <see cref="GameInterfaceLayer"/>'s from drawing
     /// </summary>
     /// <param name="targetLayer">
     ///     Name of the target <see cref="GameInterfaceLayer"/>, constants are provided for vanilla layers in <see cref="GameInterfaceLayers"/>.
@@ -64,9 +77,10 @@ public static class GameInterfaceLayers
     /// <param name="scaleType">
     ///     Changes how the cursor/screen is scaled, along with what matrix is used in the given SpriteBatch.
     /// </param>
+    /// <inheritdoc cref="InterfaceDrawDefinition" />
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]
+    [HookMetadata(DelegateType = typeof(InterfaceDrawDefinition))]
     public class InsertAttribute(string targetLayer, InterfaceScaleType scaleType, bool after) : BaseHookAttribute
     {
         public readonly string TargetLayer = targetLayer;
@@ -85,9 +99,11 @@ public static class GameInterfaceLayers
         {
             var name = Name ?? $"{bindingMethod.DeclaringType!.Assembly.GetName().Name}: {bindingMethod.Name}";
 
+            var method = new GameInterfaceDrawMethod(HookSubscriber.BuildWrapper<InterfaceDrawDefinition>(bindingMethod, instance));
+
             var interfaceLayer = new LegacyGameInterfaceLayer(
                 name,
-                bindingMethod.CreateDelegate<GameInterfaceDrawMethod>(),
+                method,
                 ScaleType
             );
 
@@ -107,7 +123,7 @@ public static class GameInterfaceLayers
     /// <inheritdoc cref="InsertAttribute"/>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]
+    [HookMetadata(DelegateType = typeof(InterfaceDrawDefinition))]
     public sealed class BeforeAttribute(string targetLayer, InterfaceScaleType scaleType)
         : InsertAttribute(targetLayer, scaleType, false);
 
@@ -117,7 +133,7 @@ public static class GameInterfaceLayers
     /// <inheritdoc cref="InsertAttribute"/>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    [HookMetadata(DelegateType = typeof(GameInterfaceDrawMethod))]
+    [HookMetadata(DelegateType = typeof(InterfaceDrawDefinition))]
     public sealed class AfterAttribute(string targetLayer, InterfaceScaleType scaleType)
         : InsertAttribute(targetLayer, scaleType, true);
 
