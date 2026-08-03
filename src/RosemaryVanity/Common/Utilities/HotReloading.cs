@@ -32,7 +32,7 @@ file static class HotReloading
         }
 
         // Because ProjectBuild is mega cursed we have to load the 'alternate' copy of our assembly from tMod.
-        if (!ModLoader.TryGetMod(nameof(Rosemary), out var mod))
+        if (!ModLoader.TryGetMod(nameof(RosemaryVanity), out var mod))
         {
             return;
         }
