@@ -83,12 +83,16 @@ public static class GameInterfaceLayers
         {
             var name = Name ?? $"{bindingMethod.DeclaringType!.Assembly.GetName().Name}: {bindingMethod.Name}";
 
+            var interfaceLayer = new LegacyGameInterfaceLayer(
+                name,
+                bindingMethod.CreateDelegate<GameInterfaceDrawMethod>(),
+                ScaleType
+            );
+
             layers.Add(
                 new Layer(
-                    bindingMethod.CreateDelegate<GameInterfaceDrawMethod>(),
-                    name,
+                    interfaceLayer,
                     TargetLayer,
-                    ScaleType,
                     After
                 )
             );
@@ -115,7 +119,7 @@ public static class GameInterfaceLayers
     public sealed class AfterAttribute(string targetLayer, InterfaceScaleType scaleType)
         : InsertAttribute(targetLayer, scaleType, true);
 
-    private record struct Layer(GameInterfaceDrawMethod Method, string Name, string TargetLayer, InterfaceScaleType ScaleType, bool After);
+    private record struct Layer(LegacyGameInterfaceLayer InterfaceLayer, string TargetLayer, bool After);
 
     private static readonly HashSet<Layer> layers = [];
 
@@ -138,11 +142,7 @@ public static class GameInterfaceLayers
 
             interfaceLayers.Insert(
                 index,
-                new LegacyGameInterfaceLayer(
-                    layer.Name,
-                    layer.Method,
-                    layer.ScaleType
-                )
+                layer.InterfaceLayer
             );
         }
     }
