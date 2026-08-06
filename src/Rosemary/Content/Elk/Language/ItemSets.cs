@@ -1328,6 +1328,7 @@ public static class ElkLangItemSets
 
         var spikesByPositionReference = c.AddVariable<Dictionary<Point, int>>();
         var spikesDrawCacheReference = c.AddVariable<List<ShimmerSpikeDrawItem>>();
+        var useInnerFrameReference = c.AddVariable<bool>();
 
         var liquidRendererIndex = -1;  // arg
         var sourceRectangleIndex = -1; // loc
@@ -1340,7 +1341,17 @@ public static class ElkLangItemSets
         var isBackgroundDrawIndex = -1; // arg
 
         c.EmitStaticDelegateUnsafe(
-            static () => spikes.ToDictionary(index => spikes[index].Position)
+            static () =>
+            {
+                var dict = new Dictionary<Point, int>();
+
+                foreach (var index in spikes)
+                {
+                    dict[spikes[index].Position] = index;
+                }
+
+                return dict;
+            }
         );
         c.EmitStloc(spikesByPositionReference);
 
@@ -1398,7 +1409,7 @@ public static class ElkLangItemSets
 
                 if (!spikesByPosition.TryGetValue(tilePosition, out var index))
                 {
-                    return;
+                    return false;
                 }
 
                 // Have the liquid use a non-surface frame
@@ -1408,11 +1419,46 @@ public static class ElkLangItemSets
                 var opacity = liquidCache->Opacity * (isBackgroundDraw ? 1f : 0.75f);
 
                 // drawOffset can be disregarded as it is a retro lighting relic
-                var position = tilePosition.ToWorldCoordinates(Vector2.Zero) + liquidCache->LiquidOffset;
+                var position =
+                    tilePosition.ToWorldCoordinates(Vector2.Zero)
+                  + liquidCache->LiquidOffset
+                  - (isBackgroundDraw ? Main.backWaterTarget.Position : Main.waterTarget.Position);
+
+                position.Y += 2f;
 
                 spikeCache.Add(new ShimmerSpikeDrawItem(index, position, opacity));
+
+                return true;
             }
         );
+        c.EmitStloc(useInnerFrameReference);
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdloc(liquidCacheCurrentIndex),
+            i => i.MatchLdfld<LiquidRenderer.LiquidDrawCache>(nameof(LiquidRenderer.LiquidDrawCache.SourceRectangle)),
+            i => i.MatchStloc(sourceRectangleIndex)
+        );
+
+        c.EmitLdloc(useInnerFrameReference);
+        c.EmitLdloca(sourceRectangleIndex);
+        c.EmitDelegate(
+            static (
+                bool useInnerFrame,
+                ref Rectangle source
+            ) =>
+            {
+                if (!useInnerFrame)
+                {
+                    return;
+                }
+
+                source.Y = 60;
+            }
+        );
+
+        c.EmitLdcI4(0);
+        c.EmitStloc(useInnerFrameReference);
 
         c.GotoNext(
             MoveType.Before,
@@ -1435,6 +1481,11 @@ public static class ElkLangItemSets
                 var backingFrame = texture.Frame(2, 1, 0, 0);
                 var frontFrame = texture.Frame(2, 1, 1, 0);
 
+                backingFrame.Height = 64;
+                frontFrame.Height = 64;
+
+                var overlayFrame = new Rectangle(16, 64, 16, 10);
+
                 foreach (var (index, position, opacity) in spikeCache)
                 {
                     var spike = spikes[index];
@@ -1443,9 +1494,7 @@ public static class ElkLangItemSets
 
                     height *= MathF.Sin(spike.LifeTime * MathF.PI);
 
-                    var dest = new Rectangle((int)(position.X - Main.screenPosition.X), (int)((position.Y - height) - Main.screenPosition.Y), 16, (int)height);
-                    dest.X += Main.offScreenRange;
-                    dest.Y += Main.offScreenRange;
+                    var dest = new Rectangle((int)position.X, (int)((position.Y - height)), 16, (int)height);
 
                     var colors = GetShimmerColors(spike, height, position, opacity, false);
 
@@ -1454,18 +1503,26 @@ public static class ElkLangItemSets
                     colors = GetShimmerColors(spike, height, position, opacity, true);
 
                     tb.Draw(texture, dest, frontFrame, colors);
+
+                    var tilePosition = position.ToTileCoordinates();
+                    LiquidRenderer.SetShimmerVertexColors_Sparkle(ref colors, opacity, tilePosition.X, tilePosition.Y, true);
+
+                    var overlayDest = new Rectangle((int)position.X, (int)position.Y - 1, 16, 16 - ((int)position.Y % 16));
+                    tb.Draw(texture, overlayDest, overlayFrame, colors);
                 }
 
                 return;
 
                 static VertexColors GetShimmerColors(ShimmerSpike spike, float height, Vector2 position, float opacity, bool useSparkleColor)
                 {
+                    var tilePosition = position.ToTileCoordinates();
+
                     var positions = new Point[]
                     {
-                        new(spike.Position.X, (int)((position.Y - height) / 16f)),
-                        new(spike.Position.X + 1, (int)((position.Y - height) / 16f)),
-                        new(spike.Position.X, (int)(position.Y / 16f) + 1),
-                        new(spike.Position.X + 1, (int)(position.Y / 16f) + 1),
+                        new(tilePosition.X, (int)((position.Y - height) / 16f)),
+                        new(tilePosition.X + 1, (int)((position.Y - height) / 16f)),
+                        new(tilePosition.X, tilePosition.Y + 1),
+                        new(tilePosition.X + 1, tilePosition.Y + 1),
                     };
 
                     var colors = new VertexColors(Color.White);
@@ -1520,8 +1577,13 @@ public static class ElkLangItemSets
                     return;
                 }
 
+                var position = item.Bottom.ToTileCoordinates();
+
                 // Can be fairly reasonably assumed that the bottom of the item is the top tile of the shimmer
-                spikes += new ShimmerSpike(item.Bottom.ToTileCoordinates(), 64f, 0f, 0.06f);
+                spikes += new ShimmerSpike(position, 64f, 0f, 0.06f);
+
+                spikes += new ShimmerSpike(new Point(position.X - 1, position.Y), 32f, 0f, 0.04f);
+                spikes += new ShimmerSpike(new Point(position.X + 1, position.Y), 32f, 0f, 0.04f);
             }
         );
     }
