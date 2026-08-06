@@ -1,6 +1,7 @@
 ﻿using Daybreak.Hooks;
 using Daybreak.MonoMod;
 using Daybreak.Rendering;
+using Humanizer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -1321,7 +1322,7 @@ public static class ElkLangItemSets
 
     private record struct ShimmerSpikeDrawItem(int Index, Vector2 Position, float Opacity);
 
-    private static void DrawShimmer_ViolentShimmerReaction(ILContext il)
+    private static unsafe void DrawShimmer_ViolentShimmerReaction(ILContext il)
     {
         var c = new ILCursor(il);
 
@@ -1383,15 +1384,18 @@ public static class ElkLangItemSets
         c.EmitLdloc(spikesDrawCacheReference);
         c.EmitDelegate(
             static (
-                LiquidRenderer.LiquidDrawCache liquidCache,
+                LiquidRenderer.LiquidDrawCache* liquidCache,
                 LiquidRenderer renderer,
-                Point tilePosition,
+                int i,
+                int j,
                 ref Rectangle source,
                 bool isBackgroundDraw,
                 Dictionary<Point, int> spikesByPosition,
                 List<ShimmerSpikeDrawItem> spikeCache
             ) =>
             {
+                var tilePosition = new Point(i, j);
+
                 if (!spikesByPosition.TryGetValue(tilePosition, out var index))
                 {
                     return;
@@ -1401,10 +1405,10 @@ public static class ElkLangItemSets
                 source.Y = 60 + renderer._animationFrame * 80;
 
                 // It can be safely assumed that the opacity at the surface is 1
-                var opacity = liquidCache.Opacity * (isBackgroundDraw ? 1f : 0.75f);
+                var opacity = liquidCache->Opacity * (isBackgroundDraw ? 1f : 0.75f);
 
                 // drawOffset can be disregarded as it is a retro lighting relic
-                var position = tilePosition.ToWorldCoordinates(Vector2.Zero) + liquidCache.LiquidOffset;
+                var position = tilePosition.ToWorldCoordinates(Vector2.Zero) + liquidCache->LiquidOffset;
 
                 spikeCache.Add(new ShimmerSpikeDrawItem(index, position, opacity));
             }
@@ -1417,6 +1421,76 @@ public static class ElkLangItemSets
         );
 
         c.MoveAfterLabels();
+
+        c.EmitLdloc(spikesDrawCacheReference);
+        c.EmitDelegate(
+            static (
+                List<ShimmerSpikeDrawItem> spikeCache
+            ) =>
+            {
+                var tb = Main.tileBatch;
+
+                var texture = Assets.Elk.Particles.ShimmerSpike.Asset.Value;
+
+                var backingFrame = texture.Frame(2, 1, 0, 0);
+                var frontFrame = texture.Frame(2, 1, 1, 0);
+
+                foreach (var (index, position, opacity) in spikeCache)
+                {
+                    var spike = spikes[index];
+
+                    var height = spike.Height;
+
+                    height *= MathF.Sin(spike.LifeTime * MathF.PI);
+
+                    var dest = new Rectangle((int)(position.X - Main.screenPosition.X), (int)((position.Y - height) - Main.screenPosition.Y), 16, (int)height);
+                    dest.X += Main.offScreenRange;
+                    dest.Y += Main.offScreenRange;
+
+                    var colors = GetShimmerColors(spike, height, position, opacity, false);
+
+                    tb.Draw(texture, dest, backingFrame, colors);
+
+                    colors = GetShimmerColors(spike, height, position, opacity, true);
+
+                    tb.Draw(texture, dest, frontFrame, colors);
+                }
+
+                return;
+
+                static VertexColors GetShimmerColors(ShimmerSpike spike, float height, Vector2 position, float opacity, bool useSparkleColor)
+                {
+                    var positions = new Point[]
+                    {
+                        new(spike.Position.X, (int)((position.Y - height) / 16f)),
+                        new(spike.Position.X + 1, (int)((position.Y - height) / 16f)),
+                        new(spike.Position.X, (int)(position.Y / 16f) + 1),
+                        new(spike.Position.X + 1, (int)(position.Y / 16f) + 1),
+                    };
+
+                    var colors = new VertexColors(Color.White);
+
+                    if (useSparkleColor)
+                    {
+                        colors.TopLeftColor = LiquidRenderer.GetShimmerGlitterColor(true, positions[0].X, positions[0].Y);
+                        colors.TopRightColor = LiquidRenderer.GetShimmerGlitterColor(true, positions[1].X, positions[1].Y);
+                        colors.BottomLeftColor = LiquidRenderer.GetShimmerGlitterColor(true, positions[2].X, positions[2].Y);
+                        colors.BottomRightColor = LiquidRenderer.GetShimmerGlitterColor(true, positions[3].X, positions[3].Y);
+                    }
+                    else
+                    {
+                        colors.TopLeftColor = new Color(colors.TopLeftColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[0].X, positions[0].Y));
+                        colors.TopRightColor = new Color(colors.TopRightColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[1].X, positions[1].Y));
+                        colors.BottomLeftColor = new Color(colors.BottomLeftColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[2].X, positions[2].Y));
+                        colors.BottomRightColor = new Color(colors.BottomRightColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[3].X, positions[3].Y));
+                    }
+
+                    colors *= opacity;
+
+                    return colors;
+                }
+            }
+        );
     }
 
     private static void MoveInWorld_ViolentShimmerReaction(ILContext il)
@@ -1447,7 +1521,7 @@ public static class ElkLangItemSets
                 }
 
                 // Can be fairly reasonably assumed that the bottom of the item is the top tile of the shimmer
-                spikes += new ShimmerSpike(item.Bottom.ToTileCoordinates(), 80f, 0f, 0.01f);
+                spikes += new ShimmerSpike(item.Bottom.ToTileCoordinates(), 64f, 0f, 0.06f);
             }
         );
     }
