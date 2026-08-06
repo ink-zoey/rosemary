@@ -1,7 +1,6 @@
 ﻿using Daybreak.Hooks;
 using Daybreak.MonoMod;
 using Daybreak.Rendering;
-using Humanizer;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;

@@ -150,7 +150,7 @@ public static class WorldItemExtensions
                 Rotation = 0f,
             };
 
-            return item.Data;
+            return item.Data!;
         }
 
         /// <summary>

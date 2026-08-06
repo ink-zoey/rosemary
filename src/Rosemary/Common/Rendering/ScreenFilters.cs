@@ -43,7 +43,6 @@ file delegate bool ScreenFilterDefinition(
 ///                 Equivalent to <see cref="Main.ColorOfTheSkies"/>, provided as vanilla screen filters pass this into draw calls,
 ///                 notably the screen itself should not be colored by this value when drawn to <b>screenSwap</b>,
 ///                 instead should be used for filter specific coloration.<br/>
-///                 Will always be <see cref="Color.White"/> when <see cref="Lighting.UpdateEveryFrame"/> is <see langword="true"/>.
 ///             </description>
 ///         </item>
 ///     </list>
@@ -144,7 +143,7 @@ file static class ScreenFilterRenderer
             return;
         }
 
-        var color = Lighting.UpdateEveryFrame ? Color.White : Main.ColorOfTheSkies;
+        var color = Main.ColorOfTheSkies;
 
         prior ??= EffectPriority.VeryLow;
 

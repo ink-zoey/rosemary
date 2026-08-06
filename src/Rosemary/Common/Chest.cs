@@ -316,7 +316,7 @@ public static class ChestExtensions
                 SilentOpenAnimationTime = 0,
             };
 
-            return chest.Data;
+            return chest.Data!;
         }
 
         public int SilentOpenAnimationTime
