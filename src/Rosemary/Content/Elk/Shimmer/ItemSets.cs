@@ -178,10 +178,8 @@ public static class ElkShimmerItemSets
                 // Have the liquid use a non-surface frame
                 source.Y = 60 + renderer._animationFrame * 80;
 
-                // It can be safely assumed that the opacity at the surface is 1
                 var opacity = liquidCache->Opacity * (isBackgroundDraw ? 1f : 0.75f);
 
-                // drawOffset can be disregarded as it is a retro lighting relic
                 var position =
                     tilePosition.ToWorldCoordinates(Vector2.Zero)
                   + liquidCache->LiquidOffset
@@ -412,7 +410,6 @@ public static class ElkShimmerItemSets
 
         self.ShimmerData.WaveProgress = -1f;
 
-        // Can be fairly reasonably assumed that the bottom of the item is the top tile of the shimmer
         SpawnSpike(-48f, 16f, 0.04f);
         SpawnSpike(-16f, 32f, 0.03f);
         SpawnSpike(0f, 64f, 0.055f);
