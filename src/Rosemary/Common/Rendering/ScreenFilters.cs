@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Terraria;
 using Terraria.Graphics.Effects;
+using Terraria.ModLoader;
 
 namespace Rosemary.Common;
 
@@ -137,6 +138,11 @@ file static class ScreenFilterRenderer
 
     private static void ApplyFiltersToPriority(ref RenderTarget2D target, ref RenderTarget2D target2, ref EffectPriority? prior, EffectPriority nextPriority)
     {
+        if (ModLoader.isLoading)
+        {
+            return;
+        }
+
         if (prior != null
          && prior == nextPriority)
         {

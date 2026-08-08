@@ -54,6 +54,15 @@ public static partial class SiffrinParticles
 
     public static UpdatingParticleHandler<Star> UIStars { get; set; } = new(128);
 
+    [ModSystemHooks.ClearWorld]
+    private static void ClearParticles()
+    {
+        BackgroundStars.Clear();
+        ForegroundStars.Clear();
+        TransformAnimation.Clear();
+        UIStars.Clear();
+    }
+
     [ModSystemHooks.PostUpdateDusts]
     private static void UpdateParticlesPostDust()
     {

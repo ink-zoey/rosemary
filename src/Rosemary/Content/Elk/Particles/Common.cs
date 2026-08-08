@@ -5,6 +5,7 @@ using Rosemary.Core;
 using System;
 using Terraria;
 using Terraria.ModLoader;
+using Terraria.UI;
 
 namespace Rosemary.Content.Elk;
 
@@ -30,6 +31,12 @@ public static class ElkParticles
     }
 
     public static UpdatingParticleHandler<Spark> Sparks { get; set; } = new(512);
+
+    [ModSystemHooks.ClearWorld]
+    private static void ClearParticles()
+    {
+        Sparks.Clear();
+    }
 
     [ModSystemHooks.PostUpdateDusts]
     private static void UpdateParticles()
