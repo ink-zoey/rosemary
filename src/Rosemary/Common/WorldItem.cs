@@ -9,8 +9,8 @@ using Terraria.DataStructures;
 // ReSharper disable InconsistentNaming
 namespace Rosemary.Common;
 
-[ExtensionDataFor<WorldItem>]
-internal sealed class WorldItemData
+[ExtensionDataFor<WorldItem>("CommonData")]
+internal sealed class WorldItemCommonData
 {
     public required float Rotation { get; set; }
 
@@ -142,15 +142,15 @@ public static class WorldItemExtensions
 {
     extension(WorldItem item)
     {
-        private WorldItemData GetOrInitializeData()
+        private WorldItemCommonData GetOrInitializeData()
         {
-            item.Data ??= new WorldItemData
+            item.CommonData ??= new WorldItemCommonData
             {
                 Hidden = false,
                 Rotation = 0f,
             };
 
-            return item.Data!;
+            return item.CommonData!;
         }
 
         /// <summary>
