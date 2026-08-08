@@ -1293,7 +1293,7 @@ public static class ElkLangItemSets
     }
 #endregion
 
-    private record struct ShimmerSpike(Point Position, float Height, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    private record struct ShimmerSpike(Point Position, int XOffset, float Height, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
         public bool Update()
         {
@@ -1493,7 +1493,7 @@ public static class ElkLangItemSets
 
                     height *= MathF.Sin(spike.LifeTime * MathF.PI);
 
-                    var dest = new Rectangle((int)position.X, (int)((position.Y - height)), 16, (int)height);
+                    var dest = new Rectangle((int)position.X + spike.XOffset, (int)((position.Y - height)), 16, (int)height);
 
                     var colors = GetShimmerColors(spike, height, position, opacity, false);
 
@@ -1576,13 +1576,49 @@ public static class ElkLangItemSets
                     return;
                 }
 
-                var position = item.Bottom.ToTileCoordinates();
+                var startingPosition = item.Bottom;
+                startingPosition.X -= 8f;
+                for (var j = 0; j < 8; j++)
+                {
+                    var position = item.Bottom.ToTileCoordinates();
+                    position.Y -= j + 1;
+
+                    if (Main.tile[position].HasShimmer)
+                    {
+                        continue;
+                    }
+
+                    startingPosition.Y -= j * 16f;
+                    break;
+                }
 
                 // Can be fairly reasonably assumed that the bottom of the item is the top tile of the shimmer
-                spikes += new ShimmerSpike(position, 64f, 0f, 0.06f);
+                SpawnSpike(-48f, 16f, 0.04f);
+                SpawnSpike(-16f, 32f, 0.03f);
+                SpawnSpike(0f, 64f, 0.055f);
+                SpawnSpike(16f, 32f, 0.03f);
+                SpawnSpike(48f, 16f, 0.04f);
 
-                spikes += new ShimmerSpike(new Point(position.X - 1, position.Y), 32f, 0f, 0.04f);
-                spikes += new ShimmerSpike(new Point(position.X + 1, position.Y), 32f, 0f, 0.04f);
+                return;
+
+                void SpawnSpike(float offset, float height, float speed)
+                {
+                    var position = startingPosition;
+
+                    position.X += offset;
+
+                    var tilePosition = position.ToTileCoordinates();
+
+                    var innerOffset = (int)(position.X % 16);
+
+                    if (innerOffset > 8)
+                    {
+                        tilePosition.X += 1;
+                        innerOffset -= 16;
+                    }
+
+                    spikes += new ShimmerSpike(tilePosition, innerOffset, height, 0f, speed);
+                }
             }
         );
     }
