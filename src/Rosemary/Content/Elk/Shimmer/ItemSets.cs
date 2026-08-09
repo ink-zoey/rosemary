@@ -2,13 +2,16 @@
 using Daybreak.MonoMod;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Core;
 using System;
 using System.Collections.Generic;
+using Daybreak.Rendering;
 using Terraria;
 using Terraria.Audio;
+using Terraria.GameContent;
 using Terraria.GameContent.Liquid;
 using Terraria.GameContent.Shaders;
 using Terraria.Graphics;
@@ -63,16 +66,58 @@ public static class ElkShimmerItemSets
 
     private static UpdatingParticleHandler<ShimmerSpike> spikes = new(128);
 
+    private record struct ShimmerSear(Vector2 Position, float Rotation, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    {
+        public bool Update()
+        {
+            LifeTime += LifeTimeIncrement;
+
+            if (Main.GameUpdateCount % 8 != 0)
+            {
+                return LifeTime <= 1f;
+            }
+
+            var velocity = Rotation.ToRotationVector2() * 6f;
+
+            sparks += new ShimmerSearSpark(Position, velocity, Rotation, LifeTime * 0.4f, 0.04f);
+            sparks += new ShimmerSearSpark(Position, -velocity, Rotation, LifeTime * 0.4f, 0.04f);
+
+            return LifeTime <= 1f;
+        }
+    }
+
+    private record struct ShimmerSearSpark(Vector2 Position, Vector2 Velocity, float Rotation, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    {
+        public bool Update()
+        {
+            Velocity *= 0.91f;
+
+            Position += Velocity;
+
+            LifeTime += LifeTimeIncrement;
+
+            return LifeTime <= 1f;
+        }
+    }
+
+    private static UpdatingParticleHandler<ShimmerSear> sears = new(32);
+
+    private static UpdatingParticleHandler<ShimmerSearSpark> sparks = new(128);
+
     [ModSystemHooks.ClearWorld]
     private static void ClearParticles_ViolentShimmerReaction()
     {
         spikes.Clear();
+        sears.Clear();
+        sparks.Clear();
     }
 
     [ModSystemHooks.PostUpdateDusts]
     private static void UpdateParticles_ViolentShimmerReaction()
     {
         spikes.Update();
+        sears.Update();
+        sparks.Update();
     }
 
     [OnLoad]
@@ -81,6 +126,65 @@ public static class ElkShimmerItemSets
         On_WorldItem.Shimmering += Shimmering_ViolentShimmerReaction;
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
         IL_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
+        On_Main.DrawInfernoRings += DrawInfernoRings_DrawFlareParticles;
+    }
+
+    private static void DrawInfernoRings_DrawFlareParticles(On_Main.orig_DrawInfernoRings orig, Main self)
+    {
+        orig(self);
+
+        var sb = Main.spriteBatch;
+
+        using var _ = sb.Scope();
+
+        var texture = TextureAssets.Extra[ExtrasID.NinetyEight].Value;
+        var origin = texture.Size() * 0.5f;
+
+        var size = new Vector2(0.4f, 2.6f);
+
+        var color = new Color(179, 133, 255, 40);
+
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+        {
+            foreach (var index in sears)
+            {
+                var sear = sears[index];
+
+                var position = sear.Position - Main.screenPosition;
+
+                var scale = size;
+
+                scale *=
+                    (1f - MathF.Pow(sear.LifeTime, 5f))
+                  * (1 - MathF.Pow(1f - sear.LifeTime, 15f));
+
+                sb.Draw(texture, position, null, color, sear.Rotation + MathF.PiOver2, origin, scale, SpriteEffects.None, 0f);
+
+                scale.Y *= 0.7f;
+                sb.Draw(texture, position, null, color, sear.Rotation + MathF.PiOver2, origin, scale, SpriteEffects.None, 0f);
+            }
+
+            size.Y = 0.6f;
+
+            foreach (var index in sparks)
+            {
+                var spark = sparks[index];
+
+                var position = spark.Position - Main.screenPosition;
+
+                var scale = size;
+
+                scale *= (1f - MathF.Pow(spark.LifeTime, 2f));
+
+                sb.Draw(texture, position, null, color, spark.Rotation, origin, scale, SpriteEffects.None, 0f);
+                sb.Draw(texture, position, null, color, spark.Rotation + MathF.PiOver2, origin, scale * 0.3f, SpriteEffects.None, 0f);
+
+                scale.Y *= 0.7f;
+                sb.Draw(texture, position, null, color, spark.Rotation, origin, scale, SpriteEffects.None, 0f);
+                sb.Draw(texture, position, null, color, spark.Rotation + MathF.PiOver2, origin, scale * 0.3f, SpriteEffects.None, 0f);
+            }
+        }
+        sb.End();
     }
 
     private record struct ShimmerSpikeDrawItem(int Index, Vector2 Position, float Opacity);
@@ -344,6 +448,29 @@ public static class ElkShimmerItemSets
                 };
 
                 item.ShimmerData.WaveProgress = 0f;
+
+                var curPosition = item.Bottom;
+                for (var j = 0; j < 8; j++)
+                {
+                    var position = curPosition.ToTileCoordinates();
+                    position.Y -= j + 1;
+
+                    if (Main.tile[position].HasShimmer)
+                    {
+                        continue;
+                    }
+
+                    position.Y += 1;
+
+                    var liquidLevel = (float)Main.tile[position].LiquidAmount / byte.MaxValue;
+                    liquidLevel = (1f - liquidLevel) * 16f;
+
+                    curPosition = position.ToWorldCoordinates(item.Bottom.X % 16f, liquidLevel);
+
+                    break;
+                }
+
+                sears += new ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, 0.035f);
             }
         );
     }
@@ -390,13 +517,13 @@ public static class ElkShimmerItemSets
 
         self.velocity = Vector2.Zero;
 
-        self.ShimmerData.WaveProgress += 0.04f;
+        self.ShimmerData.WaveProgress += 0.035f;
 
         var progress = self.ShimmerData.WaveProgress;
 
-        var rippleOffset = new Vector2((1f - progress) * 300f, 0f);
-        WaterShaderData.Instance.QueueRipple(startingPosition + rippleOffset, 0.8f, RippleShape.Square, MathF.PiOver4);
-        WaterShaderData.Instance.QueueRipple(startingPosition - rippleOffset, 0.8f, RippleShape.Square, MathF.PiOver4);
+        var rippleOffset = new Vector2((1f - progress) * 500f, Rand.Next(-8f, 8f));
+        WaterShaderData.Instance.QueueRipple(startingPosition + rippleOffset, Rand.Next(0.75f, 1f) * (1f - MathF.Pow(1f - progress, 2)), RippleShape.Square, MathF.PiOver4);
+        WaterShaderData.Instance.QueueRipple(startingPosition - rippleOffset, Rand.Next(0.75f, 1f) * (1f - MathF.Pow(1f - progress, 2)), RippleShape.Square, MathF.PiOver4);
 
         if (progress < 1f)
         {
@@ -410,11 +537,15 @@ public static class ElkShimmerItemSets
 
         self.ShimmerData.WaveProgress = -1f;
 
+        SpawnSpike(-86f, 48f, 0.08f);
+        SpawnSpike(-70f, 32f, 0.025f);
         SpawnSpike(-48f, 16f, 0.04f);
         SpawnSpike(-16f, 32f, 0.03f);
         SpawnSpike(0f, 64f, 0.055f);
         SpawnSpike(16f, 32f, 0.03f);
         SpawnSpike(48f, 16f, 0.04f);
+        SpawnSpike(70f, 32f, 0.025f);
+        SpawnSpike(86f, 48f, 0.08f);
 
         return;
 

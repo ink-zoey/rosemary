@@ -9,6 +9,7 @@ using Terraria.ModLoader;
 
 namespace Rosemary.Core;
 
+// TODO: DrawCapture support assuming no rewrite in RenderReprise
 [Autoload(Side = ModSide.Client)]
 public static class ParticleLayers
 {
