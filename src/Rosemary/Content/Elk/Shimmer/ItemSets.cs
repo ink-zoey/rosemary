@@ -64,7 +64,7 @@ public static class ElkShimmerItemSets
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
     }
 
-    private const float increment_violent_shimmer_reaction = 0.03f;
+    private const float increment_violent_shimmer_reaction = 0.006f;
 
     private static void MoveInWorld_ViolentShimmerReaction(ILContext il)
     {
@@ -125,6 +125,26 @@ public static class ElkShimmerItemSets
 
                 var modifier = new PunchCameraModifier(curPosition, new Vector2(1f, 0f), 4f, 7f, (int)(1f / increment_violent_shimmer_reaction) + 20, 900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING");
                 Main.instance.CameraModifiers.Add(modifier);
+
+                SoundEngine.PlaySound(
+                    Assets.Elk.Shimmer.Burn.Asset with
+                    {
+                        PauseBehavior = PauseBehavior.PauseWithGame,
+                        MaxInstances = 3,
+                    },
+                    curPosition,
+                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
+                );
+
+                SoundEngine.PlaySound(
+                    Assets.Elk.Shimmer.Scowl.Asset with
+                    {
+                        PauseBehavior = PauseBehavior.PauseWithGame,
+                        MaxInstances = 3,
+                    },
+                    curPosition,
+                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
+                );
             }
         );
     }
@@ -218,12 +238,21 @@ public static class ElkShimmerItemSets
 
         EjectEffects();
 
+        SoundEngine.PlaySound(
+            Assets.Elk.Shimmer.Ejection.Asset with
+            {
+                PauseBehavior = PauseBehavior.PauseWithGame,
+                MaxInstances = 3,
+            },
+            curPosition
+        );
+
         return;
 
         void PassiveEffects()
         {
             // Ripples closing in
-            var rippleOffset = new Vector2((1f - progress) * 500f, Rand.Next(-8f, 8f));
+            var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
             var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
 
             var strength = MathF.Max(MathF.Pow(progress, 2), 0.8f);
