@@ -1,5 +1,6 @@
 ﻿using Daybreak.Hooks;
 using Daybreak.MonoMod;
+using Daybreak.Rendering;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,7 +9,8 @@ using Rosemary.Common;
 using Rosemary.Core;
 using System;
 using System.Collections.Generic;
-using Daybreak.Rendering;
+using System.IO.Pipelines;
+using System.Linq;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -54,7 +56,27 @@ public static class ElkShimmerItemSets
         public static bool[] ViolentShimmerReaction => violentShimmerReaction;
     }
 
-    private record struct ShimmerSpike(Point Position, int XOffset, float Height, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    private sealed class ShimmerSpikeHandler(int max) : UpdatingParticleHandler<ShimmerSpike>(max)
+    {
+        public override bool Add(ShimmerSpike particle)
+        {
+            if (this.Any(i => this[i].Position == particle.Position))
+            {
+                return false;
+            }
+
+            return base.Add(particle);
+        }
+
+        public static ShimmerSpikeHandler operator +(ShimmerSpikeHandler handler, ShimmerSpike particle)
+        {
+            handler.Add(particle);
+
+            return handler;
+        }
+    }
+
+    private record struct ShimmerSpike(Point Position, int XOffset, float Height, byte Style, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
         public bool Update()
         {
@@ -64,7 +86,7 @@ public static class ElkShimmerItemSets
         }
     }
 
-    private static UpdatingParticleHandler<ShimmerSpike> spikes = new(128);
+    private static ShimmerSpikeHandler spikes = new(128);
 
     private record struct ShimmerSear(Vector2 Position, float Rotation, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
@@ -343,21 +365,23 @@ public static class ElkShimmerItemSets
 
                 var texture = Assets.Elk.Particles.ShimmerSpike.Asset.Value;
 
-                var backingFrame = texture.Frame(2, 1, 0, 0);
-                var frontFrame = texture.Frame(2, 1, 1, 0);
-
-                backingFrame.Height = 64;
-                frontFrame.Height = 64;
-
-                var overlayFrame = new Rectangle(16, 64, 16, 10);
+                var overlayFrame = new Rectangle(0, 64, 16, 10);
 
                 foreach (var (index, position, opacity) in spikeCache)
                 {
                     var spike = spikes[index];
 
+                    var backingFrame = texture.Frame(6, 1, spike.Style * 2, 0);
+                    var frontFrame = texture.Frame(6, 1, spike.Style * 2 + 1, 0);
+                    backingFrame.Height = 64;
+                    frontFrame.Height = 64;
+
                     var height = spike.Height;
 
-                    height *= MathF.Sin(spike.LifeTime * MathF.PI);
+                    height *=
+                        MathF.Pow(1f - spike.LifeTime, 1.6f)
+                      * (1f - MathF.Pow(1f - spike.LifeTime, 10f))
+                      * 1.6f;
 
                     var dest = new Rectangle((int)position.X + spike.XOffset, (int)((position.Y - height)), 16, (int)height);
 
@@ -499,8 +523,7 @@ public static class ElkShimmerItemSets
             return;
         }
 
-        var startingPosition = self.Bottom;
-        startingPosition.X -= 8f;
+        var curPosition = self.Bottom;
         for (var j = 0; j < 8; j++)
         {
             var position = self.Bottom.ToTileCoordinates();
@@ -511,8 +534,35 @@ public static class ElkShimmerItemSets
                 continue;
             }
 
-            startingPosition.Y -= j * 16f;
+            curPosition.Y -= j * 16f;
             break;
+        }
+
+        var minRange = -16f;
+        var maxRange = 16f;
+        for (var i = 0; i < 32; ++i)
+        {
+            var leftPosition = curPosition.ToTileCoordinates();
+            var rightPosition = leftPosition;
+            leftPosition.X -= i;
+            rightPosition.X += i;
+
+            var leftShimmer = Main.tile[leftPosition].HasShimmer;
+            var rightShimmer = Main.tile[rightPosition].HasShimmer;
+
+            if (!leftShimmer && !rightShimmer)
+            {
+                break;
+            }
+
+            if (leftShimmer)
+            {
+                minRange -= 16f;
+            }
+            if (rightShimmer)
+            {
+                maxRange += 16f;
+            }
         }
 
         self.velocity = Vector2.Zero;
@@ -521,9 +571,7 @@ public static class ElkShimmerItemSets
 
         var progress = self.ShimmerData.WaveProgress;
 
-        var rippleOffset = new Vector2((1f - progress) * 500f, Rand.Next(-8f, 8f));
-        WaterShaderData.Instance.QueueRipple(startingPosition + rippleOffset, Rand.Next(0.75f, 1f) * (1f - MathF.Pow(1f - progress, 2)), RippleShape.Square, MathF.PiOver4);
-        WaterShaderData.Instance.QueueRipple(startingPosition - rippleOffset, Rand.Next(0.75f, 1f) * (1f - MathF.Pow(1f - progress, 2)), RippleShape.Square, MathF.PiOver4);
+        PassiveEffects();
 
         if (progress < 1f)
         {
@@ -537,21 +585,76 @@ public static class ElkShimmerItemSets
 
         self.ShimmerData.WaveProgress = -1f;
 
-        SpawnSpike(-86f, 48f, 0.08f);
-        SpawnSpike(-70f, 32f, 0.025f);
-        SpawnSpike(-48f, 16f, 0.04f);
-        SpawnSpike(-16f, 32f, 0.03f);
-        SpawnSpike(0f, 64f, 0.055f);
-        SpawnSpike(16f, 32f, 0.03f);
-        SpawnSpike(48f, 16f, 0.04f);
-        SpawnSpike(70f, 32f, 0.025f);
-        SpawnSpike(86f, 48f, 0.08f);
+        EjectEffects();
 
         return;
 
+        void PassiveEffects()
+        {
+            var rippleOffset = new Vector2((1f - progress) * 500f, Rand.Next(-8f, 8f));
+            var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
+
+            var strength = MathF.Max(MathF.Pow(progress, 2), 0.8f);
+
+            WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
+            WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
+
+            if (rippleOffset.X >= 90f)
+            {
+                SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
+                SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
+            }
+
+            var dustOffset = new Vector2(Rand.Next(minRange, maxRange), 0f);
+
+            var dust = Dust.NewDustPerfect(
+                curPosition + dustOffset,
+                DustID.ShimmerSplash,
+                new Vector2(Rand.Next(-1f, 1f), Rand.Next(-13f, -5f)),
+                0,
+                GetShimmerSplashColor(),
+                1.2f
+            );
+
+            dust.noGravity = true;
+        }
+
+        void EjectEffects()
+        {
+            for (var i = 0; i < 70; i++)
+            {
+                var dist = Rand.Next(-1f, 1f);
+
+                var dustOffset = new Vector2((MathF.Pow(1f - MathF.Abs(dist), 3f)) * MathF.Sign(dist) * 120f, 0f);
+
+                var dust = Dust.NewDustPerfect(
+                    curPosition + dustOffset,
+                    DustID.ShimmerSplash,
+                    new Vector2(Rand.Next(-1f, 1f), Rand.Next(-50f * MathF.Abs(dist), -2f)),
+                    0,
+                    GetShimmerSplashColor(),
+                    1.1f
+                );
+
+                dust.noGravity = true;
+            }
+
+            curPosition.X -= 8f;
+
+            SpawnSpike(-86f, 48f, 0.08f);
+            SpawnSpike(-70f, 64f, 0.025f);
+            SpawnSpike(-48f, 16f, 0.04f);
+            SpawnSpike(-16f, 128f, 0.03f);
+            SpawnSpike(0f, 200f, 0.055f);
+            SpawnSpike(16f, 128f, 0.03f);
+            SpawnSpike(48f, 16f, 0.04f);
+            SpawnSpike(70f, 64f, 0.025f);
+            SpawnSpike(86f, 48f, 0.08f);
+        }
+
         void SpawnSpike(float offset, float height, float speed)
         {
-            var position = startingPosition;
+            var position = curPosition;
 
             position.X += offset;
 
@@ -570,7 +673,18 @@ public static class ElkShimmerItemSets
                 innerOffset -= 16;
             }
 
-            spikes += new ShimmerSpike(tilePosition, innerOffset, height, 0f, speed);
+            spikes += new ShimmerSpike(tilePosition, innerOffset, height, Rand.Next((byte)3), 0f, speed);
+        }
+
+        static Color GetShimmerSplashColor()
+        {
+            return Rand.Next(6) switch
+            {
+                0 => new Color(255, 255, 210),
+                1 => new Color(190, 245, 255),
+                2 => new Color(255, 150, 255),
+                _ => new Color(190, 175, 255),
+            };
         }
     }
 }
