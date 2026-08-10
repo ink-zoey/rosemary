@@ -168,6 +168,7 @@ public static class ElkShimmerItemSets
             break;
         }
 
+        // Find the bounds of the current pool
         var minRange = -16f;
         var maxRange = 16f;
         for (var i = 0; i < 32; ++i)
@@ -221,6 +222,7 @@ public static class ElkShimmerItemSets
 
         void PassiveEffects()
         {
+            // Ripples closing in
             var rippleOffset = new Vector2((1f - progress) * 500f, Rand.Next(-8f, 8f));
             var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
 
@@ -228,13 +230,6 @@ public static class ElkShimmerItemSets
 
             WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
             WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
-
-
-            if (rippleOffset.X >= 85f)
-            {
-                SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
-                SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
-            }
 
             // Bubbles
             var dustOffset = new Vector2(Rand.Next(minRange, maxRange), 0f);
@@ -250,6 +245,7 @@ public static class ElkShimmerItemSets
 
             dust.noGravity = true;
 
+            // Dust moving inward
             dustOffset = Rand.NextUnitVector(Rand.Next(400f));
             dustOffset.Y = -MathF.Abs(dustOffset.Y);
 
@@ -263,10 +259,22 @@ public static class ElkShimmerItemSets
             );
 
             dust.noGravity = true;
+
+            // Inward spikes
+            if (!(rippleOffset.X >= 85f))
+            {
+                return;
+            }
+
+            curPosition.X -= 16f;
+
+            SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
+            SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
         }
 
         void EjectEffects()
         {
+            // Giant splash with a center bias
             for (var i = 0; i < 70; i++)
             {
                 var dist = Rand.Next(-1f, 1f);
@@ -285,8 +293,9 @@ public static class ElkShimmerItemSets
                 dust.noGravity = true;
             }
 
-            curPosition.X -= 8f;
+            curPosition.X -= 16f;
 
+            // Hand-picked ejection values
             SpawnSpike(-86f, 48f, 0.08f);
             SpawnSpike(-70f, 64f, 0.025f);
             SpawnSpike(-48f, 16f, 0.04f);
@@ -299,6 +308,7 @@ public static class ElkShimmerItemSets
 
             ElkShimmerParticles.Rings += new ElkShimmerParticles.ExpandingRing(curPosition, 0.1f, 0.02f, 0f, 0.04f);
 
+            // Camera shake with lingering effect
             var strong = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 35f, 8f, 45, 2500f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WRONG");
             var lingering = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 2f, 9f, 200, 3900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_AFTERSHOCK");
             Main.instance.CameraModifiers.Add(strong);
