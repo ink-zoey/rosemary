@@ -64,6 +64,8 @@ public static class ElkShimmerItemSets
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
     }
 
+    private const float increment_violent_shimmer_reaction = 0.03f;
+
     private static void MoveInWorld_ViolentShimmerReaction(ILContext il)
     {
         var c = new ILCursor(il);
@@ -119,9 +121,9 @@ public static class ElkShimmerItemSets
                     break;
                 }
 
-                ElkShimmerParticles.Sears += new ElkShimmerParticles.ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, 0.03f);
+                ElkShimmerParticles.Sears += new ElkShimmerParticles.ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, increment_violent_shimmer_reaction);
 
-                var modifier = new PunchCameraModifier(curPosition, new Vector2(1f, 0f), 4f, 7f, (int)(1f / 0.03f) + 20, 900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING");
+                var modifier = new PunchCameraModifier(curPosition, new Vector2(1f, 0f), 4f, 7f, (int)(1f / increment_violent_shimmer_reaction) + 20, 900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING");
                 Main.instance.CameraModifiers.Add(modifier);
             }
         );
@@ -195,7 +197,7 @@ public static class ElkShimmerItemSets
 
         self.velocity = Vector2.Zero;
 
-        self.ShimmerData.WaveProgress += 0.03f;
+        self.ShimmerData.WaveProgress += increment_violent_shimmer_reaction;
 
         var progress = self.ShimmerData.WaveProgress;
 
@@ -297,8 +299,8 @@ public static class ElkShimmerItemSets
 
             ElkShimmerParticles.Rings += new ElkShimmerParticles.ExpandingRing(curPosition, 0.1f, 0.02f, 0f, 0.04f);
 
-            var strong = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 35f, 8f, 45, 1500f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WRONG");
-            var lingering = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 2f, 9f, 200, 1900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_AFTERSHOCK");
+            var strong = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 35f, 8f, 45, 2500f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WRONG");
+            var lingering = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 2f, 9f, 200, 3900f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_AFTERSHOCK");
             Main.instance.CameraModifiers.Add(strong);
             Main.instance.CameraModifiers.Add(lingering);
         }
