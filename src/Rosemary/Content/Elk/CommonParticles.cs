@@ -5,7 +5,6 @@ using Rosemary.Core;
 using System;
 using Terraria;
 using Terraria.ModLoader;
-using Terraria.UI;
 
 namespace Rosemary.Content.Elk;
 
