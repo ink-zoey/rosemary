@@ -25,7 +25,7 @@ public static class RandomExtensions
             System.Numerics.INumber<T>,
             IConvertible
         {
-            return (T)Convert.ChangeType(Rand.Instance.Sample() * max.ToDouble(null), typeof(T));
+            return (T)(dynamic)(Rand.Instance.Sample() * max.ToDouble(null));
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ public static class RandomExtensions
             System.Numerics.INumber<T>,
             IConvertible
         {
-            return (T)Convert.ChangeType(Rand.Instance.Sample() * (max - min).ToDouble(null) + min.ToDouble(null), typeof(T));
+            return (T)(dynamic)(Rand.Instance.Sample() * (max - min).ToDouble(null) + min.ToDouble(null));
         }
 
         /// <returns><see langword="true"/> <paramref name="antecedent"/> out of <paramref name="consequent"/> times.</returns>
