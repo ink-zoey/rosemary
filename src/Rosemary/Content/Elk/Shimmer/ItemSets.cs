@@ -209,7 +209,7 @@ public static class ElkShimmerItemSets
         sb.End();
     }
 
-    private record struct ShimmerSpikeDrawItem(int Index, Vector2 Position, float Opacity);
+    private record struct ShimmerSpikeDrawItem(int Index, Vector2 Position);
 
     private static unsafe void DrawShimmer_ViolentShimmerReaction(ILContext il)
     {
@@ -304,16 +304,19 @@ public static class ElkShimmerItemSets
                 // Have the liquid use a non-surface frame
                 source.Y = 60 + renderer._animationFrame * 80;
 
-                var opacity = liquidCache->Opacity * (isBackgroundDraw ? 1f : 0.75f);
+                if (isBackgroundDraw)
+                {
+                    return true;
+                }
 
                 var position =
                     tilePosition.ToWorldCoordinates(Vector2.Zero)
                   + liquidCache->LiquidOffset
-                  - (isBackgroundDraw ? Main.backWaterTarget.Position : Main.waterTarget.Position);
+                  - Main.waterTarget.Position;
 
                 position.Y += 2f;
 
-                spikeCache.Add(new ShimmerSpikeDrawItem(index, position, opacity));
+                spikeCache.Add(new ShimmerSpikeDrawItem(index, position));
 
                 return true;
             }
@@ -367,13 +370,13 @@ public static class ElkShimmerItemSets
 
                 var overlayFrame = new Rectangle(0, 64, 16, 10);
 
-                foreach (var (index, position, opacity) in spikeCache)
+                foreach (var (index, position) in spikeCache)
                 {
                     var spike = spikes[index];
 
-                    var backingFrame = texture.Frame(6, 1, spike.Style * 2, 0);
+                    var backFrame = texture.Frame(6, 1, spike.Style * 2, 0);
                     var frontFrame = texture.Frame(6, 1, spike.Style * 2 + 1, 0);
-                    backingFrame.Height = 64;
+                    backFrame.Height = 64;
                     frontFrame.Height = 64;
 
                     var height = spike.Height;
@@ -385,24 +388,28 @@ public static class ElkShimmerItemSets
 
                     var dest = new Rectangle((int)position.X + spike.XOffset, (int)((position.Y - height)), 16, (int)height);
 
-                    var colors = GetShimmerColors(spike, height, position, opacity, false);
+                    var backColors = GetShimmerColors(height, position, false);
+                    var frontColors = GetShimmerColors(height, position, true);
 
-                    tb.Draw(texture, dest, backingFrame, colors);
+                    tb.Draw(texture, dest, backFrame, backColors);
+                    tb.Draw(texture, dest, frontFrame, frontColors);
 
-                    colors = GetShimmerColors(spike, height, position, opacity, true);
+                    backColors *= 0.75f;
+                    frontColors *= 0.75f;
 
-                    tb.Draw(texture, dest, frontFrame, colors);
+                    tb.Draw(texture, dest, backFrame, backColors);
+                    tb.Draw(texture, dest, frontFrame, frontColors);
 
                     var tilePosition = position.ToTileCoordinates();
-                    LiquidRenderer.SetShimmerVertexColors_Sparkle(ref colors, opacity, tilePosition.X, tilePosition.Y, true);
+                    LiquidRenderer.SetShimmerVertexColors_Sparkle(ref frontColors, 0.75f, tilePosition.X, tilePosition.Y, true);
 
                     var overlayDest = new Rectangle((int)position.X, (int)position.Y - 1, 16, 16 - ((int)position.Y % 16));
-                    tb.Draw(texture, overlayDest, overlayFrame, colors);
+                    tb.Draw(texture, overlayDest, overlayFrame, frontColors);
                 }
 
                 return;
 
-                static VertexColors GetShimmerColors(ShimmerSpike spike, float height, Vector2 position, float opacity, bool useSparkleColor)
+                static VertexColors GetShimmerColors(float height, Vector2 position, bool useSparkleColor)
                 {
                     var tilePosition = position.ToTileCoordinates();
 
@@ -430,8 +437,6 @@ public static class ElkShimmerItemSets
                         colors.BottomLeftColor = new Color(colors.BottomLeftColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[2].X, positions[2].Y));
                         colors.BottomRightColor = new Color(colors.BottomRightColor.ToVector4() * LiquidRenderer.GetShimmerBaseColor(positions[3].X, positions[3].Y));
                     }
-
-                    colors *= opacity;
 
                     return colors;
                 }
@@ -494,7 +499,7 @@ public static class ElkShimmerItemSets
                     break;
                 }
 
-                sears += new ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, 0.035f);
+                sears += new ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, 0.03f);
             }
         );
     }
@@ -567,7 +572,7 @@ public static class ElkShimmerItemSets
 
         self.velocity = Vector2.Zero;
 
-        self.ShimmerData.WaveProgress += 0.035f;
+        self.ShimmerData.WaveProgress += 0.03f;
 
         var progress = self.ShimmerData.WaveProgress;
 
@@ -579,7 +584,7 @@ public static class ElkShimmerItemSets
         }
 
         var velocity = -self.velocity;
-        velocity.Y = -9f;
+        velocity.Y = -20f;
 
         self.velocity = velocity;
 
@@ -599,7 +604,7 @@ public static class ElkShimmerItemSets
             WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
             WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
 
-            if (rippleOffset.X >= 90f)
+            if (rippleOffset.X >= 85f)
             {
                 SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
                 SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
@@ -673,7 +678,9 @@ public static class ElkShimmerItemSets
                 innerOffset -= 16;
             }
 
-            spikes += new ShimmerSpike(tilePosition, innerOffset, height, Rand.Next((byte)3), 0f, speed);
+            var style = Rand.NextBoolean(7, 3) ? (byte)0 : Rand.Next((byte)3);
+
+            spikes += new ShimmerSpike(tilePosition, innerOffset, height, style, 0f, speed);
         }
 
         static Color GetShimmerSplashColor()
