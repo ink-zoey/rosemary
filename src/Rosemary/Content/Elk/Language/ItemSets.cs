@@ -1212,8 +1212,7 @@ public static class ElkLangItemSets
                 outline,
                 0f,
                 stackOrigin,
-                new Vector2(stackScale),
-                maxWidth: 999f
+                new Vector2(stackScale)
             );
         }
 
@@ -1249,8 +1248,7 @@ public static class ElkLangItemSets
                 outline,
                 prefixRotation,
                 prefixOrigin,
-                new Vector2(prefixScale),
-                maxWidth: 999f
+                new Vector2(prefixScale)
             );
         }
     }
