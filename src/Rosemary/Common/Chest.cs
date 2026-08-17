@@ -244,7 +244,7 @@ file static class ChestParticles
         ItemTransfer.Update();
     }
 
-    [ParticleLayers.OverPlayers]
+    [ParticleLayer(ParticleLayers.OverPlayers)]
     private static void DrawParticlesOverPlayers(SpriteBatch sb)
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);

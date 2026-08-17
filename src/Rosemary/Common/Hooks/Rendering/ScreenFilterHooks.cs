@@ -67,6 +67,8 @@ public sealed class ScreenFilterAttribute(EffectPriority priority) : SubscribesT
     }
 }
 
+// TODO: DrawCapture support assuming no rewrite in RenderReprise
+[Autoload(Side = ModSide.Client)]
 file static class ScreenFilterRenderer
 {
     public static readonly Dictionary<EffectPriority, List<ScreenFilterDefinition>> FILTERS_BY_PRIORITY = [];

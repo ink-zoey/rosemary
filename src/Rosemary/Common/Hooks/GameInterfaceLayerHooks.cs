@@ -4,10 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Terraria.ModLoader;
 using Terraria.UI;
 
 namespace Rosemary.Common;
 
+// TODO: DrawCapture support assuming no rewrite in RenderReprise
+[Autoload(Side = ModSide.Client)]
 public static class GameInterfaceLayers
 {
     public const string INTERFACE_LOGIC_1           = "Vanilla: Interface Logic 1";

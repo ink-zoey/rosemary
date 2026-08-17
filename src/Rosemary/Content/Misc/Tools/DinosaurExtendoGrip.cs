@@ -69,7 +69,7 @@ public sealed class DinosaurExtendoGrip : ModItem
         On_NPC.ReleaseNPC += ReleaseNPC_ApplyVelocity;
     }
 
-    private int ReleaseNPC_ApplyVelocity(On_NPC.orig_ReleaseNPC orig, int x, int y, int type, int style, int who)
+    private static int ReleaseNPC_ApplyVelocity(On_NPC.orig_ReleaseNPC orig, int x, int y, int type, int style, int who)
     {
         var index = orig(x, y, type, style, who);
 
@@ -110,7 +110,7 @@ public sealed class DinosaurExtendoGrip : ModItem
         return index;
     }
 
-    private void CatchNPC_ForceDinoGrabberPickup(ILContext il)
+    private static void CatchNPC_ForceDinoGrabberPickup(ILContext il)
     {
         var c = new ILCursor(il);
 

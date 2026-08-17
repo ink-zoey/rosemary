@@ -77,8 +77,8 @@ public static partial class SiffrinParticles
         UIStars.Update();
     }
 
-    [ParticleLayers.UnderPlayers]
-    private static void DrawParticlesUnderPlayers(SpriteBatch sb)
+    [ParticleLayer(ParticleLayers.BehindPlayers)]
+    private static void DrawParticlesBehindPlayers(SpriteBatch sb)
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
         {
@@ -87,7 +87,7 @@ public static partial class SiffrinParticles
         sb.End();
     }
 
-    [ParticleLayers.OverPlayers]
+    [ParticleLayer(ParticleLayers.OverPlayers)]
     private static void DrawParticlesOverPlayers(SpriteBatch sb)
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
@@ -191,10 +191,10 @@ public static partial class SiffrinParticles
         }
     }
 
-    [GameInterfaceLayers.Before(GameInterfaceLayers.CURSOR, InterfaceScaleType.UI, Name = $"{nameof(RosemaryVanity)}: Siffrin UI Particles")]
-    private static void DrawParticlesUI()
+    [ParticleLayer(ParticleLayers.OverCursor)]
+    private static void DrawParticlesUI(SpriteBatch sb)
     {
-        DrawStars(Main.spriteBatch, UIStars, Vector2.Zero);
+        DrawStars(sb, UIStars, Vector2.Zero);
     }
 
     private static void DrawStars(SpriteBatch sb, ParticleHandler<Star> stars, Vector2 offset)

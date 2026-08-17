@@ -1,6 +1,7 @@
 ﻿using Daybreak.Hooks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Rosemary.Common;
 using Rosemary.Core;
 using System;
 using Terraria;
@@ -43,7 +44,7 @@ public static class ElkParticles
         Sparks.Update();
     }
 
-    [ParticleLayers.OverPlayers]
+    [ParticleLayer(ParticleLayers.OverPlayers)]
     private static void DrawParticlesOverPlayers(SpriteBatch sb)
     {
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
