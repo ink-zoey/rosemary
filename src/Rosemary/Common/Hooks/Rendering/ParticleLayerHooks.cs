@@ -13,7 +13,7 @@ using Terraria.ModLoader;
 
 namespace Rosemary.Common;
 
-public enum ParticleLayers
+public enum ParticleLayers : int
 {
     OverCursor,
     OverInventory,
@@ -91,7 +91,7 @@ file static class ParticleLayerRenderer
                 i => i.MatchCallvirt<SpriteBatch>(nameof(SpriteBatch.End))
             );
 
-            c.EmitLdcI4((int)ParticleLayers.BehindPlayers);
+            c2.EmitLdcI4((int)ParticleLayers.BehindPlayers);
             c2.EmitDelegate(DrawParticleLayer);
         }
 
