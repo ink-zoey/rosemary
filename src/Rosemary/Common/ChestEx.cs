@@ -155,7 +155,7 @@ file static class ChestParticles
 
         private Vector2 BezierHelper2 { get; }
 
-        private SoundStyle? Sound { get; }
+        private Terraria.Audio.SoundStyle? Sound { get; }
 
         public bool TransitionIn { get; }
 
