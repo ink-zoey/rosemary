@@ -194,7 +194,11 @@ public static partial class SiffrinParticles
     [ParticleLayer(ParticleLayers.OverCursor)]
     private static void DrawParticlesUI(SpriteBatch sb)
     {
-        DrawStars(sb, UIStars, Vector2.Zero);
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        {
+            DrawStars(sb, UIStars, Vector2.Zero);
+        }
+        sb.End();
     }
 
     private static void DrawStars(SpriteBatch sb, ParticleHandler<Star> stars, Vector2 offset)
