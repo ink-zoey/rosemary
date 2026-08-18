@@ -381,4 +381,49 @@ public static class ElkShimmerItemSets
             };
         }
     }
+
+    [GlobalNPCHooks.PreAI]
+    private static bool PreAI_ViolentShimmerReaction_Faelings(NPC npc)
+    {
+        if (npc.aiStyle != NPCAIStyleID.Firefly
+         || npc.type != NPCID.Shimmerfly)
+        {
+            return true;
+        }
+
+        var count = 0;
+        var zero = Vector2.Zero;
+        foreach (var item in Main.ActiveItems)
+        {
+            var diff = npc.Center - item.Center;
+
+            if (item.ShimmerData is null || item.ShimmerData.WaveProgress <= 0f || diff.Length() >= 900f)
+            {
+                continue;
+            }
+
+            count++;
+            zero += diff.Normalized;
+        }
+
+        if (zero == Vector2.Zero)
+        {
+            return true;
+        }
+
+        zero /= count;
+        zero *= 2f;
+
+        npc.velocity += zero;
+
+        if (npc.velocity.Length() > 7f)
+        {
+            npc.velocity.Magnitude = 7f;
+        }
+
+        npc.localAI[0] = 10f;
+        npc.netUpdate = true;
+
+        return true;
+    }
 }
