@@ -77,9 +77,10 @@ file static class ScreenFilterRenderer
     private static void Load()
     {
         IL_FilterManager.EndCapture_RenderTarget2D_RenderTarget2D_RenderTarget2D_Vector2_Vector2_Vector2 += EndCapture_ScreenFilters;
-        On_FilterManager.CanCapture += (_, _) => true;
-        IL_Main.DoDraw += _ => { };
     }
+
+    [ModSystemHooks.RequiresScreenTarget]
+    private static bool RequiresScreenTarget() => true;
 
     private static void EndCapture_ScreenFilters(ILContext il)
     {
