@@ -84,7 +84,7 @@ public static class ElkShimmerParticles
         }
     }
 
-    public static UpdatingParticleHandler<ShimmerBubble> Bubbles { get; set; } = new(255);
+    public static UpdatingParticleHandler<ShimmerBubble> Bubbles { get; set; } = new(256);
 
     public record struct ExpandingRing(Vector2 Position, float Scale, float ScaleIncrement, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
