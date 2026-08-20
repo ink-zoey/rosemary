@@ -51,43 +51,40 @@ public static class ElkShimmerParticles
 
     public static ShimmerSpikeHandler Spikes { get; set; } = new(128);
 
-    public record struct ShimmerSear(Vector2 Position, float Rotation, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
+    public record struct ShimmerBubble(Vector2 Position, Color Color, float Direction, byte Frame, int FrameCounter) : IUpdatingParticle
     {
         public bool Update()
         {
-            LifeTime += LifeTimeIncrement;
+            FrameCounter++;
 
-            if (Main.GameUpdateCount % 8 != 0)
+            if (FrameCounter >= 9)
             {
-                return LifeTime <= 1f;
+                Frame++;
+                FrameCounter = 0;
+            }
+            var newPosition = Position;
+
+            newPosition.Y -= 0.4f;
+            if (Collision.WetCollision(newPosition, 1, 1) && Collision.shimmer)
+            {
+                Position = newPosition;
+            }
+            else if (!Collision.WetCollision(Position, 1, 1) || !Collision.shimmer)
+            {
+                return false;
             }
 
-            var velocity = Rotation.ToRotationVector2() * 6f;
+            newPosition = Position;
 
-            Sparks += new ShimmerSearSpark(Position, velocity, Rotation, LifeTime * 0.4f, 0.04f);
-            Sparks += new ShimmerSearSpark(Position, -velocity, Rotation, LifeTime * 0.4f, 0.04f);
+            newPosition.X += Direction;
 
-            return LifeTime <= 1f;
+            Position = newPosition;
+
+            return Frame <= 4;
         }
     }
 
-    public record struct ShimmerSearSpark(Vector2 Position, Vector2 Velocity, float Rotation, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
-    {
-        public bool Update()
-        {
-            Velocity *= 0.91f;
-
-            Position += Velocity;
-
-            LifeTime += LifeTimeIncrement;
-
-            return LifeTime <= 1f;
-        }
-    }
-
-    public static UpdatingParticleHandler<ShimmerSear> Sears { get; set; } = new(32);
-
-    public static UpdatingParticleHandler<ShimmerSearSpark> Sparks { get; set; } = new(128);
+    public static UpdatingParticleHandler<ShimmerBubble> Bubbles { get; set; } = new(255);
 
     public record struct ExpandingRing(Vector2 Position, float Scale, float ScaleIncrement, float LifeTime, float LifeTimeIncrement) : IUpdatingParticle
     {
@@ -107,8 +104,7 @@ public static class ElkShimmerParticles
     private static void ClearParticles()
     {
         Spikes.Clear();
-        Sears.Clear();
-        Sparks.Clear();
+        Bubbles.Clear();
         Rings.Clear();
     }
 
@@ -116,8 +112,7 @@ public static class ElkShimmerParticles
     private static void UpdateParticles()
     {
         Spikes.Update();
-        Sears.Update();
-        Sparks.Update();
+        Bubbles.Update();
         Rings.Update();
     }
 
@@ -136,59 +131,37 @@ public static class ElkShimmerParticles
 
         using var _ = sb.Scope();
 
-        var texture = TextureAssets.Extra[ExtrasID.NinetyEight].Value;
-        var origin = texture.Size() * 0.5f;
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+        {
+            var texture = Assets.Elk.Particles.ShimmerBubble.Asset.Value;
+            var origin = texture.Frame(5, 1, 0, 0).Size() * 0.5f;
 
-        var size = new Vector2(0.4f, 2.6f);
+            foreach (var index in Bubbles)
+            {
+                ref var bubble = ref Bubbles[index];
 
-        var color = new Color(179, 133, 255, 40);
+                var position = bubble.Position - Main.screenPosition;
 
+                var frame = texture.Frame(5, 1, bubble.Frame, 0);
+
+                var color = bubble.Color;
+
+                color.A = 0;
+
+                sb.Draw(texture, position, frame, color, 0f, origin, 1f, SpriteEffects.None, 0f);
+            }
+        }
+        sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
         {
-            foreach (var index in Sears)
-            {
-                var sear = Sears[index];
+            var texture = Assets.Elk.Particles.ExpandingCircle.Asset.Value;
+            var origin = texture.Size() * 0.5f;
 
-                var position = sear.Position - Main.screenPosition;
-
-                var scale = size;
-
-                scale *=
-                    (1f - MathF.Pow(sear.LifeTime, 5f))
-                  * (1 - MathF.Pow(1f - sear.LifeTime, 15f));
-
-                sb.Draw(texture, position, null, color, sear.Rotation + MathF.PiOver2, origin, scale, SpriteEffects.None, 0f);
-
-                scale.Y *= 0.7f;
-                sb.Draw(texture, position, null, color, sear.Rotation + MathF.PiOver2, origin, scale, SpriteEffects.None, 0f);
-            }
-
-            size.Y = 0.6f;
-
-            foreach (var index in Sparks)
-            {
-                var spark = Sparks[index];
-
-                var position = spark.Position - Main.screenPosition;
-
-                var scale = size;
-
-                scale *= (1f - MathF.Pow(spark.LifeTime, 2f));
-
-                sb.Draw(texture, position, null, color, spark.Rotation, origin, scale, SpriteEffects.None, 0f);
-                sb.Draw(texture, position, null, color, spark.Rotation + MathF.PiOver2, origin, scale * 0.3f, SpriteEffects.None, 0f);
-
-                scale.Y *= 0.7f;
-                sb.Draw(texture, position, null, color, spark.Rotation, origin, scale, SpriteEffects.None, 0f);
-                sb.Draw(texture, position, null, color, spark.Rotation + MathF.PiOver2, origin, scale * 0.3f, SpriteEffects.None, 0f);
-            }
-
-            texture = Assets.Elk.Particles.ExpandingCircle.Asset.Value;
-            origin = texture.Size() * 0.5f;
+            var color = new Color(179, 133, 255, 40);
 
             foreach (var index in Rings)
             {
-                var ring = Rings[index];
+                ref var ring = ref Rings[index];
 
                 var position = ring.Position - Main.screenPosition;
 

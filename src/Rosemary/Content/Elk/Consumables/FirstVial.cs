@@ -1,11 +1,13 @@
 ﻿using Microsoft.Xna.Framework;
+using Rosemary.Common;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace Rosemary.Content.Elk;
 
-public sealed class FirstVial : ModItem
+public sealed class FirstVial : ModItem, IViolentShimmerReactant
 {
     public override string Texture => Assets.Elk.Consumables.FirstVial.KEY;
 
@@ -52,5 +54,30 @@ public sealed class FirstVial : ModItem
         Item.value = Item.buyPrice(gold: 3);
         // Item.buffType = ModContent.BuffType<InkDrugStatBuff>();
         // Item.buffTime = 36000;
+    }
+
+    bool IViolentShimmerReactant.Ejection(WorldItem item)
+    {
+        for (var i = 0; i < 6; i++)
+        {
+            var velocity = -Vector2.UnitY * Rand.Next(4f, 11f);
+            velocity = velocity.RotatedByRandom(0.7f);
+
+            Gore.NewGorePerfect(new EntitySource_Parent(item, "SHIMMER_BAD"), item.Center, velocity, ModContent.GoreType<VialGore>());
+        }
+
+        return true;
+    }
+}
+
+file sealed class VialGore : ShimmerReactionGore
+{
+    public override string Texture => Assets.Elk.Consumables.FirstVialShatter.KEY;
+
+    public override void OnSpawn(Gore gore, IEntitySource source)
+    {
+        base.OnSpawn(gore, source);
+
+        gore.Frame = new SpriteFrame(3, 1, Rand.Next((byte)3), 0);
     }
 }

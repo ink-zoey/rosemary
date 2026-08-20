@@ -1,22 +1,12 @@
 ﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using Daybreak.Rendering;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
-using Rosemary.Core;
 using System;
-using System.Collections.Generic;
-using System.IO.Pipelines;
-using System.Linq;
 using Terraria;
 using Terraria.Audio;
-using Terraria.GameContent;
-using Terraria.GameContent.Liquid;
 using Terraria.GameContent.Shaders;
-using Terraria.Graphics;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -121,8 +111,6 @@ public static class ElkShimmerItemSets
                     break;
                 }
 
-                ElkShimmerParticles.Sears += new ElkShimmerParticles.ShimmerSear(curPosition, Rand.Next(-0.12f, 0.12f), 0f, increment_violent_shimmer_reaction);
-
                 var modifier = new PunchCameraModifier(curPosition, new Vector2(1f, 0f), 4f, 7f, (int)(1f / increment_violent_shimmer_reaction) + 20, 1200f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING");
                 Main.instance.CameraModifiers.Add(modifier);
 
@@ -186,7 +174,13 @@ public static class ElkShimmerItemSets
                 continue;
             }
 
-            curPosition.Y -= j * 16f;
+            position.Y += 1;
+
+            var liquidLevel = (float)Main.tile[position].LiquidAmount / byte.MaxValue;
+            liquidLevel = (1f - liquidLevel) * 16f;
+
+            curPosition = position.ToWorldCoordinates(self.Bottom.X % 16f, liquidLevel);
+
             break;
         }
 
@@ -250,6 +244,12 @@ public static class ElkShimmerItemSets
             attenuationDistance: 5500f
         );
 
+        if (self.inner.ModItem is IViolentShimmerReactant reactant
+         && reactant.Ejection(self))
+        {
+            self.ClearOut();
+        }
+
         return;
 
         void PassiveEffects()
@@ -263,7 +263,7 @@ public static class ElkShimmerItemSets
             WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
             WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
 
-            // Bubbles
+            // Surface droplets
             var dustOffset = new Vector2(Rand.Next(minRange, maxRange), 0f);
 
             var dust = Dust.NewDustPerfect(
@@ -291,6 +291,16 @@ public static class ElkShimmerItemSets
             );
 
             dust.noGravity = true;
+
+            // Acid bubbles
+            ElkShimmerParticles.Bubbles +=
+                new ElkShimmerParticles.ShimmerBubble(
+                    Rand.Next(self.Hitbox),
+                    GetShimmerSplashColor(),
+                    Rand.Next(-1f, 1f),
+                    Rand.Next((byte)1, (byte)4),
+                    0
+                );
 
             // Inward spikes
             if (!(rippleOffset.X >= 85f))
