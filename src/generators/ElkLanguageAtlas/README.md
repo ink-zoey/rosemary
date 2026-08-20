@@ -15,11 +15,12 @@
         </td>
         <td valign="top"><br/>
 
-The ElkLang atlas tool takes in images in `input/`, premultiplies them, and compiles them into a single atlas with a respective .json definition file.
+The ElkLang atlas tool takes in images in `input/`, premultiplies them, and compiles them into a single atlas with a respective .json definition file in `output/`; these files currently have to be manually placed into the parent project's assets.
 
 Images should be named in the format of `[NAME]-[OFFSET FROM LEFT]-[OFFSET FROM TOP]-[HEIGHT]`;
 offsets and height should be provided as integers, use `m` to denote negatives.
 Height is used to determine how much to offset the next character vertically when writing phrases.
+Open `TEMPLATE.pdn` in [paint.net](https://paint.net/) for a layout to help with constructing characters.
 
 Example:\
 `BranchLeftA-m1-m2-14` would be drawn 1px to the left, 2px up, and have a height of 14.
