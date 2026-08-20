@@ -147,7 +147,7 @@ public static class GameInterfaceLayers
     private static readonly HashSet<Layer> layers = [];
 
     [ModSystemHooks.ModifyInterfaceLayers]
-    private static void PostSetupContent([OriginalName("layers")] List<GameInterfaceLayer> interfaceLayers)
+    private static void ModifyInterfaceLayers([OriginalName("layers")] List<GameInterfaceLayer> interfaceLayers)
     {
         foreach (var layer in layers)
         {
