@@ -577,7 +577,31 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
 
         var currentLength = (Projectile.Center - center).Length();
 
-        Projectile.velocity = GetVelocity(target) * 0.15f;
+        Projectile.wet = Collision.WetCollision(Projectile.position, Projectile.width, Projectile.height);
+        Projectile.lavaWet = Collision.LavaCollision(Projectile.position, Projectile.width, Projectile.height);
+        Projectile.honeyWet = Collision.honey;
+        Projectile.shimmerWet = Collision.shimmer;
+
+        var speed = 0.15f;
+
+        if (Projectile.shimmerWet)
+        {
+            speed = 0.09f;
+        }
+        else if (Projectile.lavaWet)
+        {
+            speed = 0.12f;
+        }
+        else if (Projectile.honeyWet)
+        {
+            speed = 0.07f;
+        }
+        else if (Projectile.wet)
+        {
+            speed = 0.1f;
+        }
+
+        Projectile.velocity = GetVelocity(target) * speed;
 
         if (Projectile.velocity.Length() > min_speed && Rand.NextBoolean(10) && !Collision.SolidCollision(Projectile.position - new Vector2(2), Projectile.width + 4, Projectile.height + 4))
         {
@@ -600,6 +624,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var overExtended = currentLength > (Projectile.tileCollide ? overMaxLength : innerMaxLength);
 
         Projectile.tileCollide = !overExtended && stillInUse;
+
+        Projectile.netUpdate = true;
 
         return;
 
