@@ -1,6 +1,7 @@
 ﻿using Daybreak.Hooks;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using System;
@@ -53,7 +54,83 @@ public static class ElkShimmerItemSets
     {
         On_WorldItem.Shimmering += Shimmering_ViolentShimmerReaction;
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
+        IL_Main.DrawItem += DrawItem_ViolentShimmerReaction;
     }
+
+    private static void DrawItem_ViolentShimmerReaction(ILContext il)
+    {
+        var c = new ILCursor(il);
+
+        var itemIndex = -1;  // arg
+        var colorIndex = -1; // loc
+
+        c.GotoNext(
+            MoveType.After,
+            i => i.MatchLdarg(out itemIndex),
+            i => i.MatchLdloc(out _),
+            i => i.MatchCallvirt<WorldItem>(nameof(WorldItem.GetAlpha)),
+            i => i.MatchStloc(out colorIndex)
+        );
+
+        c.EmitLdarg(itemIndex);
+        c.EmitLdloca(colorIndex);
+        c.EmitDelegate(
+            static (WorldItem item, ref Color color) =>
+            {
+                if (!ItemID.Sets.ViolentShimmerReaction[item.type]
+                 || item.ShimmerData is null
+                 || item.ShimmerData.WaveProgress < 0f
+                 || !item.shimmerWet)
+                {
+                    return;
+                }
+
+                var interpolator = 1f - MathF.Pow(1f - item.ShimmerData.WaveProgress, 2f);
+
+                color = Color.Lerp(color, Color.White, interpolator);
+            }
+        );
+    }
+
+    [GlobalItemHooks.PostDrawInWorld]
+    private static void PostDrawInWorld_ViolentShimmerReaction(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale, int whoAmI)
+    {
+        if (!ItemID.Sets.ViolentShimmerReaction[item.type]
+         || item.ShimmerData is null
+         || item.ShimmerData.WaveProgress < 0f
+         || !item.shimmerWet)
+        {
+            return;
+        }
+
+        Main.instance.DrawItem_GetBasics(item.inner, whoAmI, out var texture, out var frame, out _);
+
+        var origin = frame.Size() * 0.5f;
+
+        var off = new Vector2((item.width * 0.5f) - origin.X, item.height - frame.Height);
+
+        var position = (item.position + origin + off) - Main.screenPosition;
+
+        var color = alphaColor;
+        color.A = 0;
+
+        var interpolator = 1f - MathF.Pow(1f - item.ShimmerData.WaveProgress, 3f);
+
+        color *= interpolator;
+
+        const float freq = 7f;
+        const float amp = 0.5f;
+
+        var time = Main.GlobalTimeWrappedHourly * freq;
+
+        var wave = ((time % 1f) - 0.5f) * 2f;
+        wave = (MathF.Abs(wave) - 0.5f) * 2f;
+
+        scale *= 1f + (wave * amp * interpolator);
+
+        spriteBatch.Draw(texture, position, frame, color, rotation, origin, scale, SpriteEffects.None, 0f);
+    }
+
 
     private const float increment_violent_shimmer_reaction = 0.006f;
 
