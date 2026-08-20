@@ -254,6 +254,8 @@ public static class ElkShimmerItemSets
 
         void PassiveEffects()
         {
+            WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), Rand.Next(0.15f, 0.85f), RippleShape.Square, MathF.PiOver4);
+
             // Ripples closing in
             var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
             var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));

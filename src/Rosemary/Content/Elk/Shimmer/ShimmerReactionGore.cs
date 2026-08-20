@@ -3,9 +3,11 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Graphics.PackedVector;
 using Rosemary.Common;
+using System;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -65,12 +67,16 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
 
             gore.alpha += 3;
 
-            var frame = (byte)(4 * (gore.alpha / (float)byte.MaxValue));
+            var ratio = (gore.alpha / (float)byte.MaxValue);
+
+            var frame = (byte)(4 * ratio);
 
             if (frame < 1)
             {
                 frame = 1;
             }
+
+            WaterShaderData.Instance.QueueRipple(Rand.Next(gore.Hitbox), Rand.Next(0.15f, 0.85f) * (1f - ratio), RippleShape.Square, MathF.PiOver4);
 
             if (Rand.NextBoolean())
             {
@@ -93,8 +99,6 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
             return true;
         }
 
-        // PLAY SOUND
-
         gore.ShimmerData ??= new ShimmerReactionData
         {
             Shimmering = true,
@@ -102,6 +106,28 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
 
         gore.ShimmerData.Shimmering = true;
 
+        // Splash particles
+        for (var i = 0; i < 10; i++)
+        {
+            var index = Dust.NewDust(
+                new Vector2(gore.position.X - 6f, gore.position.Y + (gore.Height * 0.5f) - 8f),
+                (int)gore.Width + 12,
+                24,
+                DustID.ShimmerSplash,
+                newColor: GetShimmerSplashColor(),
+                Scale: 0.8f
+            );
+
+            var dust = Main.dust[index];
+
+            dust.velocity.Y -= 4f;
+            dust.velocity.X *= 2.5f;
+            dust.noGravity = true;
+        }
+
+        // TODO: SFX
+
+        // Snap the position to the surface of the shimmer
         var curPosition = gore.Bottom;
         for (var j = 0; j < 8; j++)
         {
