@@ -311,7 +311,6 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Projectile.hostile = false;
 
         Projectile.tileCollide = true;
-        Projectile.ignoreWater = true;
         Projectile.hide = true;
 
         Projectile.manualDirectionChange = true;
@@ -576,11 +575,6 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         target -= center;
 
         var currentLength = (Projectile.Center - center).Length();
-
-        Projectile.wet = Collision.WetCollision(Projectile.position, Projectile.width, Projectile.height);
-        Projectile.lavaWet = Collision.LavaCollision(Projectile.position, Projectile.width, Projectile.height);
-        Projectile.honeyWet = Collision.honey;
-        Projectile.shimmerWet = Collision.shimmer;
 
         var speed = 0.15f;
 
