@@ -122,7 +122,8 @@ public static class ElkShimmerItemSets
                         MaxInstances = 3,
                     },
                     curPosition,
-                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer,
+                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
+                      || Main.tile[item.Top.ToTileCoordinates()].HasShimmer,
                     3100f
                 );
 
@@ -133,7 +134,8 @@ public static class ElkShimmerItemSets
                         MaxInstances = 3,
                     },
                     curPosition,
-                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer,
+                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
+                      || Main.tile[item.Top.ToTileCoordinates()].HasShimmer,
                     3600f
                 );
             }
@@ -165,7 +167,7 @@ public static class ElkShimmerItemSets
         }
 
         var curPosition = self.Bottom;
-        for (var j = 0; j < 8; j++)
+        for (var j = 0; j < 16; j++)
         {
             var position = self.Bottom.ToTileCoordinates();
             position.Y -= j + 1;
@@ -213,11 +215,27 @@ public static class ElkShimmerItemSets
             }
         }
 
-        self.velocity = Vector2.Zero;
-
         self.ShimmerData.WaveProgress += increment_violent_shimmer_reaction;
 
         var progress = self.ShimmerData.WaveProgress;
+
+        var subSurface = false;
+
+        var above = self.Center.ToTileCoordinates();
+        above.Y -= 1;
+        if (Main.tile[above].HasShimmer)
+        {
+            var dist = curPosition == self.Bottom
+              ? 1f
+              : MathF.Saturate(MathF.Abs(self.Center.Y - curPosition.Y) / 80f);
+
+            self.velocity.Y = -22f * dist;
+            subSurface = true;
+        }
+        else
+        {
+            self.velocity *= 0.5f;
+        }
 
         PassiveEffects();
 
@@ -255,16 +273,17 @@ public static class ElkShimmerItemSets
 
         void PassiveEffects()
         {
+            // Acid bubbles
+            ElkShimmerParticles.Bubbles +=
+                new ElkShimmerParticles.ShimmerBubble(
+                    Rand.Next(self.Hitbox),
+                    GetShimmerSplashColor(),
+                    Rand.Next(-1f, 1f),
+                    Rand.Next((byte)1, (byte)4),
+                    0
+                );
+
             WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), Rand.Next(0.15f, 0.85f), RippleShape.Square, MathF.PiOver4);
-
-            // Ripples closing in
-            var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
-            var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
-
-            var strength = MathF.Max(MathF.Pow(progress, 2), 0.8f);
-
-            WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
-            WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
 
             // Surface droplets
             var dustOffset = new Vector2(Rand.Next(minRange, maxRange), 0f);
@@ -279,6 +298,11 @@ public static class ElkShimmerItemSets
             );
 
             dust.noGravity = true;
+
+            if (subSurface)
+            {
+                return;
+            }
 
             // Dust moving inward
             dustOffset = Rand.NextUnitVector(Rand.Next(400f));
@@ -295,15 +319,14 @@ public static class ElkShimmerItemSets
 
             dust.noGravity = true;
 
-            // Acid bubbles
-            ElkShimmerParticles.Bubbles +=
-                new ElkShimmerParticles.ShimmerBubble(
-                    Rand.Next(self.Hitbox),
-                    GetShimmerSplashColor(),
-                    Rand.Next(-1f, 1f),
-                    Rand.Next((byte)1, (byte)4),
-                    0
-                );
+            // Ripples closing in
+            var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
+            var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
+
+            var strength = MathF.Max(MathF.Pow(progress, 2), 0.8f);
+
+            WaterShaderData.Instance.QueueRipple(curPosition + rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
+            WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
 
             // Inward spikes
             if (!(rippleOffset.X >= 85f))
