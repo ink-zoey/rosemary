@@ -64,12 +64,16 @@ public static class ElkShimmerParticles
             }
             var newPosition = Position;
 
-            newPosition.Y -= 0.4f;
+            newPosition.Y -= 0.6f;
+            newPosition.X += Direction * 0.6f;
             if (Collision.WetCollision(newPosition, 1, 1) && Collision.shimmer)
             {
                 Position = newPosition;
+
+                return Frame <= 4;
             }
-            else if (!Collision.WetCollision(Position, 1, 1) || !Collision.shimmer)
+
+            if (!Collision.WetCollision(Position, 1, 1) || !Collision.shimmer)
             {
                 return false;
             }

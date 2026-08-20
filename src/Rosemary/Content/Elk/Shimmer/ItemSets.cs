@@ -264,7 +264,7 @@ public static class ElkShimmerItemSets
         );
 
         if (self.inner.ModItem is IViolentShimmerReactant reactant
-         && reactant.Ejection(self))
+         && reactant.Ejection(self, subSurface))
         {
             self.ClearOut();
         }
@@ -342,6 +342,19 @@ public static class ElkShimmerItemSets
 
         void EjectEffects()
         {
+            ElkShimmerParticles.Rings += new ElkShimmerParticles.ExpandingRing(self.Center, 0.1f, 0.02f, 0f, 0.04f);
+
+            // Camera shake with lingering effect
+            var strong = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 35f, 8f, 45, 4500f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WRONG");
+            var lingering = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 2f, 9f, 200, 7000f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_AFTERSHOCK");
+            Main.instance.CameraModifiers.Add(strong);
+            Main.instance.CameraModifiers.Add(lingering);
+
+            if (subSurface)
+            {
+                return;
+            }
+
             // Giant splash with a center bias
             for (var i = 0; i < 70; i++)
             {
@@ -373,14 +386,6 @@ public static class ElkShimmerItemSets
             SpawnSpike(48f, 16f, 0.04f);
             SpawnSpike(70f, 64f, 0.025f);
             SpawnSpike(86f, 48f, 0.08f);
-
-            ElkShimmerParticles.Rings += new ElkShimmerParticles.ExpandingRing(curPosition, 0.1f, 0.02f, 0f, 0.04f);
-
-            // Camera shake with lingering effect
-            var strong = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 35f, 8f, 45, 4500f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WRONG");
-            var lingering = new PunchCameraModifier(curPosition, new Vector2(0f, -1f), 2f, 9f, 200, 7000f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_AFTERSHOCK");
-            Main.instance.CameraModifiers.Add(strong);
-            Main.instance.CameraModifiers.Add(lingering);
         }
 
         void SpawnSpike(float offset, float height, float speed)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Rosemary.Common;
 using Terraria;
 using Terraria.DataStructures;
@@ -56,14 +57,49 @@ public sealed class FirstVial : ModItem, IViolentShimmerReactant
         // Item.buffTime = 36000;
     }
 
-    bool IViolentShimmerReactant.Ejection(WorldItem item)
+    bool IViolentShimmerReactant.Ejection(WorldItem item, bool subSurface)
     {
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < (subSurface ? 12 : 6); i++)
         {
             var velocity = -Vector2.UnitY * Rand.Next(4f, 11f);
-            velocity = velocity.RotatedByRandom(0.7f);
+            velocity = velocity.RotatedByRandom(subSurface ? MathF.PI : 0.7f);
 
-            Gore.NewGorePerfect(new EntitySource_Parent(item, "SHIMMER_BAD"), item.Center, velocity, ModContent.GoreType<VialGore>());
+            var gore = Gore.NewGorePerfect(new EntitySource_Parent(item, "SHIMMER_BAD"), item.Center, velocity, ModContent.GoreType<VialGore>());
+
+            if (subSurface)
+            {
+                gore.scale = 0.7f;
+            }
+
+            gore.ShimmerData ??= new ShimmerReactionGore.ShimmerReactionData
+            {
+                Shimmering = false,
+                SpawnedSubSurface = false,
+            };
+
+            gore.ShimmerData.SpawnedSubSurface = subSurface;
+        }
+
+        if (subSurface)
+        {
+            return true;
+        }
+
+        var bright = new Color(179, 133, 255, 120);
+        for (var i = 0; i < 17; i++)
+        {
+            var velocity = -Vector2.UnitY * Rand.Next(2f, 7f);
+            velocity = velocity.RotatedByRandom(MathF.PiOver2);
+
+            var offset = Vector2.Normalize(velocity) * 10f;
+
+            ElkParticles.Sparks += new ElkParticles.Spark(
+                item.Center + offset,
+                velocity,
+                Main.rand.NextFloat(2.5f, 6f),
+                bright,
+                Rand.Next((byte)3)
+            );
         }
 
         return true;
