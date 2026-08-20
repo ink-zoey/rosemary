@@ -42,7 +42,8 @@ public static class ElkShimmerItemSets
     extension(ItemID.Sets)
     {
         /// <summary>
-        ///     TODO
+        ///     If <see langword="true"/> for a given item, upon interaction with shimmer the item will pause, then be violently ejected.<br/>
+        ///     Made for use with <see cref="IViolentShimmerReactant"/> applied on the <see cref="ModItem"/>.
         /// </summary>
         public static bool[] ViolentShimmerReaction => violentShimmerReaction;
     }
