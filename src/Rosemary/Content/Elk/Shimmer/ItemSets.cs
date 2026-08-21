@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
 using System;
+using Rosemary.Content.Misc;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent.Shaders;
@@ -168,28 +169,27 @@ public static class ElkShimmerItemSets
 
                 item.ShimmerData.WaveProgress = 0f;
 
-                var curPosition = item.Bottom;
-                for (var j = 0; j < 8; j++)
-                {
-                    var position = curPosition.ToTileCoordinates();
-                    position.Y -= j + 1;
-
-                    if (Main.tile[position].HasShimmer)
+                var modifier = new CallbackPunchCameraModifier(
+                    item.Center,
+                    new Vector2(1f, 0f),
+                    4f,
+                    7f,
+                    (int)(1f / increment_violent_shimmer_reaction) + 20,
+                    m =>
                     {
-                        continue;
-                    }
+                        if (!ItemID.Sets.ViolentShimmerReaction[item.type] || !item.shimmerWet)
+                        {
+                            return false;
+                        }
 
-                    position.Y += 1;
+                        m._startPosition = item.Center;
+                        m._framesLasted %= 60;
 
-                    var liquidLevel = (float)Main.tile[position].LiquidAmount / byte.MaxValue;
-                    liquidLevel = (1f - liquidLevel) * 16f;
-
-                    curPosition = position.ToWorldCoordinates(item.Bottom.X % 16f, liquidLevel);
-
-                    break;
-                }
-
-                var modifier = new PunchCameraModifier(curPosition, new Vector2(1f, 0f), 4f, 7f, (int)(1f / increment_violent_shimmer_reaction) + 20, 1200f, $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING");
+                        return false;
+                    },
+                    600f,
+                    $"{nameof(Rosemary)}: SHIMMER_VIOLENT_WARNING"
+                );
                 Main.instance.CameraModifiers.Add(modifier);
 
                 SoundEngine.PlaySound(
@@ -198,25 +198,59 @@ public static class ElkShimmerItemSets
                         PauseBehavior = PauseBehavior.PauseWithGame,
                         MaxInstances = 3,
                     },
-                    curPosition,
-                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
-                      || Main.tile[item.Top.ToTileCoordinates()].HasShimmer,
+                    item.Center,
+                    SoundCallback,
                     3100f
                 );
 
-                SoundEngine.PlaySound(
-                    Assets.Elk.Shimmer.Scowl.Asset with
+                PlayScowl(item);
+
+                return;
+
+                bool SoundCallback(ActiveSound sound)
+                {
+                    if (!ItemID.Sets.ViolentShimmerReaction[item.type] || !item.shimmerWet)
                     {
-                        PauseBehavior = PauseBehavior.PauseWithGame,
-                        MaxInstances = 3,
-                    },
-                    curPosition,
-                    _ => Main.tile[item.Bottom.ToTileCoordinates()].HasShimmer
-                      || Main.tile[item.Top.ToTileCoordinates()].HasShimmer,
-                    3600f
-                );
+                        return false;
+                    }
+
+                    sound.Position = item.Center;
+
+                    return item.shimmerWet;
+                }
             }
         );
+    }
+
+    public static void PlayScowl(WorldItem item)
+    {
+        if (item.ExtendoGripData?.InClaw is not true)
+        {
+            SoundEngine.PlaySound(
+                Assets.Elk.Shimmer.Scowl.Asset with
+                {
+                    PauseBehavior = PauseBehavior.PauseWithGame,
+                    MaxInstances = 3,
+                },
+                item.Center,
+                SoundCallback,
+                3600f
+            );
+        }
+
+        return;
+
+        bool SoundCallback(ActiveSound sound)
+        {
+            if (!ItemID.Sets.ViolentShimmerReaction[item.type] || !item.shimmerWet || item.ExtendoGripData?.InClaw is true)
+            {
+                return false;
+            }
+
+            sound.Position = item.Center;
+
+            return item.shimmerWet;
+        }
     }
 
     private static void Shimmering_ViolentShimmerReaction(On_WorldItem.orig_Shimmering orig, WorldItem self)
@@ -292,7 +326,10 @@ public static class ElkShimmerItemSets
             }
         }
 
-        self.ShimmerData.WaveProgress += increment_violent_shimmer_reaction;
+        if (self.ExtendoGripData?.InClaw is not true)
+        {
+            self.ShimmerData.WaveProgress += increment_violent_shimmer_reaction;
+        }
 
         var progress = self.ShimmerData.WaveProgress;
 
@@ -350,15 +387,18 @@ public static class ElkShimmerItemSets
 
         void PassiveEffects()
         {
-            // Acid bubbles
-            ElkShimmerParticles.Bubbles +=
-                new ElkShimmerParticles.ShimmerBubble(
-                    Rand.Next(self.Hitbox),
-                    GetShimmerSplashColor(),
-                    Rand.Next(-1f, 1f),
-                    Rand.Next((byte)1, (byte)4),
-                    0
-                );
+            if (self.ExtendoGripData?.InClaw is not true || Rand.NextBoolean(10))
+            {
+                // Acid bubbles
+                ElkShimmerParticles.Bubbles +=
+                    new ElkShimmerParticles.ShimmerBubble(
+                        Rand.Next(self.Hitbox),
+                        GetShimmerSplashColor(),
+                        Rand.Next(-1f, 1f),
+                        Rand.Next((byte)1, (byte)4),
+                        0
+                    );
+            }
 
             WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), Rand.Next(0.15f, 0.85f), RippleShape.Square, MathF.PiOver4);
 
@@ -376,7 +416,8 @@ public static class ElkShimmerItemSets
 
             dust.noGravity = true;
 
-            if (subSurface)
+            if (subSurface
+             || self.ExtendoGripData?.InClaw is true)
             {
                 return;
             }

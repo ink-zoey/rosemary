@@ -1,5 +1,4 @@
 ﻿using Daybreak.Rendering;
-using Microsoft.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -7,6 +6,8 @@ using Rosemary.Common;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using GoldMeridian.CodeAnalysis;
+using Rosemary.Content.Elk;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -18,6 +19,12 @@ namespace Rosemary.Content.Misc;
 
 public sealed class DinosaurExtendoGrip : ModItem
 {
+    [ExtensionDataFor<WorldItem>("ExtendoGripData")]
+    internal sealed class WorldItemData
+    {
+        public required bool InClaw { get; set; }
+    }
+
     public override string Texture => Assets.Misc.DinosaurExtendoGrip.KEY;
 
     public override string LocalizationCategory => "Content.Misc";
@@ -67,6 +74,37 @@ public sealed class DinosaurExtendoGrip : ModItem
         IL_NPC.CatchNPC += CatchNPC_ForceDinoGrabberPickup;
 
         On_NPC.ReleaseNPC += ReleaseNPC_ApplyVelocity;
+
+        On_Item.NewItem_Inner += NewItem_Inner_RefreshData;
+    }
+
+    private static int NewItem_Inner_RefreshData(
+        On_Item.orig_NewItem_Inner orig,
+        IEntitySource source,
+        int x,
+        int y,
+        int width,
+        int height,
+        Item itemToClone,
+        int type,
+        int stack,
+        bool noBroadcast,
+        int prefix,
+        bool noGrabDelay
+    )
+    {
+        var index = orig(source, x, y, width, height, itemToClone, type, stack, noBroadcast, prefix, noGrabDelay);
+
+        if (index == -1)
+        {
+            return -1;
+        }
+
+        var item = Main.item[index];
+
+        item.ExtendoGripData = null;
+
+        return index;
     }
 
     private static int ReleaseNPC_ApplyVelocity(On_NPC.orig_ReleaseNPC orig, int x, int y, int type, int style, int who)
@@ -852,6 +890,13 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
             item.shimmered = false;
 
             item.Hidden = true;
+
+            item.ExtendoGripData ??= new DinosaurExtendoGrip.WorldItemData
+            {
+                InClaw = true,
+            };
+
+            item.ExtendoGripData.InClaw = true;
         }
 
         void HoverInteractions()
@@ -914,6 +959,22 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var center = player.RotatedRelativePoint(player.MountedCenter, true);
 
         var item = Main.item[HeldItem];
+
+        item.ExtendoGripData ??= new DinosaurExtendoGrip.WorldItemData
+        {
+            InClaw = false,
+        };
+
+        item.ExtendoGripData.InClaw = false;
+
+        if (ItemID.Sets.ViolentShimmerReaction[item.type]
+         && item.shimmerWet
+         && item.ShimmerData is { } data)
+        {
+            data.WaveProgress = 0f;
+
+            ElkShimmerItemSets.PlayScowl(item);
+        }
 
         if (player.whoAmI != Main.myPlayer)
         {
