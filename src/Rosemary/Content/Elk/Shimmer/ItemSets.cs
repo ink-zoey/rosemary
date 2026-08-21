@@ -4,14 +4,17 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
-using System;
 using Rosemary.Content.Misc;
+using System;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent.Shaders;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
+using static Daybreak.Mathematics.Angle;
 
 namespace Rosemary.Content.Elk;
 
@@ -351,7 +354,10 @@ public static class ElkShimmerItemSets
             self.velocity *= 0.5f;
         }
 
+        var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
+
         PassiveEffects();
+        InteractWithPlayers();
 
         if (progress < 1f)
         {
@@ -383,7 +389,96 @@ public static class ElkShimmerItemSets
             self.ClearOut();
         }
 
+        const int center_width = 80;
+        const int center_height = 120;
+
+        var centerHitbox = new Rectangle(
+            (int)self.Center.X - center_width,
+            (int)curPosition.Y - center_height,
+            center_width * 2,
+            center_height + 32
+        );
+
+        foreach (var player in Main.ActivePlayers)
+        {
+            if (centerHitbox.Intersects(player.Hitbox))
+            {
+                player.KillMe(
+                    PlayerDeathReason.ByCustomReason(
+                        NetworkText.FromKey(Mods.Rosemary.Content.Elk.Shimmer.Ejection.DeathMessage.KEY, player.name)
+                    ),
+                    -999,
+                    0
+                );
+            }
+        }
+
         return;
+
+        void InteractWithPlayers()
+        {
+            if (rippleOffset.X < 85f)
+            {
+                return;
+            }
+
+            const int offset = 16;
+            const int height = 64;
+
+            Rectangle? leftHitbox = null;
+            if (-rippleOffset.X > minRange)
+            {
+                leftHitbox = new Rectangle(
+                    (int)(curPosition.X - rippleOffset.X) - 8 - offset,
+                    (int)curPosition.Y - height,
+                    16,
+                    height + 16
+                );
+            }
+
+            Rectangle? rightHitbox = null;
+            if (rippleOffset.X < maxRange)
+            {
+                rightHitbox = new Rectangle(
+                    (int)(curPosition.X + rippleOffset.X) - 8 + offset,
+                    (int)curPosition.Y - height,
+                    16,
+                    height + 16
+                );
+            }
+
+            foreach (var player in Main.ActivePlayers)
+            {
+                if (leftHitbox?.Intersects(player.Hitbox) is true)
+                {
+                    DamagePlayer(player, 1);
+                }
+                else if (rightHitbox?.Intersects(player.Hitbox) is true)
+                {
+                    DamagePlayer(player, -1);
+                }
+            }
+
+            return;
+
+            static void DamagePlayer(Player player, int direction)
+            {
+                player.Hurt(
+                    PlayerDeathReason.ByCustomReason(
+                        NetworkText.FromKey(Mods.Rosemary.Content.Elk.Shimmer.Spikes.DeathMessage.KEY, player.name)
+                    ),
+                    120,
+                    direction,
+                    false,
+                    false,
+                    -1,
+                    false,
+                    0.4f,
+                    0f,
+                    7f
+                );
+            }
+        }
 
         void PassiveEffects()
         {
@@ -438,7 +533,6 @@ public static class ElkShimmerItemSets
             dust.noGravity = true;
 
             // Ripples closing in
-            var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
             var size = new Vector2(MathF.Max(50f * MathF.Pow(progress, 3), 6f));
 
             var strength = MathF.Max(MathF.Pow(progress, 2), 0.8f);
@@ -447,12 +541,12 @@ public static class ElkShimmerItemSets
             WaterShaderData.Instance.QueueRipple(curPosition - rippleOffset, Rand.Next(0.75f, 1f) * strength, size, RippleShape.Square, MathF.PiOver4);
 
             // Inward spikes
-            if (!(rippleOffset.X >= 85f))
+            if (rippleOffset.X < 85f)
             {
                 return;
             }
 
-            curPosition.X -= 16f;
+            // curPosition.X -= 16f;
 
             SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
             SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
@@ -492,7 +586,7 @@ public static class ElkShimmerItemSets
                 dust.noGravity = true;
             }
 
-            curPosition.X -= 16f;
+            // curPosition.X -= 16f;
 
             // Hand-picked ejection values
             SpawnSpike(-86f, 48f, 0.08f);

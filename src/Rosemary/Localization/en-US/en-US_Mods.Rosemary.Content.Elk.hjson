@@ -7,3 +7,8 @@ FirstVial: {
 	DisplayName: First Vial
 	Tooltip: ""
 }
+
+Shimmer: {
+	Spikes.DeathMessage: "{0} had their organs transmutated."
+	Ejection.DeathMessage: "{0} was shimmered away."
+}
