@@ -154,7 +154,7 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
 
     public override void DrawPlayer(Camera camera)
     {
-        if (AfterImages.ActiveParticleCount <= 0)
+        if (AfterImages.ActiveParticleCount <= 0 || Player.dead || Player.CCed)
         {
             return;
         }
@@ -261,7 +261,9 @@ public sealed class SiffrinHoverMount : ModMount
 
     private void DrawPlayer_RenderAllLayers_CapturePlayer(On_PlayerDrawLayers.orig_DrawPlayer_RenderAllLayers orig, ref PlayerDrawSet drawInfo)
     {
-        if (!drawInfo.drawPlayer.mount.Active
+        if (drawInfo.drawPlayer.dead
+         || drawInfo.drawPlayer.CCed
+         || !drawInfo.drawPlayer.mount.Active
          || drawInfo.drawPlayer.mount.Type != ModContent.MountType<SiffrinHoverMount>()
          || drawInfo.headOnlyRender
          || drawInfo.shadow > 0)
@@ -406,6 +408,11 @@ public sealed class SiffrinHoverMount : ModMount
 
     public override void UpdateEffects(Player player)
     {
+        if (player.dead || player.CCed)
+        {
+            return;
+        }
+
         var effectsPlayer = player.GetModPlayer<OutlineAfterImagesPlayer>();
 
         if (Main.timeForVisualEffects % 6 == 0)
