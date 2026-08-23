@@ -13,10 +13,11 @@ using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.Liquid;
 using Terraria.Graphics;
-using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace Rosemary.Content.Elk;
 
+[Autoload(Side = ModSide.Client)]
 public static class ElkShimmerParticles
 {
     public sealed class ShimmerSpikeHandler(int max) : UpdatingParticleHandler<ShimmerSpike>(max)
