@@ -215,7 +215,7 @@ public static class ElkShimmerItemSets
                         PauseBehavior = PauseBehavior.PauseWithGame,
                         MaxInstances = 3,
                         IsLooped = true,
-                        Volume = 0.75f,
+                        Volume = 0.5f,
                     },
                     item.Center,
                     SoundCallback

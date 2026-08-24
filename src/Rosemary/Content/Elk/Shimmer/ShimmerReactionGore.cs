@@ -86,7 +86,7 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
                 {
                     PauseBehavior = PauseBehavior.PauseWithGame,
                     MaxInstances = 15,
-                    Volume = Rand.Next(0.35f, 0.6f),
+                    Volume = Rand.Next(0.1f, 0.3f),
                     PitchRange = (-0.3f, 0.6f),
                 },
                 gore.Center
