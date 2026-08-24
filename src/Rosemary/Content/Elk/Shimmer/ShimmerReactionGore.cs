@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using System;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.Shaders;
@@ -80,6 +81,17 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
          && shimmering
          && !subSurface)
         {
+            SoundEngine.PlaySound(
+                Assets.Elk.Shimmer.BurnSmall.Asset with
+                {
+                    PauseBehavior = PauseBehavior.PauseWithGame,
+                    MaxInstances = 15,
+                    Volume = Rand.Next(0.35f, 0.6f),
+                    PitchRange = (-0.3f, 0.6f),
+                },
+                gore.Center
+            );
+
             gore.ShimmerData.Shimmering = true;
             Shimmer();
         }

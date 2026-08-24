@@ -14,7 +14,6 @@ using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
-using static Daybreak.Mathematics.Angle;
 
 namespace Rosemary.Content.Elk;
 
@@ -24,6 +23,8 @@ public static class ElkShimmerItemSets
     internal sealed class ShimmerReactionData
     {
         public required float WaveProgress { get; set; }
+
+        public required float SubSurfaceProgress { get; set; }
     }
 
     private static bool[] violentShimmerReaction = [];
@@ -168,9 +169,11 @@ public static class ElkShimmerItemSets
                 item.ShimmerData ??= new ShimmerReactionData
                 {
                     WaveProgress = 0f,
+                    SubSurfaceProgress = 0f,
                 };
 
                 item.ShimmerData.WaveProgress = 0f;
+                item.ShimmerData.SubSurfaceProgress = 0f;
 
                 var modifier = new CallbackPunchCameraModifier(
                     item.Center,
@@ -206,13 +209,28 @@ public static class ElkShimmerItemSets
                     3100f
                 );
 
+                SoundEngine.PlaySound(
+                    Assets.Elk.Shimmer.BurnLoop.Asset with
+                    {
+                        PauseBehavior = PauseBehavior.PauseWithGame,
+                        MaxInstances = 3,
+                        IsLooped = true,
+                        Volume = 0.75f,
+                    },
+                    item.Center,
+                    SoundCallback
+                );
+
                 PlayScowl(item);
 
                 return;
 
                 bool SoundCallback(ActiveSound sound)
                 {
-                    if (!ItemID.Sets.ViolentShimmerReaction[item.type] || !item.shimmerWet)
+                    if (!ItemID.Sets.ViolentShimmerReaction[item.type]
+                     || !item.shimmerWet
+                     || item.IsAir
+                     || !item.active)
                     {
                         return false;
                     }
@@ -245,7 +263,11 @@ public static class ElkShimmerItemSets
 
         bool SoundCallback(ActiveSound sound)
         {
-            if (!ItemID.Sets.ViolentShimmerReaction[item.type] || !item.shimmerWet || item.ExtendoGripData?.InClaw is true)
+            if (!ItemID.Sets.ViolentShimmerReaction[item.type]
+             || !item.shimmerWet
+             || item.ExtendoGripData?.InClaw is true
+             || item.IsAir
+             || !item.active)
             {
                 return false;
             }
@@ -271,17 +293,20 @@ public static class ElkShimmerItemSets
         self.ShimmerData ??= new ShimmerReactionData
         {
             WaveProgress = 0f,
+            SubSurfaceProgress = 0f,
         };
 
         self.noGrabDelay = 90;
 
-        if (self.ShimmerData.WaveProgress < 0f)
+        var data = self.ShimmerData;
+
+        if (data.WaveProgress < 0f)
         {
             return;
         }
 
         var curPosition = self.Bottom;
-        for (var j = 0; j < 16; j++)
+        for (var j = 0; j < 32; j++)
         {
             var position = self.Bottom.ToTileCoordinates();
             position.Y -= j + 1;
@@ -329,12 +354,20 @@ public static class ElkShimmerItemSets
             }
         }
 
+        const float increment_smoke_result_shimmer_reaction = 0.01f;
+
         if (self.ExtendoGripData?.InClaw is not true)
         {
-            self.ShimmerData.WaveProgress += increment_violent_shimmer_reaction;
+            data.WaveProgress += increment_violent_shimmer_reaction;
+        }
+        else
+        {
+            data.SubSurfaceProgress += increment_smoke_result_shimmer_reaction;
         }
 
-        var progress = self.ShimmerData.WaveProgress;
+        var reactant = self.inner.ModItem as IViolentShimmerReactant;
+
+        var progress = data.WaveProgress;
 
         var subSurface = false;
 
@@ -356,6 +389,21 @@ public static class ElkShimmerItemSets
 
         var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
 
+        if (data.SubSurfaceProgress > 0)
+        {
+            SmokeEffects();
+
+            if (data.SubSurfaceProgress > 1f)
+            {
+                data.SubSurfaceProgress = Rand.Next(0.6f, 0.94f);
+
+                if (reactant?.SmokeResult is not null && reactant.SmokeResult >= 0)
+                {
+                    self.ClearOut();
+                }
+            }
+        }
+
         PassiveEffects();
         InteractWithPlayers();
 
@@ -369,7 +417,7 @@ public static class ElkShimmerItemSets
 
         self.velocity = velocity;
 
-        self.ShimmerData.WaveProgress = -1f;
+        data.WaveProgress = -1f;
 
         EjectEffects();
 
@@ -383,8 +431,22 @@ public static class ElkShimmerItemSets
             attenuationDistance: 5500f
         );
 
-        if (self.inner.ModItem is IViolentShimmerReactant reactant
-         && reactant.Ejection(self, subSurface))
+        if (curPosition.Distance(Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f) > 3300f)
+        {
+            SoundEngine.PlaySound(
+                Assets.Elk.Shimmer.EjectionFar.Asset with
+                {
+                    PauseBehavior = PauseBehavior.PauseWithGame,
+                    MaxInstances = 3,
+                },
+                curPosition,
+                attenuationDistance: 150000f
+            );
+        }
+
+        Main.NewText($"eyes {curPosition.Distance(Main.LocalPlayer.Center)}");
+
+        if (reactant?.Ejection(self, subSurface) is true)
         {
             self.ClearOut();
         }
@@ -403,17 +465,22 @@ public static class ElkShimmerItemSets
         {
             if (centerHitbox.Intersects(player.Hitbox))
             {
-                player.KillMe(
-                    PlayerDeathReason.ByCustomReason(
-                        NetworkText.FromKey(Mods.Rosemary.Content.Elk.Shimmer.Ejection.DeathMessage.KEY, player.name)
-                    ),
-                    -999,
-                    0
-                );
+                KillPlayer(player);
             }
         }
 
         return;
+
+        static void KillPlayer(Player player)
+        {
+            player.KillMe(
+                PlayerDeathReason.ByCustomReason(
+                    NetworkText.FromKey(Mods.Rosemary.Content.Elk.Shimmer.Ejection.DeathMessage.KEY, player.name)
+                ),
+                int.MinValue,
+                0
+            );
+        }
 
         void InteractWithPlayers()
         {
@@ -480,8 +547,18 @@ public static class ElkShimmerItemSets
             }
         }
 
+        void SmokeEffects()
+        {
+
+        }
+
         void PassiveEffects()
         {
+            if (Main.netMode == NetmodeID.Server)
+            {
+                return;
+            }
+
             if (self.ExtendoGripData?.InClaw is not true || Rand.NextBoolean(10))
             {
                 // Acid bubbles
@@ -554,6 +631,11 @@ public static class ElkShimmerItemSets
 
         void EjectEffects()
         {
+            if (Main.netMode == NetmodeID.Server)
+            {
+                return;
+            }
+
             ElkShimmerParticles.Rings += new ElkShimmerParticles.ExpandingRing(self.Center, 0.1f, 0.02f, 0f, 0.04f);
 
             // Camera shake with lingering effect

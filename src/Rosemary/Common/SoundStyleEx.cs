@@ -65,12 +65,14 @@ public static class SoundEngineExtensions
                 return Main.RunOnMainThread(() => SoundEngine.PlaySound(in styleCopy, position, updateCallback, attenuationDistance)).GetAwaiter().GetResult();
             }
 
-            var slot = SoundEngine.PlaySound(in style, position, updateCallback);
+            var slot = SoundEngine.PlaySound(in style, attenuationDistance >= 10000f ? null : position, updateCallback);
 
             if (!SoundEngine.TryGetActiveSound(slot, out var activeSound))
             {
                 return slot;
             }
+
+            activeSound.Position = position;
 
             activeSound.Data ??= new ActiveSoundData
             {
