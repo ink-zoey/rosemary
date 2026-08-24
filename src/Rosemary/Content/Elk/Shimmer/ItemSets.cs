@@ -444,8 +444,6 @@ public static class ElkShimmerItemSets
             );
         }
 
-        Main.NewText($"eyes {curPosition.Distance(Main.LocalPlayer.Center)}");
-
         if (reactant?.Ejection(self, subSurface) is true)
         {
             self.ClearOut();
