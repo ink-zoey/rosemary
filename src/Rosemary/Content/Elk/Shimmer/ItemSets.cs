@@ -634,8 +634,15 @@ public static class ElkShimmerItemSets
 
             WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), Rand.Next(0.15f, 0.85f), RippleShape.Square, MathF.PiOver4);
 
+            var side = Rand.NextDirection();
+
+            var dustOffX = MathF.Pow(1f - Rand.Next(0f, 1f), 3f);
+
             // Surface droplets
-            var dustOffset = new Vector2(Rand.Next(minRange, maxRange), 0f);
+            var dustOffset = new Vector2(
+                (dustOffX * (side >= 0 ? minRange : maxRange)),
+                0f
+            );
 
             var dust = Dust.NewDustPerfect(
                 curPosition + dustOffset,
@@ -795,7 +802,10 @@ public static class ElkShimmerItemSets
         {
             var diff = npc.Center - item.Center;
 
-            if (item.ShimmerData is null || item.ShimmerData.WaveProgress <= 0f || diff.Length() >= 900f)
+            if (!item.shimmerWet
+             || item.ShimmerData is not { } data
+             || (data.WaveProgress <= 0f && data.SubSurfaceProgress <= 0f)
+             || diff.Length() >= 900f)
             {
                 continue;
             }
