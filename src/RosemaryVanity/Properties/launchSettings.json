@@ -1,4 +1,4 @@
-{
+﻿{
   "profiles": {
     "Terraria Client": {
       "commandName": "Executable",
@@ -37,6 +37,12 @@
       "executablePath": "$(DotNetName)",
       "commandLineArgs": "Tomat.TML.ClientBootstrap.dll --working-directory \"$(tMLSteamPath).\" --binary \"$(tMLPath)\" --mode server --mod $(AssemblyName) --sdk-natives-directory \"$(TmlBuildNativeRoot).\" --tml-build-version $(TmlBuildSdkVersion) --tml-version $(TmlVersion) --tml-version-resolved $(TmlVersionResolved) --features \"$(TmlBuildBootstrapFeatures)\"",
       "workingDirectory": "$(TmlBuildBootstrapRoot)"
+    },
+    "Terraria Server (Standard)": {
+      "commandName": "Executable",
+      "executablePath": "$(DotNetName)",
+      "commandLineArgs": "$(tMLServerPath)",
+      "workingDirectory": "$(tMLSteamPath)"
     },
     "Terraria Server (ProjectBuild)": {
       "commandName": "Project",
