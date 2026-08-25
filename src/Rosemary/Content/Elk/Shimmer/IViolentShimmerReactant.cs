@@ -14,6 +14,4 @@ public interface IViolentShimmerReactant
     ///     <see langword="true"/> if the item should be removed.
     /// </returns>
     bool Ejection(WorldItem item, bool subSurface);
-
-    int SmokeResult => -1;
 }

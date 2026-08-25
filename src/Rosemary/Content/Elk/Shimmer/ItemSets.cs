@@ -6,9 +6,11 @@ using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Content.Misc;
 using System;
+using Daybreak.Rendering;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent.Liquid;
 using Terraria.GameContent.Shaders;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
@@ -60,6 +62,58 @@ public static class ElkShimmerItemSets
         On_WorldItem.Shimmering += Shimmering_ViolentShimmerReaction;
         IL_WorldItem.MoveInWorld += MoveInWorld_ViolentShimmerReaction;
         IL_Main.DrawItem += DrawItem_ViolentShimmerReaction;
+
+        On_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
+    }
+
+    private static void DrawShimmer_ViolentShimmerReaction(On_LiquidRenderer.orig_DrawShimmer orig, LiquidRenderer self, SpriteBatch sb, Vector2 drawOffset, bool isBackgroundDraw)
+    {
+        orig(self, sb, drawOffset, isBackgroundDraw);
+
+        if (isBackgroundDraw)
+        {
+            return;
+        }
+
+        using var _ = sb.Scope();
+
+        sb.Begin(SpriteSortMode.Deferred, BlendState.Multiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+        {
+            var texture = Assets.Elk.Shimmer.Mesmerizer.Asset.Value;
+            var origin = texture.Size() * 0.5f;
+
+            foreach (var item in Main.ActiveItems)
+            {
+                if (!item.shimmerWet
+                 || item.ShimmerData is not { } data
+                 || data.SubSurfaceProgress <= 0f)
+                {
+                    continue;
+                }
+
+                Main.instance.DrawItem_GetBasics(item.inner, item.whoAmI, out var _, out var frame, out var _);
+
+                var itemOrigin = frame.Size() * 0.5f;
+
+                var topLeft = new Vector2((item.width * 0.5f) - itemOrigin.X, item.height - frame.Height);
+                var center = item.position + itemOrigin + topLeft;
+
+                center -= Main.waterTarget.Position;
+
+                var prog = 1f - MathF.Pow(1f - data.SubSurfaceProgress, 8f);
+
+                var time = Main.GlobalTimeWrappedHourly * 3f;
+
+                var rotation = (1 - MathF.Cos(MathF.PI * (time % 1f))) * 0.5f + MathF.Floor(time);
+                rotation *= MathF.Tau / 12.5f;
+
+                var scale = MathF.Abs(MathF.Sin(MathF.PI * (time % 1f)));
+                scale = Utils.Remap(scale, 0f, 1f, 0.3f, 0.4f) * prog;
+
+                sb.Draw(texture, center, null, Color.White, rotation, origin, scale, SpriteEffects.None, 0f);
+            }
+        }
+        sb.End();
     }
 
     private static void DrawItem_ViolentShimmerReaction(ILContext il)
@@ -354,11 +408,16 @@ public static class ElkShimmerItemSets
             }
         }
 
-        const float increment_smoke_result_shimmer_reaction = 0.01f;
+        const float increment_smoke_result_shimmer_reaction = 0.001f;
 
         if (self.ExtendoGripData?.InClaw is not true)
         {
             data.WaveProgress += increment_violent_shimmer_reaction;
+
+            if (data.SubSurfaceProgress > 0)
+            {
+                data.SubSurfaceProgress -= 0.005f;
+            }
         }
         else
         {
@@ -395,11 +454,13 @@ public static class ElkShimmerItemSets
 
             if (data.SubSurfaceProgress > 1f)
             {
-                data.SubSurfaceProgress = Rand.Next(0.6f, 0.94f);
-
-                if (reactant?.SmokeResult is not null && reactant.SmokeResult >= 0)
+                if (reactant?.Ejection(self, subSurface) is true)
                 {
                     self.ClearOut();
+                }
+                else
+                {
+                    data.SubSurfaceProgress = Rand.Next(0.5f, 0.8f);
                 }
             }
         }
