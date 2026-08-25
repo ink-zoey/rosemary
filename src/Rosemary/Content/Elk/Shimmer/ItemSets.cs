@@ -75,13 +75,27 @@ public static class ElkShimmerItemSets
             return;
         }
 
+        var texture = Assets.Elk.Shimmer.Mesmerizer.Asset.Value;
+        var origin = texture.Size() * 0.5f;
+
         using var _ = sb.Scope();
-
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Multiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+        
+        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaMask, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
         {
-            var texture = Assets.Elk.Shimmer.Mesmerizer.Asset.Value;
-            var origin = texture.Size() * 0.5f;
+            DrawMesmerizers(0.3f, 0.4f, 1f, true);
+        }
+        sb.End();
 
+        sb.Begin(SpriteSortMode.Deferred, BlendState.InverseMultiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+        {
+            DrawMesmerizers(0.25f, 0.4f, 0.8f, false);
+        }
+        sb.End();
+
+        return;
+
+        void DrawMesmerizers(float minScale, float maxScale, float scaleMultiplier, bool useShimmerColor)
+        {
             foreach (var item in Main.ActiveItems)
             {
                 if (!item.shimmerWet
@@ -90,6 +104,12 @@ public static class ElkShimmerItemSets
                 {
                     continue;
                 }
+
+                var curPosition = FindShimmerSurface(item, 16);
+
+                var dist = curPosition == item.Bottom
+                    ? 1f
+                    : (1f - MathF.Pow(1f - MathF.Saturate(MathF.Abs(item.Center.Y - curPosition.Y) / 32f), 2f));
 
                 Main.instance.DrawItem_GetBasics(item.inner, item.whoAmI, out var _, out var frame, out var _);
 
@@ -100,7 +120,9 @@ public static class ElkShimmerItemSets
 
                 center -= Main.waterTarget.Position;
 
-                var prog = 1f - MathF.Pow(1f - data.SubSurfaceProgress, 8f);
+                var prog = 1f - MathF.Pow(1f - data.SubSurfaceProgress, 12f);
+
+                prog *= 1f - MathF.Pow(data.SubSurfaceProgress, 32f);
 
                 var time = Main.GlobalTimeWrappedHourly * 3f;
 
@@ -108,12 +130,17 @@ public static class ElkShimmerItemSets
                 rotation *= MathF.Tau / 12.5f;
 
                 var scale = MathF.Abs(MathF.Sin(MathF.PI * (time % 1f)));
-                scale = Utils.Remap(scale, 0f, 1f, 0.3f, 0.4f) * prog;
+                scale = Utils.Remap(scale, 0f, 1f, minScale, maxScale) * prog * scaleMultiplier * dist;
 
-                sb.Draw(texture, center, null, Color.White, rotation, origin, scale, SpriteEffects.None, 0f);
+                var (i, j) = item.Center.ToTileCoordinates();
+
+                var color = useShimmerColor
+                    ? LiquidRenderer.GetShimmerGlitterColor(true, i, j) * 0.75f
+                    : Color.White;
+
+                sb.Draw(texture, center, null, color, rotation, origin, scale, SpriteEffects.None, 0f);
             }
         }
-        sb.End();
     }
 
     private static void DrawItem_ViolentShimmerReaction(ILContext il)
@@ -359,26 +386,7 @@ public static class ElkShimmerItemSets
             return;
         }
 
-        var curPosition = self.Bottom;
-        for (var j = 0; j < 32; j++)
-        {
-            var position = self.Bottom.ToTileCoordinates();
-            position.Y -= j + 1;
-
-            if (Main.tile[position].HasShimmer)
-            {
-                continue;
-            }
-
-            position.Y += 1;
-
-            var liquidLevel = (float)Main.tile[position].LiquidAmount / byte.MaxValue;
-            liquidLevel = (1f - liquidLevel) * 16f;
-
-            curPosition = position.ToWorldCoordinates(self.Bottom.X % 16f, liquidLevel);
-
-            break;
-        }
+        var curPosition = FindShimmerSurface(self, 32);
 
         // Find the bounds of the current pool
         var minRange = -16f;
@@ -450,8 +458,6 @@ public static class ElkShimmerItemSets
 
         if (data.SubSurfaceProgress > 0)
         {
-            SmokeEffects();
-
             if (data.SubSurfaceProgress > 1f)
             {
                 if (reactant?.Ejection(self, subSurface) is true)
@@ -604,11 +610,6 @@ public static class ElkShimmerItemSets
                     7f
                 );
             }
-        }
-
-        void SmokeEffects()
-        {
-
         }
 
         void PassiveEffects()
@@ -822,5 +823,31 @@ public static class ElkShimmerItemSets
         npc.netUpdate = true;
 
         return true;
+    }
+
+    private static Vector2 FindShimmerSurface(WorldItem item, int maxTiles)
+    {
+        var curPosition = item.Bottom;
+        for (var j = 0; j < maxTiles; j++)
+        {
+            var position = item.Bottom.ToTileCoordinates();
+            position.Y -= j + 1;
+
+            if (Main.tile[position].HasShimmer)
+            {
+                continue;
+            }
+
+            position.Y += 1;
+
+            var liquidLevel = (float)Main.tile[position].LiquidAmount / byte.MaxValue;
+            liquidLevel = (1f - liquidLevel) * 16f;
+
+            curPosition = position.ToWorldCoordinates(item.Bottom.X % 16f, liquidLevel);
+
+            break;
+        }
+
+        return curPosition;
     }
 }

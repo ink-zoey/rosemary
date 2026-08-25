@@ -147,7 +147,7 @@ public static partial class SiffrinParticles
             sb.Draw(screen, Vector2.Zero, Color.White);
         }
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Multiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.ZoomMatrix);
+        sb.Begin(SpriteSortMode.Deferred, BlendState.InverseMultiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.ZoomMatrix);
         {
             foreach (var index in TransformAnimation)
             {
