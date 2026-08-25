@@ -29,7 +29,7 @@ file delegate void ParticleLayerDefinition(
 [MeansImplicitUse]
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 [HookMetadata(DelegateType = typeof(ParticleLayerDefinition))]
-public sealed class ParticleLayer(ParticleLayers layer) : BaseHookAttribute
+public sealed class ParticleLayerAttribute(ParticleLayers layer) : BaseHookAttribute
 {
     public override void Apply(MethodInfo bindingMethod, object? instance)
     {

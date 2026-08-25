@@ -19,7 +19,7 @@ file delegate void RenderLayerDefinition(
 [MeansImplicitUse]
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 [HookMetadata(DelegateType = typeof(RenderLayerDefinition))]
-public sealed class RenderLayer(RenderLayers layer) : BaseHookAttribute
+public sealed class RenderLayerAttribute(RenderLayers layer) : BaseHookAttribute
 {
     public override void Apply(MethodInfo bindingMethod, object? instance)
     {
