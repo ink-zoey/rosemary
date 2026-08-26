@@ -11,8 +11,9 @@
         <Project Path="daybreak-mod/src/Daybreak.Models/Daybreak.Models.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.MonoMod/Daybreak.MonoMod.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.Networking/Daybreak.Networking.csproj" />
-        <Project Path="daybreak-mod/src/Daybreak.Rendering.Buffers/Daybreak.Rendering.Buffers.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.Rendering/Daybreak.Rendering.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Rendering.Buffers/Daybreak.Rendering.Buffers.csproj" />
+        <Project Path="daybreak-mod/src/Daybreak.Rendering.ItemBuffering/Daybreak.Rendering.ItemBuffering.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.Resources/Daybreak.Resources.csproj" />
         <Project Path="daybreak-mod/src/Daybreak/Daybreak.csproj" />
     </Folder>
