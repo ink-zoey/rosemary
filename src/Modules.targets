@@ -1,0 +1,42 @@
+<Project InitialTargets="RestoreDaybreakModules">
+
+    <PropertyGroup>
+        <DirectoryToCopyModulesFrom>$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak\lib\modules\</DirectoryToCopyModulesFrom>
+        <DirectoryToCopyModulesTo>$(MSBuildProjectFileDirectory)lib\</DirectoryToCopyModulesTo>
+	
+        <DirectoryToCopyAnalyzersTo>$(MSBuildProjectFileDirectory)libanalyzer\</DirectoryToCopyAnalyzersTo>
+
+    </PropertyGroup>
+
+    <Target Name="RestoreDaybreakModules">
+
+        <!-- Build the Daybreak project to trigger a build of every module -->
+	<MSBuild Projects="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak\Daybreak.csproj"
+                 Targets="Build"
+                 Properties="Configuration=Release" />
+
+        <!-- Build the Daybreak.CodeAnalysis project explicitly -->
+        <MSBuild Projects="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj"
+                 Properties="Configuration=$(Configuration);Platform=$(Platform)"
+                 Targets="Build">
+             <Output TaskParameter="TargetOutputs" ItemName="BuildOutputAnalyzers" />
+        </MSBuild>
+
+        <ItemGroup>
+            <ModulesToCopy Include="$(DirectoryToCopyModulesFrom)*.*" />
+        </ItemGroup>
+
+	<Copy SourceFiles="@(ModulesToCopy)"
+              DestinationFolder="$(DirectoryToCopyModulesTo)"
+              SkipUnchangedFiles="true" />
+
+	<Copy SourceFiles="@(BuildOutputAnalyzers)"
+              DestinationFolder="$(DirectoryToCopyAnalyzersTo)"
+              SkipUnchangedFiles="true" />
+	<Copy SourceFiles="@(BuildOutputAnalyzers->'%(Identity)'->Replace('.dll', '.pdb'))"
+              DestinationFolder="$(DirectoryToCopyAnalyzersTo)"
+              SkipUnchangedFiles="true" />
+
+    </Target>
+
+</Project>
