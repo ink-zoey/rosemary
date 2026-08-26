@@ -8,7 +8,7 @@
     </ItemGroup>
 
     <Target Name="PackageModules" BeforeTargets="Rebuild">
-        <Message Text="$(MSBuildThisFileDirectory)" Importance="high" />
+        <Message Text="------ Packaging Daybreak Modules ------" Importance="high" />
 
         <!-- Libraries -->
         <MSBuild Projects="@(Libraries)" Targets="Build" Properties="Configuration=Release">
@@ -18,6 +18,8 @@
         <Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(ProjectDir)lib\" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
         <Copy SourceFiles="@(BuildOutput->'%(Identity)'->Replace('.dll', '.pdb'))" DestinationFolder="$(ProjectDir)lib\" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
 
+        <Message Text="------ Library Modules: $(ProjectDir)lib\ ------" Importance="high" />
+
         <!-- Analyzers -->
         <MSBuild Projects="@(Analyzers)" Targets="Build" Properties="Configuration=Release">
             <Output TaskParameter="TargetOutputs" ItemName="BuildOutputAnalyzers" />
@@ -25,6 +27,8 @@
 
         <Copy SourceFiles="@(BuildOutputAnalyzers)" DestinationFolder="$(ProjectDir)libanalyzer\" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
         <Copy SourceFiles="@(BuildOutputAnalyzers->'%(Identity)'->Replace('.dll', '.pdb'))" DestinationFolder="$(ProjectDir)libanalyzer\" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
+
+        <Message Text="------ Analyzer Modules: $(ProjectDir)libanalyzer\ ------" Importance="high" />
     </Target>
 
 </Project>
