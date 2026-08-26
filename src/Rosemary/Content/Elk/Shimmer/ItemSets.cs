@@ -458,22 +458,6 @@ public static class ElkShimmerItemSets
             }
         }
 
-        const float increment_smoke_result_shimmer_reaction = 0.001f;
-
-        if (self.ExtendoGripData?.InClaw is not true)
-        {
-            data.WaveProgress += increment_violent_shimmer_reaction;
-
-            if (data.SubSurfaceProgress > 0)
-            {
-                data.SubSurfaceProgress -= 0.005f;
-            }
-        }
-        else
-        {
-            data.SubSurfaceProgress += increment_smoke_result_shimmer_reaction;
-        }
-
         var reactant = self.inner.ModItem as IViolentShimmerReactant;
 
         var progress = data.WaveProgress;
@@ -512,6 +496,22 @@ public static class ElkShimmerItemSets
                 }
             }
         }
+
+        const float increment_smoke_result_shimmer_reaction = 0.001f;
+
+        if (self.ExtendoGripData?.InClaw is not true)
+        {
+            data.WaveProgress += increment_violent_shimmer_reaction;
+
+            if (data.SubSurfaceProgress > 0)
+            {
+                data.SubSurfaceProgress -= 0.005f;
+            }
+
+            data.SubSurfaceProgress = MathF.Min(data.SubSurfaceProgress, 0.5f);
+        }
+
+        data.SubSurfaceProgress += increment_smoke_result_shimmer_reaction;
 
         PassiveEffects();
         InteractWithPlayers();
