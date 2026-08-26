@@ -7,9 +7,12 @@ using Rosemary.Common;
 using Rosemary.Content.Misc;
 using System;
 using Daybreak.Rendering;
+using Daybreak.Rendering.Buffers;
+using Rosemary.Core;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.GameContent.Liquid;
 using Terraria.GameContent.Shaders;
 using Terraria.Graphics.CameraModifiers;
@@ -75,26 +78,71 @@ public static class ElkShimmerItemSets
             return;
         }
 
-        var texture = Assets.Elk.Shimmer.Mesmerizer.Asset.Value;
+        const float spike_count = 8;
+
+        var texture = Assets.Elk.Particles.ExpandingCircle.Asset.Value;
         var origin = texture.Size() * 0.5f;
 
         using var _ = sb.Scope();
-        
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaMask, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+
+        var mesmerShaderizer = Assets.Elk.Shimmer.Mesmerizer.CreateMesmerizerShader();
+
+        using var lease = ScreenspaceTargetProvider.Shared.Create(Main.graphics.GraphicsDevice, (_, _, targetWidth, targetHeight) => (targetWidth, targetHeight));
+
+        using (lease.Scope(clearColor: Color.Transparent))
         {
-            DrawMesmerizers(0.3f, 0.4f, 1f, true);
+            mesmerShaderizer.Parameters.SpikeCount = spike_count;
+            mesmerShaderizer.Parameters.Time = (float)Main.timeForVisualEffects * 0.013f;
+
+            mesmerShaderizer.Apply();
+
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, mesmerShaderizer.Shader, Matrix.Identity);
+            {
+                DrawMesmerizers();
+            }
+            sb.End();
+        }
+
+        sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaMask, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+        {
+            var shimmerMesmerizer = Assets.Elk.Shimmer.MesmerizerShimmerColors.CreateMesmerizerShimmerColorsShader();
+
+            shimmerMesmerizer.Parameters.Texture = new HlslSampler2D
+            {
+                Texture = lease.Target,
+                Sampler = SamplerState.PointClamp,
+            };
+
+            shimmerMesmerizer.Parameters.Time = (float)Main.timeForVisualEffects;
+            shimmerMesmerizer.Parameters.TargetPosition = Main.waterTarget.Position;
+
+            shimmerMesmerizer.Apply();
+
+            sb.Draw(lease.Target, Vector2.Zero, Color.White);
         }
         sb.End();
 
-        sb.Begin(SpriteSortMode.Deferred, BlendState.InverseMultiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
+        sb.Begin(SpriteSortMode.Immediate, BlendState.InverseMultiplicative, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Matrix.Identity);
         {
-            DrawMesmerizers(0.25f, 0.4f, 0.8f, false);
+            var inlineMesmerizer = Assets.Elk.Shimmer.MesmerizerInset.CreateMesmerizerInsetShader();
+
+            inlineMesmerizer.Parameters.Texture = new HlslSampler2D
+            {
+                Texture = lease.Target,
+                Sampler = SamplerState.PointClamp,
+            };
+
+            inlineMesmerizer.Parameters.TargetPosition = Main.waterTarget.Position;
+
+            inlineMesmerizer.Apply();
+
+            sb.Draw(lease.Target, Vector2.Zero, Color.White);
         }
         sb.End();
 
         return;
 
-        void DrawMesmerizers(float minScale, float maxScale, float scaleMultiplier, bool useShimmerColor)
+        void DrawMesmerizers()
         {
             foreach (var item in Main.ActiveItems)
             {
@@ -127,18 +175,13 @@ public static class ElkShimmerItemSets
                 var time = Main.GlobalTimeWrappedHourly * 3f;
 
                 var rotation = (1 - MathF.Cos(MathF.PI * (time % 1f))) * 0.5f + MathF.Floor(time);
-                rotation *= MathF.Tau / 12.5f;
+                rotation *= MathF.Tau / (spike_count - 0.5f);
 
-                var scale = MathF.Abs(MathF.Sin(MathF.PI * (time % 1f)));
-                scale = Utils.Remap(scale, 0f, 1f, minScale, maxScale) * prog * scaleMultiplier * dist;
+                var size = prog * dist * 0.15f;
 
-                var (i, j) = item.Center.ToTileCoordinates();
+                var color = Color.White * prog;
 
-                var color = useShimmerColor
-                    ? LiquidRenderer.GetShimmerGlitterColor(true, i, j) * 0.75f
-                    : Color.White;
-
-                sb.Draw(texture, center, null, color, rotation, origin, scale, SpriteEffects.None, 0f);
+                sb.Draw(texture, center, null, color, rotation, origin, size, SpriteEffects.None, 0f);
             }
         }
     }
@@ -216,7 +259,6 @@ public static class ElkShimmerItemSets
 
         spriteBatch.Draw(texture, position, frame, color, rotation, origin, scale, SpriteEffects.None, 0f);
     }
-
 
     private const float increment_violent_shimmer_reaction = 0.006f;
 
@@ -632,7 +674,10 @@ public static class ElkShimmerItemSets
                     );
             }
 
-            WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), Rand.Next(0.15f, 0.85f), RippleShape.Square, MathF.PiOver4);
+            var rippleStrength = self.ExtendoGripData?.InClaw is true ? Rand.Next(0.25f, 2.1f) : Rand.Next(0.15f, 0.85f);
+            var rippleShape = self.ExtendoGripData?.InClaw is true ? RippleShape.Circle : RippleShape.Square;
+
+            WaterShaderData.Instance.QueueRipple(Rand.Next(self.Hitbox), rippleStrength, rippleShape, MathF.PiOver4);
 
             var side = Rand.NextDirection();
 
