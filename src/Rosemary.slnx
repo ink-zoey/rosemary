@@ -19,36 +19,8 @@
         <Project Path="daybreak-mod/src/Daybreak.Rendering/Daybreak.Rendering.csproj" />
         <Project Path="daybreak-mod/src/Daybreak.Resources/Daybreak.Resources.csproj" />
     </Folder>
-    <Project Path="Rosemary/Rosemary.csproj">
-        <BuildDependency Project="daybreak-mod/src/Daybreak.ChatTags/Daybreak.ChatTags.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.CodeAnalysis/Daybreak.CodeAnalysis.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Contracts/Daybreak.Contracts.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.EarlyLoader/Daybreak.EarlyLoader.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Hooks/Daybreak.Hooks.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Mathematics/Daybreak.Mathematics.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Models/Daybreak.Models.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.MonoMod/Daybreak.MonoMod.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Networking/Daybreak.Networking.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering.Buffers/Daybreak.Rendering.Buffers.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering.ItemBuffering/Daybreak.Rendering.ItemBuffering.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering/Daybreak.Rendering.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Resources/Daybreak.Resources.csproj" />
-    </Project>
-    <Project Path="RosemaryVanity/RosemaryVanity.csproj">
-        <BuildDependency Project="daybreak-mod/src/Daybreak.ChatTags/Daybreak.ChatTags.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.CodeAnalysis/Daybreak.CodeAnalysis.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Contracts/Daybreak.Contracts.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.EarlyLoader/Daybreak.EarlyLoader.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Hooks/Daybreak.Hooks.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Mathematics/Daybreak.Mathematics.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Models/Daybreak.Models.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.MonoMod/Daybreak.MonoMod.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Networking/Daybreak.Networking.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering.Buffers/Daybreak.Rendering.Buffers.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering.ItemBuffering/Daybreak.Rendering.ItemBuffering.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Rendering/Daybreak.Rendering.csproj" />
-        <BuildDependency Project="daybreak-mod/src/Daybreak.Resources/Daybreak.Resources.csproj" />
-    </Project>
+    <Project Path="Rosemary/Rosemary.csproj" />
+    <Project Path="RosemaryVanity/RosemaryVanity.csproj" />
     <Folder Name="/generators/">
         <Project Path="generators/ElkLanguageAtlas/ElkLanguageAtlas.csproj" />
         <Project Path="generators/ElkLanguageReferences/ElkLanguageReferences.csproj" />

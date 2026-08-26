@@ -7,7 +7,10 @@
         <Analyzers Include="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj" />
     </ItemGroup>
 
-    <Target Name="PackageModules" BeforeTargets="Rebuild">
+    <Target Name="PackageModules"
+            BeforeTargets="Rebuild"
+            Inputs="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak\lib\modules\Daybreak.ChatTags.dll"
+            Outputs="$(ProjectDir)lib\Daybreak.ChatTags.dll">
         <Message Text="------ Packaging Daybreak Modules ------" Importance="high" />
 
         <!-- Libraries -->
