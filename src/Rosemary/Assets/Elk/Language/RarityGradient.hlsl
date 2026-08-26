@@ -16,7 +16,7 @@ float4 RarityGradientShaderFragment(float2 uv : TEXCOORD0, float2 svPos : SV_POS
     
     gradient = 1 - gradient;
     
-    float4 color = oklabLerp(baseColor, GradientColor, gradient);
+    float4 color = OklabLerp(baseColor, GradientColor, gradient);
     
     return character * color;
 }

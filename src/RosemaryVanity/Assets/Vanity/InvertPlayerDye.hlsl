@@ -1,34 +1,6 @@
 ﻿#include "../common.h"
+#include "../colors.h"
 #include "../ArmorShaderData.h"
-
-#define EPSILON (1e-10)
-
-float3 RGBtoHCV(float3 color)
-{
-    float4 p = color.g < color.b
-        ? float4(color.bg, -1, 0.6666)
-        : float4(color.gb, 0, -0.3333);
-    
-    float4 q = color.r < p.x
-        ? float4(p.xyw, color.r)
-        : float4(color.r, p.yzx);
-    
-    float c = q.x - min(q.w, q.y);
-    
-    float hue = abs((q.w - q.y) / (6 * c + EPSILON) + q.z);
-    
-    return float3(hue, c, q.x);
-}
-
-float3 RGBtoHSL(float3 color)
-{
-    float3 hcv = RGBtoHCV(color);
-    
-    float l = hcv.z - hcv.y * 0.5;
-    float s = hcv.y / (1 - abs((l * 2) - 1) + EPSILON);
-    
-    return float3(hcv.x, s, l);
-}
 
 float Map(float value, float start1, float stop1, float start2, float stop2)
 {
@@ -42,7 +14,7 @@ float4 InvertPlayerDyeShaderFragment(float2 uv : TEXCOORD0, float4 baseColor : C
     
     float gradient = ((uv.y * uImageSize0.y) - uSourceRect.y) / uSourceRect.w;
     
-    float3 hsl = RGBtoHSL(base.rgb);
+    float3 hsl = RGBToHSL(base.rgb);
     
     float brightness = 1 - hsl.z;
     brightness = pow(brightness * 1.2, 9);
