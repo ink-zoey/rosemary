@@ -8,6 +8,7 @@ using Rosemary.Content.Misc;
 using System;
 using Daybreak.Rendering;
 using Daybreak.Rendering.Buffers;
+using ReLogic.Utilities;
 using Rosemary.Core;
 using Terraria;
 using Terraria.Audio;
@@ -30,6 +31,8 @@ public static class ElkShimmerItemSets
         public required float WaveProgress { get; set; }
 
         public required float SubSurfaceProgress { get; set; }
+
+        public required bool LoopingSound { get; set; }
     }
 
     private static bool[] violentShimmerReaction = [];
@@ -293,6 +296,7 @@ public static class ElkShimmerItemSets
                 {
                     WaveProgress = 0f,
                     SubSurfaceProgress = 0f,
+                    LoopingSound = false,
                 };
 
                 item.ShimmerData.WaveProgress = 0f;
@@ -343,6 +347,7 @@ public static class ElkShimmerItemSets
                     item.Center,
                     SoundCallback
                 );
+                item.ShimmerData.LoopingSound = true;
 
                 PlayScowl(item);
 
@@ -355,9 +360,11 @@ public static class ElkShimmerItemSets
                      || item.IsAir
                      || !item.active)
                     {
+                        item.ShimmerData?.LoopingSound = false;
                         return false;
                     }
 
+                    item.ShimmerData?.LoopingSound = true;
                     sound.Position = item.Center;
 
                     return item.shimmerWet;
@@ -417,6 +424,7 @@ public static class ElkShimmerItemSets
         {
             WaveProgress = 0f,
             SubSurfaceProgress = 0f,
+            LoopingSound = false,
         };
 
         self.noGrabDelay = 90;
@@ -426,6 +434,22 @@ public static class ElkShimmerItemSets
         if (data.WaveProgress < 0f)
         {
             return;
+        }
+
+        if (!data.LoopingSound)
+        {
+            SoundEngine.PlaySound(
+                Assets.Elk.Shimmer.BurnLoop.Asset with
+                {
+                    PauseBehavior = PauseBehavior.PauseWithGame,
+                    MaxInstances = 3,
+                    IsLooped = true,
+                    Volume = 0.5f,
+                },
+                self.Center,
+                SoundCallback
+            );
+            data.LoopingSound = true;
         }
 
         var curPosition = FindShimmerSurface(self, 32);
@@ -482,18 +506,15 @@ public static class ElkShimmerItemSets
 
         var rippleOffset = new Vector2((1f - progress) * 700f, Rand.Next(-8f, 8f));
 
-        if (data.SubSurfaceProgress > 0)
+        if (data.SubSurfaceProgress > 1f)
         {
-            if (data.SubSurfaceProgress > 1f)
+            if (reactant?.Ejection(self, subSurface) is true)
             {
-                if (reactant?.Ejection(self, subSurface) is true)
-                {
-                    self.ClearOut();
-                }
-                else
-                {
-                    data.SubSurfaceProgress = Rand.Next(0.5f, 0.8f);
-                }
+                self.ClearOut();
+            }
+            else
+            {
+                data.SubSurfaceProgress = Rand.Next(0.5f, 0.8f);
             }
         }
 
@@ -578,6 +599,23 @@ public static class ElkShimmerItemSets
 
         return;
 
+        bool SoundCallback(ActiveSound sound)
+        {
+            if (!ItemID.Sets.ViolentShimmerReaction[self.type]
+             || !self.shimmerWet
+             || self.IsAir
+             || !self.active)
+            {
+                self.ShimmerData?.LoopingSound = false;
+                return false;
+            }
+
+            self.ShimmerData?.LoopingSound = true;
+            sound.Position = self.Center;
+
+            return self.shimmerWet;
+        }
+
         static void KillPlayer(Player player)
         {
             player.KillMe(
@@ -591,7 +629,7 @@ public static class ElkShimmerItemSets
 
         void InteractWithPlayers()
         {
-            if (rippleOffset.X < 85f)
+            if (rippleOffset.X < 85f || subSurface)
             {
                 return;
             }
@@ -661,18 +699,15 @@ public static class ElkShimmerItemSets
                 return;
             }
 
-            if (self.ExtendoGripData?.InClaw is not true || Rand.NextBoolean(10))
-            {
-                // Acid bubbles
-                ElkShimmerParticles.Bubbles +=
-                    new ElkShimmerParticles.ShimmerBubble(
-                        Rand.Next(self.Hitbox),
-                        GetShimmerSplashColor(),
-                        Rand.Next(-1f, 1f),
-                        Rand.Next((byte)1, (byte)4),
-                        0
-                    );
-            }
+            // Acid bubbles
+            ElkShimmerParticles.Bubbles +=
+                new ElkShimmerParticles.ShimmerBubble(
+                    Rand.Next(self.Hitbox),
+                    GetShimmerSplashColor(),
+                    Rand.Next(-1f, 1f),
+                    Rand.Next((byte)1, (byte)4),
+                    0
+                );
 
             var rippleStrength = self.ExtendoGripData?.InClaw is true ? Rand.Next(0.25f, 2.1f) : Rand.Next(0.15f, 0.85f);
             var rippleShape = self.ExtendoGripData?.InClaw is true ? RippleShape.Circle : RippleShape.Square;
@@ -734,8 +769,6 @@ public static class ElkShimmerItemSets
             {
                 return;
             }
-
-            // curPosition.X -= 16f;
 
             SpawnSpike(rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
             SpawnSpike(-rippleOffset.X, Rand.Next(32f, 64f), Rand.Next(0.04f, 0.07f));
