@@ -2,12 +2,12 @@
 
     <ItemGroup>
         <Libraries Include="$(MSBuildThisFileDirectory)daybreak-mod\src\**\*.csproj"
-                   Exclude="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak\Daybreak.csproj"/>
+                   Exclude="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak\Daybreak.csproj;$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj" />
 
-        <Analyzers Include="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj"/>
+        <Analyzers Include="$(MSBuildThisFileDirectory)daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj" />
     </ItemGroup>
 
-    <Target Name="PackageModules" BeforeTargets="Build">
+    <Target Name="PackageModules" BeforeTargets="Rebuild">
         <Message Text="$(MSBuildThisFileDirectory)" Importance="high" />
 
         <!-- Libraries -->
