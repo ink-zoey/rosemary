@@ -5,9 +5,9 @@
 
     <!-- Daybreak -->
     <ItemGroup>
-        <Analyzer Include="libanalyzer\Daybreak.CodeAnalysis.dll" />
+        <ProjectReference Include="..\daybreak-mod\src\Daybreak\Daybreak.csproj" />
+        <ProjectReference Include="..\daybreak-mod\src\Daybreak.CodeAnalysis\Daybreak.CodeAnalysis.csproj" PrivateAssets="All" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
-    <Import Project="..\Modules.targets" />
 
     <!-- Source Generators -->
     <Import Project="..\generators\ElkLanguageReferences.targets" />

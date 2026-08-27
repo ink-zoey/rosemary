@@ -1,6 +1,6 @@
-﻿displayName = rosemary
-author = Zoey
+﻿displayName = ROSEMARY
+author = SWIRLIER-INK
 version = 1.0.0
 side = Both
-dllReferences = Daybreak.ChatTags, Daybreak.Contracts, Daybreak.EarlyLoader, Daybreak.Hooks, Daybreak.Mathematics, Daybreak.Models, Daybreak.MonoMod, Daybreak.Networking, Daybreak.Rendering, Daybreak.Rendering.Buffers, Daybreak.Resources
+modReferences = Daybreak
 buildIgnore = .idea\*, .vs\*, *.tmp, Properties\*, *.csproj, *.user, obj\*, bin\*, *.config, .editorconfig, TemplateEngineHost\*, *\ElkAtlas.json
