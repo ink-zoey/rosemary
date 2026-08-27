@@ -1,16 +1,16 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
+using Daybreak.Rendering;
+using Daybreak.Rendering.Buffers;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using ReLogic.Utilities;
 using Rosemary.Common;
 using Rosemary.Content.Misc;
-using System;
-using Daybreak.MonoMod;
-using Daybreak.Rendering;
-using Daybreak.Rendering.Buffers;
-using ReLogic.Utilities;
 using Rosemary.Core;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -21,6 +21,7 @@ using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using static Terraria.Testing.WindowsPerformanceDiagnostics;
 
 namespace Rosemary.Content.Elk;
 
@@ -250,14 +251,15 @@ public static class ElkShimmerItemSets
             static (WorldItem item, ref Color color) =>
             {
                 if (!ItemID.Sets.ViolentShimmerReaction[item.type]
-                 || item.ShimmerData is null
-                 || item.ShimmerData.WaveProgress < 0f
+                 || item.ShimmerData is not { } data
+                 || (data.WaveProgress < 0f && data.SubSurfaceProgress <= 0f)
                  || !item.shimmerWet)
                 {
                     return;
                 }
 
-                var interpolator = 1f - MathF.Pow(1f - item.ShimmerData.WaveProgress, 2f);
+                var interpolator = 1f - MathF.Pow(1f - data.WaveProgress, 3f);
+                interpolator += (1f - MathF.Pow(1f - data.SubSurfaceProgress, 12f)) * (1f - MathF.Pow(data.SubSurfaceProgress, 32f));
 
                 color = Color.Lerp(color, Color.White, interpolator);
             }
@@ -268,8 +270,8 @@ public static class ElkShimmerItemSets
     private static void PostDrawInWorld_ViolentShimmerReaction(WorldItem item, SpriteBatch spriteBatch, Color lightColor, Color alphaColor, float rotation, float scale, int whoAmI)
     {
         if (!ItemID.Sets.ViolentShimmerReaction[item.type]
-         || item.ShimmerData is null
-         || item.ShimmerData.WaveProgress < 0f
+         || item.ShimmerData is not { } data
+         || (data.WaveProgress < 0f && data.SubSurfaceProgress <= 0f)
          || !item.shimmerWet)
         {
             return;
@@ -286,7 +288,8 @@ public static class ElkShimmerItemSets
         var color = alphaColor;
         color.A = 0;
 
-        var interpolator = 1f - MathF.Pow(1f - item.ShimmerData.WaveProgress, 3f);
+        var interpolator = 1f - MathF.Pow(1f - data.WaveProgress, 3f);
+        interpolator += (1f - MathF.Pow(1f - data.SubSurfaceProgress, 12f)) * (1f - MathF.Pow(data.SubSurfaceProgress, 32f));
 
         color *= interpolator;
 
