@@ -301,7 +301,7 @@ public sealed class SiffrinTransform : ModItem
             c.EmitDelegate(
                 static (ref Vector2 vector, ref PlayerDrawSet drawInfo) =>
                 {
-                    if (IsVisible(drawInfo) && !ShowsArm(drawInfo))
+                    if (!IsVisible(drawInfo) || !ShowsArm(drawInfo))
                     {
                         return;
                     }
