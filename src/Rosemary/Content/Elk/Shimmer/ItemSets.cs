@@ -6,6 +6,7 @@ using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Content.Misc;
 using System;
+using Daybreak.MonoMod;
 using Daybreak.Rendering;
 using Daybreak.Rendering.Buffers;
 using ReLogic.Utilities;
@@ -70,6 +71,45 @@ public static class ElkShimmerItemSets
         IL_Main.DrawItem += DrawItem_ViolentShimmerReaction;
 
         On_LiquidRenderer.DrawShimmer += DrawShimmer_ViolentShimmerReaction;
+
+        // TODO: Move to separate system if this becomes relevant elsewhere
+        On_Player.KillMe += KillMe_DisableDrops_ViolentShimmerReaction;
+        On_Player.DropTombstone += DropTombstone_DisableDrops_ViolentShimmerReaction;
+    }
+
+    private static readonly string[] death_keys_violent_shimmer_reaction =
+    [
+        Mods.Rosemary.Content.Elk.Shimmer.Ejection.DeathMessage.KEY,
+        Mods.Rosemary.Content.Elk.Shimmer.Spikes.DeathMessage.KEY,
+    ];
+
+    private static bool skipPlayerDrops;
+
+    private static void DropTombstone_DisableDrops_ViolentShimmerReaction(On_Player.orig_DropTombstone orig, Player self, long coinsOwned, NetworkText deathText, int hitDirection)
+    {
+        if (skipPlayerDrops)
+        {
+            return;
+        }
+
+        orig(self, coinsOwned, deathText, hitDirection);
+    }
+
+    private static void KillMe_DisableDrops_ViolentShimmerReaction(On_Player.orig_KillMe orig, Player self, PlayerDeathReason damageSource, double dmg, int hitDirection, bool pvp)
+    {
+        var priorNewItem = Item.newItemDisabled;
+
+        if (damageSource.CustomReason._mode == NetworkText.Mode.LocalizationKey
+         && death_keys_violent_shimmer_reaction.Contains(damageSource.CustomReason._text))
+        {
+            skipPlayerDrops = true;
+            Item.newItemDisabled = true;
+        }
+
+        orig(self, damageSource, dmg, hitDirection, pvp);
+
+        skipPlayerDrops = false;
+        Item.newItemDisabled = priorNewItem;
     }
 
     private static void DrawShimmer_ViolentShimmerReaction(On_LiquidRenderer.orig_DrawShimmer orig, LiquidRenderer self, SpriteBatch sb, Vector2 drawOffset, bool isBackgroundDraw)
@@ -199,7 +239,7 @@ public static class ElkShimmerItemSets
         c.GotoNext(
             MoveType.After,
             i => i.MatchLdarg(out itemIndex),
-            i => i.MatchLdloc(out _),
+            i => ILPatternMatchingExt.MatchLdloc(i, out _),
             i => i.MatchCallvirt<WorldItem>(nameof(WorldItem.GetAlpha)),
             i => i.MatchStloc(out colorIndex)
         );
@@ -618,6 +658,11 @@ public static class ElkShimmerItemSets
 
         static void KillPlayer(Player player)
         {
+            if (Main.myPlayer != player.whoAmI)
+            {
+                return;
+            }
+
             player.KillMe(
                 PlayerDeathReason.ByCustomReason(
                     NetworkText.FromKey(Mods.Rosemary.Content.Elk.Shimmer.Ejection.DeathMessage.KEY, player.name)
@@ -682,7 +727,7 @@ public static class ElkShimmerItemSets
                     120,
                     direction,
                     false,
-                    false,
+                    true,
                     -1,
                     false,
                     0.4f,
