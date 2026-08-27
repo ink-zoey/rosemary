@@ -1,4 +1,5 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
@@ -26,7 +27,7 @@ file static class ActiveSoundDataBehavior
     {
         var c = new ILCursor(il);
 
-        var selfIndex = -1; // arg
+        var selfIndex = ParameterIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,

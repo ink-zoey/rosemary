@@ -86,12 +86,11 @@ file static class ScreenFilterRenderer
     {
         var c = new ILCursor(il);
 
-        var priorPriority = c.AddVariable<EffectPriority?>();
+        var priorPriorityReference = c.AddVariable<EffectPriority?>();
 
-        var tIndex = -1;  // loc
-        var t2Index = -1; // loc
-
-        var value2Index = -1; // loc
+        var tIndex = VariableIndex.Invalid;
+        var t2Index = VariableIndex.Invalid;
+        var value2Index = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,
@@ -110,7 +109,7 @@ file static class ScreenFilterRenderer
         c.EmitLdloca(tIndex);
         c.EmitLdloca(t2Index);
 
-        c.EmitLdloca(priorPriority);
+        c.EmitLdloca(priorPriorityReference);
 
         c.EmitLdloc(value2Index);
         c.EmitCallvirt(
@@ -133,7 +132,7 @@ file static class ScreenFilterRenderer
         c.EmitLdloca(tIndex);
         c.EmitLdloca(t2Index);
 
-        c.EmitLdloca(priorPriority);
+        c.EmitLdloca(priorPriorityReference);
         c.EmitLdcI4((int)EffectPriority.VeryHigh);
 
         c.EmitDelegate(ApplyFiltersToPriority);

@@ -1,4 +1,5 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -27,7 +28,7 @@ file static class CustomDrawGoreRenderer
     {
         var c = new ILCursor(il);
 
-        var goreIndexIndex = -1;
+        var goreIndexIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,

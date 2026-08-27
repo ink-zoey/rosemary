@@ -95,7 +95,7 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var bestReforgeIndex = -1;
+        var bestReforgeIndex = VariableIndex.Invalid;
 
         var jumpRetTarget = c.DefineLabel();
 
@@ -265,8 +265,8 @@ public static class ElkLangItemSets
         var widthMultiplier = c.AddVariable<float>();
         var heightMultiplier = c.AddVariable<float>();
 
-        var popupIndex = -1;      // arg
-        var textHitboxIndex = -1; // loc
+        var popupIndex = ParameterIndex.Invalid;
+        var textHitboxIndex = VariableIndex.Invalid;
 
         var jumpXVelocitySettingTarget = c.DefineLabel();
         var jumpYVelocitySettingTarget = c.DefineLabel();
@@ -397,11 +397,10 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var popupTextIndex = -1;
-        var scaleMultiplierIndex = -1;
-        var magicAlphaMultiplierIndex = -1;
-
-        var colorIndex = -1;
+        var popupTextIndex = VariableIndex.Invalid;
+        var scaleMultiplierIndex = VariableIndex.Invalid;
+        var magicAlphaMultiplierIndex = VariableIndex.Invalid;
+        var colorIndex = VariableIndex.Invalid;
 
         ILLabel? contLoopTarget = null;
         ILLabel? jumpDrawEffectsTarget = null;
@@ -618,7 +617,7 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var itemIndex = -1; // arg
+        var itemIndex = ParameterIndex.Invalid;
 
         c.GotoNext(
             i => i.MatchLdarg(out itemIndex),
@@ -652,8 +651,8 @@ public static class ElkLangItemSets
 
         var jumpVelocityUpdatesTarget = c.DefineLabel();
 
-        var selfIndex = -1; // arg
-        var collidingFlagIndex = -1; // loc
+        var selfIndex = ParameterIndex.Invalid;
+        var collidingFlagIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.Before,
@@ -780,8 +779,8 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var bigXIndex = -1;
-        var bigYIndex = -1;
+        var bigXIndex = VariableIndex.Invalid;
+        var bigYIndex = VariableIndex.Invalid;
 
         var jumpDrawStringTarget = c.DefineLabel();
 
@@ -857,7 +856,7 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var worldItemIndexIndex = -1;
+        var worldItemIndexIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,
@@ -890,7 +889,7 @@ public static class ElkLangItemSets
 
         var magicNumber = -1f;
 
-        var hotbarIndexIndex = -1;
+        var hotbarIndexIndex = VariableIndex.Invalid;
 
         var jumpDrawStringTarget = c.DefineLabel();
 
@@ -997,7 +996,7 @@ public static class ElkLangItemSets
     {
         var c = new ILCursor(il);
 
-        var sizeIndex = -1;
+        var sizeIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.Before,

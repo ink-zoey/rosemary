@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
-using Daybreak.Hooks;
+﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
 using MonoMod.Cil;
+using Rosemary.Common;
+using System.Diagnostics;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -58,7 +60,7 @@ public static class DevMountSets
     {
         var c = new ILCursor(il);
 
-        var playerIndex = -1; // arg
+        var playerIndex = ParameterIndex.Invalid;
 
         for (var j = 0; j < 2; j++)
         {

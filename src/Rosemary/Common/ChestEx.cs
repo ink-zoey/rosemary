@@ -7,6 +7,7 @@ using Rosemary.Core;
 using System;
 using System.IO;
 using System.Linq;
+using Daybreak.MonoMod;
 using GoldMeridian.CodeAnalysis;
 using Terraria;
 using Terraria.Audio;
@@ -38,7 +39,7 @@ file static class ChestBehavior
     {
         var c = new ILCursor(il);
 
-        var chestIndex = -1;
+        var chestIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.Before,

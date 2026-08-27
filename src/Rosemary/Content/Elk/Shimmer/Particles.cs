@@ -188,15 +188,12 @@ public static class ElkShimmerParticles
         var spikesDrawCacheReference = c.AddVariable<List<ShimmerSpikeDrawItem>>();
         var useInnerFrameReference = c.AddVariable<bool>();
 
-        var liquidRendererIndex = -1;  // arg
-        var sourceRectangleIndex = -1; // loc
-
-        var liquidCacheCurrentIndex = -1; // loc
-
-        var xIndex = -1; // loc
-        var yIndex = -1; // loc
-
-        var isBackgroundDrawIndex = -1; // arg
+        var liquidRendererIndex = ParameterIndex.Invalid;
+        var sourceRectangleIndex = VariableIndex.Invalid;
+        var liquidCacheCurrentIndex = VariableIndex.Invalid;
+        var xIndex = VariableIndex.Invalid;
+        var yIndex = VariableIndex.Invalid;
+        var isBackgroundDrawIndex = ParameterIndex.Invalid;
 
         c.EmitStaticDelegateUnsafe(
             static () =>

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
 using System;
+using Daybreak.MonoMod;
 using GoldMeridian.CodeAnalysis;
 using Terraria;
 using Terraria.DataStructures;
@@ -65,13 +66,13 @@ file static class WorldItemDataBehavior
     {
         var c = new ILCursor(il);
 
-        var itemIndexIndex = -1; // loc
+        var itemIndexIndex = VariableIndex.Invalid;
 
         var loopTarget = c.DefineLabel();
 
         c.GotoNext(
             MoveType.Before,
-            i => i.MatchLdarg(out _),
+            i => i.MatchLdarg(out int _),
             i => i.MatchLdsfld<Main>(nameof(Main.item)),
             i => i.MatchLdloc(out itemIndexIndex)
         );
@@ -110,8 +111,8 @@ file static class WorldItemDataBehavior
     {
         var c = new ILCursor(il);
 
-        var itemIndex = -1;     // arg
-        var rotationIndex = -1; // loc
+        var itemIndex = ParameterIndex.Invalid;
+        var rotationIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.Before,

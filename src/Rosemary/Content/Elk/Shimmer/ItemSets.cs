@@ -234,8 +234,8 @@ public static class ElkShimmerItemSets
     {
         var c = new ILCursor(il);
 
-        var itemIndex = -1;  // arg
-        var colorIndex = -1; // loc
+        var itemIndex = ParameterIndex.Invalid;
+        var colorIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,
@@ -312,7 +312,7 @@ public static class ElkShimmerItemSets
     {
         var c = new ILCursor(il);
 
-        var itemIndex = -1; // arg
+        var itemIndex = ParameterIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,

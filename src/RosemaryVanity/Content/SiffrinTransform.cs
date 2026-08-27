@@ -1,4 +1,5 @@
 ﻿using Daybreak.Hooks;
+using Daybreak.MonoMod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -215,7 +216,7 @@ public sealed class SiffrinTransform : ModItem
         {
             var c = new ILCursor(il);
 
-            var playerIndex = -1; // arg
+            var playerIndex = ParameterIndex.Invalid;
             ILLabel? jumpJumpFramingTarget = null;
 
             c.GotoNext(
@@ -280,13 +281,13 @@ public sealed class SiffrinTransform : ModItem
         {
             var c = new ILCursor(il);
 
-            var baseVectorIndex = -1; // loc
-            var drawInfoIndex = -1;   // arg
+            var baseVectorIndex = VariableIndex.Invalid;
+            var drawInfoIndex = ParameterIndex.Invalid;
 
             c.GotoNext(
                 MoveType.After,
                 i => i.MatchCall(typeof(PlayerDrawLayers), nameof(PlayerDrawLayers.GetCompositeOffset_FrontArm)),
-                i => i.MatchStloc(out _)
+                i => i.MatchStloc(out int _)
             );
 
             c.GotoNext(

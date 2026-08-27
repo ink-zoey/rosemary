@@ -1,13 +1,14 @@
-﻿using Daybreak.Rendering;
+﻿using Daybreak.MonoMod;
+using Daybreak.Rendering;
+using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
+using Rosemary.Content.Elk;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using GoldMeridian.CodeAnalysis;
-using Rosemary.Content.Elk;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -152,8 +153,8 @@ public sealed class DinosaurExtendoGrip : ModItem
     {
         var c = new ILCursor(il);
 
-        var whoIndex = -1;        // arg
-        var itemWhoAmIIndex = -1; // loc
+        var whoIndex = ParameterIndex.Invalid;
+        var itemWhoAmIIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,
@@ -251,7 +252,7 @@ public sealed class DinosaurExtendoGrip : ModItem
     {
         var c = new ILCursor(il);
 
-        var worldItemIndexIndex = -1;
+        var worldItemIndexIndex = VariableIndex.Invalid;
 
         c.GotoNext(
             MoveType.After,
