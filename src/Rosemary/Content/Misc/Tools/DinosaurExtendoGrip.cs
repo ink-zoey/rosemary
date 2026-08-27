@@ -1,4 +1,5 @@
-﻿using Daybreak.MonoMod;
+﻿using Daybreak.Mathematics;
+using Daybreak.MonoMod;
 using Daybreak.Rendering;
 using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
@@ -12,9 +13,11 @@ using System.Reflection;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
+using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Content.Misc;
 
@@ -313,7 +316,7 @@ public sealed class DinosaurExtendoGrip : ModItem
             Volume = 0.25f,
         };
 
-        Item.useStyle = ItemUseStyleID.Shoot;
+        Item.useStyle = ItemUseStyleID.Swing;
         Item.useAnimation = 3;
         Item.useTime = 3;
         Item.reuseDelay = 5;
@@ -350,7 +353,8 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         Projectile.hostile = false;
 
         Projectile.tileCollide = true;
-        Projectile.hide = true;
+
+        Projectile.drawLayer = ProjectileDrawLayerID.HeldProj;
 
         Projectile.manualDirectionChange = true;
     }
@@ -1336,5 +1340,34 @@ public sealed class DinosaurExtendoGripHoldout : ModProjectile
         var diff = (Projectile.Center - player.MountedCenter);
         diff.Y *= yDir;
         return diff.ToRotation() - MathF.PiOver2 - player.fullRotation;
+    }
+
+    public override bool DisplayDollSettings(Player doll, TEDisplayDoll.DisplayDollPose pose, ref int aiStyle, ref int aiType)
+    {
+        var offset = new Vector2(120f, 0f);
+
+        var rotation = (pose.ItemAnimationPercent * -MathF.PI) + MathF.PiOver4;
+
+        offset = offset.RotatedBy(rotation);
+
+        offset.X *= doll.direction;
+
+        Projectile.Center = doll.Center + offset;
+
+        MaxReach = 13f * 16f;
+        HeldItem = -1;
+
+        Projectile.direction = doll.direction;
+
+        Projectile.velocity = Vector2.Zero;
+
+        CompositeArm();
+
+        return false;
+
+        void CompositeArm()
+        {
+            doll.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, (rotation - MathF.PiOver2) * doll.direction);
+        }
     }
 }
