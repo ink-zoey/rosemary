@@ -18,13 +18,13 @@
         <Project Path="daybreak-mod/src/Daybreak/Daybreak.csproj" />
     </Folder>
 
-    <Folder Name="/rosemary/">
+    <Folder Name="/rosemary-mod/">
         <File Path="GlobalUsings.cs" />
         <Project Path="Rosemary/Rosemary.csproj" />
         <Project Path="RosemaryVanity/RosemaryVanity.csproj" />
     </Folder>
 
-    <Folder Name="/rosemary/generators/">
+    <Folder Name="/rosemary-mod/generators/">
         <Project Path="generators/ElkLanguageAtlas/ElkLanguageAtlas.csproj" />
         <Project Path="generators/ElkLanguageReferences/ElkLanguageReferences.csproj" />
     </Folder>
