@@ -1,8 +1,6 @@
-﻿using Daybreak.Hooks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using MonoMod.Cil;
 using System;
-using Daybreak.MonoMod;
 using GoldMeridian.CodeAnalysis;
 using Terraria;
 using Terraria.DataStructures;

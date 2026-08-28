@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Terraria.Graphics;
+﻿using Terraria.Graphics;
 
 namespace Rosemary.Common;
 

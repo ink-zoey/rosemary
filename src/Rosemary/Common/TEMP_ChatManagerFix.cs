@@ -1,5 +1,4 @@
-﻿using Daybreak.Hooks;
-using Terraria.UI.Chat;
+﻿using Terraria.UI.Chat;
 
 namespace Rosemary.Common;
 

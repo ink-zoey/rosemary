@@ -1,6 +1,4 @@
-﻿global using Player = Terraria.Player; // Terraria.ModLoader.BackupIO+Player
-using Daybreak.Networking;
-using log4net;
+﻿using log4net;
 using log4net.Appender;
 using log4net.Config;
 using log4net.Layout;

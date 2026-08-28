@@ -1,7 +1,4 @@
-﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using Daybreak.Rendering;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;
@@ -10,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria;
-using Terraria.GameContent;
 using Terraria.GameContent.Liquid;
 using Terraria.Graphics;
 using Terraria.ModLoader;

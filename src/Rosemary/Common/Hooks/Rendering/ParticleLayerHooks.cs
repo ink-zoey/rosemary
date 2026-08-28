@@ -1,11 +1,9 @@
-﻿using Daybreak.Hooks;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Daybreak.Rendering;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Graphics.Renderers;

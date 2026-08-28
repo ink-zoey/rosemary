@@ -1,7 +1,4 @@
-﻿using Daybreak.Mathematics;
-using Daybreak.MonoMod;
-using Daybreak.Rendering;
-using GoldMeridian.CodeAnalysis;
+﻿using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -17,7 +14,6 @@ using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
-using static Terraria.ModLoader.BackupIO;
 
 namespace Rosemary.Content.Misc;
 

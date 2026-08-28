@@ -1,6 +1,4 @@
-﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using MonoMod.Cil;
+﻿using MonoMod.Cil;
 using Rosemary.Common;
 using System.Diagnostics;
 using Terraria;

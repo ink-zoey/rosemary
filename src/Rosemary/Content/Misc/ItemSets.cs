@@ -1,5 +1,4 @@
-﻿using Daybreak.Hooks;
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 

@@ -17,9 +17,14 @@
         <Project Path="daybreak-mod/src/Daybreak.Resources.V1/Daybreak.Resources.V1.csproj" />
         <Project Path="daybreak-mod/src/Daybreak/Daybreak.csproj" />
     </Folder>
-    <Project Path="Rosemary/Rosemary.csproj" />
-    <Project Path="RosemaryVanity/RosemaryVanity.csproj" />
-    <Folder Name="/generators/">
+
+    <Folder Name="/rosemary/">
+        <File Path="GlobalUsings.cs" />
+        <Project Path="Rosemary/Rosemary.csproj" />
+        <Project Path="RosemaryVanity/RosemaryVanity.csproj" />
+    </Folder>
+
+    <Folder Name="/rosemary/generators/">
         <Project Path="generators/ElkLanguageAtlas/ElkLanguageAtlas.csproj" />
         <Project Path="generators/ElkLanguageReferences/ElkLanguageReferences.csproj" />
     </Folder>

@@ -1,5 +1,4 @@
-﻿using Daybreak.ChatTags;
-using Rosemary.Content;
+﻿using Rosemary.Content;
 using Terraria.UI.Chat;
 
 namespace Rosemary.Common;

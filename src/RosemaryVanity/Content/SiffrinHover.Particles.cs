@@ -1,14 +1,10 @@
-﻿using Daybreak.Hooks;
-using Daybreak.Rendering;
-using Daybreak.Rendering.Buffers;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using Rosemary.Core;
 using System;
 using Terraria;
 using Terraria.Graphics.Effects;
-using Terraria.UI;
 
 namespace Rosemary.Vanity.Content;
 

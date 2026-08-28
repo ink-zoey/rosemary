@@ -1,6 +1,4 @@
-﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using GoldMeridian.CodeAnalysis;
+﻿using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using MonoMod.Cil;
 using ReLogic.Utilities;

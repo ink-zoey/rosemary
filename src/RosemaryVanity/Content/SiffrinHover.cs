@@ -1,6 +1,4 @@
-﻿using Daybreak.Rendering;
-using Daybreak.Rendering.Buffers;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using Rosemary.Common;

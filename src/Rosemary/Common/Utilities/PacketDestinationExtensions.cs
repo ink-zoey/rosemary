@@ -1,6 +1,4 @@
-﻿using Daybreak.Networking;
-
-namespace Rosemary.Common;
+﻿namespace Rosemary.Common;
 
 public static class PacketDestinationExtensions
 {

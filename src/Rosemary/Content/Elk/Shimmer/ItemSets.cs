@@ -1,12 +1,7 @@
-﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using Daybreak.Rendering;
-using Daybreak.Rendering.Buffers;
-using GoldMeridian.CodeAnalysis;
+﻿using GoldMeridian.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
-using ReLogic.Utilities;
 using Rosemary.Common;
 using Rosemary.Content.Misc;
 using Rosemary.Core;
@@ -14,14 +9,12 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.GameContent.Liquid;
 using Terraria.GameContent.Shaders;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
-using static Terraria.Testing.WindowsPerformanceDiagnostics;
 
 namespace Rosemary.Content.Elk;
 

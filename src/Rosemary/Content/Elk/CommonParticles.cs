@@ -1,5 +1,4 @@
-﻿using Daybreak.Hooks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rosemary.Common;
 using Rosemary.Core;

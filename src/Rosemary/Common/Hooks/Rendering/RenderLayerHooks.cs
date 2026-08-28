@@ -1,6 +1,4 @@
-﻿using Daybreak.Hooks;
-using Daybreak.Rendering;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,4 @@
-﻿using Daybreak.Hooks;
-using Daybreak.MonoMod;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;

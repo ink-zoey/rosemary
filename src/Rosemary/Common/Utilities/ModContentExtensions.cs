@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
 
 namespace Rosemary.Common;
