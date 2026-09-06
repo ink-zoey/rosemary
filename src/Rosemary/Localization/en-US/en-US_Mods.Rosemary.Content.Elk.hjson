@@ -1,4 +1,4 @@
-﻿TestVerticalLangItem: {
+TestVerticalLangItem: {
 	DisplayName: Test Vertical Lang Item
 	Tooltip: ""
 }
@@ -11,4 +11,9 @@ FirstVial: {
 Shimmer: {
 	Spikes.DeathMessage: "{0} had their organs transmutated."
 	Ejection.DeathMessage: "{0} was shimmered away."
+}
+
+CrystallizedNought: {
+	DisplayName: Crystallized Nought
+	Tooltip: ""
 }
