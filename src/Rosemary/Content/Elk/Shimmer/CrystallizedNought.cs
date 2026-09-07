@@ -6,7 +6,7 @@ namespace Rosemary.Content.Elk;
 
 public sealed class CrystallizedNought : ModItem
 {
-    public override string Texture => Assets.Elk.TestItem.KEY;
+    public override string Texture => Assets.Elk.Shimmer.CrystallizedNought.KEY;
 
     public override string LocalizationCategory => "Content.Elk";
 

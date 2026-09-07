@@ -82,7 +82,10 @@ public sealed class FirstVial : ModItem, IViolentShimmerReactant
 
         if (subSurface)
         {
-            return true;
+            item.SetDefaults(ModContent.ItemType<CrystallizedNought>());
+            item.stack = Rand.Next(2, 7);
+
+            return false;
         }
 
         var bright = new Color(179, 133, 255, 120);
