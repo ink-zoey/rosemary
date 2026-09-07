@@ -184,7 +184,7 @@ public abstract class ShimmerReactionGore : ModGore, ICustomDrawGore
 
             WaterShaderData.Instance.QueueRipple(Rand.Next(gore.Hitbox), Rand.Next(0.15f, 0.85f) * (1f - ratio), RippleShape.Square, MathF.PiOver4);
 
-            if (Rand.NextBoolean())
+            if (Rand.NextBoolean(subSurface ? 6 : 2))
             {
                 var rect = gore.Hitbox;
 
