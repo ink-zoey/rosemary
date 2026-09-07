@@ -64,7 +64,7 @@ public sealed class FirstVial : ModItem, IViolentShimmerReactant
             var velocity = -Vector2.UnitY * Rand.Next(4f, 11f);
             velocity = velocity.RotatedByRandom(subSurface ? MathF.PI : 0.7f);
 
-            var gore = Gore.NewGorePerfect(new EntitySource_Parent(item, "SHIMMER_BAD"), item.Center, velocity, ModContent.GoreType<VialGore>());
+            var gore = Gore.NewGorePerfect(new EntitySource_Parent(item, $"{nameof(Rosemary)}: SHIMMER_BAD"), item.Center, velocity, ModContent.GoreType<VialGore>());
 
             if (subSurface)
             {

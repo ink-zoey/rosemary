@@ -65,7 +65,7 @@ public static partial class ElkShimmerItemSets
                     continue;
                 }
 
-                var level = 16f - (((Main.tile[i, j].LiquidAmount / (float)byte.MaxValue) * 16f) + 2);
+                var level = 16f - (((Main.tile[i, j].LiquidAmount / (float)byte.MaxValue) * 16f) - 2);
 
                 current.X = i * 16f;
                 current.Y = j * 16f + level;
