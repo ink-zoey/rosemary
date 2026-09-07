@@ -111,3 +111,14 @@ public sealed class FullBrightScope : IDisposable
         engine._activeLightMap = prior;
     }
 }
+
+public static class LightingExtensions
+{
+    extension(Lighting)
+    {
+        public static void AddLight(Vector2 position, Color color)
+        {
+            Lighting.AddLight(position, color.ToVector3());
+        }
+    }
+}

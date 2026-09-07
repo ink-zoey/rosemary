@@ -61,6 +61,19 @@ public static partial class ElkShimmerItemSets
     {
         On_LiquidRenderer.DrawShimmer += DrawShimmer_Mesmerizers;
         IL_Main.DrawItem += DrawItem_ShimmerRadiance;
+        On_WorldItem.UpdateItem_VisualEffects += UpdateItem_VisualEffects_Radiance;
+    }
+
+    private static void UpdateItem_VisualEffects_Radiance(On_WorldItem.orig_UpdateItem_VisualEffects orig, WorldItem self)
+    {
+        orig(self);
+
+        if (!ShimmerRadianceInfo(self, out var interpolator, out _))
+        {
+            return;
+        }
+
+        Lighting.AddLight(self.Center, Color.White * interpolator);
     }
 
     private static void DrawItem_ShimmerRadiance(ILContext il)
