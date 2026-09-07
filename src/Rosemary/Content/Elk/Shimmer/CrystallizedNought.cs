@@ -1,9 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Newtonsoft.Json.Linq;
 using Rosemary.Common;
-using System;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -78,5 +75,31 @@ public sealed class CrystallizedNought : ModItem
         {
             return vector.X + vector.Y + vector.Z;
         }
+    }
+
+    public override bool PreDrawInInventory(SpriteBatch sb, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+    {
+        var texture = TextureAssets.Item[Type].Value;
+
+        sb.Draw(texture, position, frame, Color.Black, 0f, origin, scale, SpriteEffects.None, 0f);
+
+        var lightDirection = new Vector2(Main.screenWidth * 0.3f, 0f) - position;
+
+        lightDirection = lightDirection.Normalized;
+
+        var redColor = Color.White * (Vector2.Dot(Vector2.UnitX, lightDirection) + 0.25f);
+        var greenColor = Color.White * (Vector2.Dot(-Vector2.UnitX, lightDirection) + 0.1f);
+        var blueColor = Color.White * (Vector2.Dot(-Vector2.UnitY, lightDirection) + 0.4f);
+        redColor.A = 0;
+        greenColor.A = 0;
+        blueColor.A = 0;
+
+        sb.Draw(texture, position, texture.Frame(1, 4, 0, 1), redColor, 0f, origin, scale, SpriteEffects.None, 0f);
+        sb.Draw(texture, position, texture.Frame(1, 4, 0, 2), greenColor, 0f, origin, scale, SpriteEffects.None, 0f);
+        sb.Draw(texture, position, texture.Frame(1, 4, 0, 3), blueColor, 0f, origin, scale, SpriteEffects.None, 0f);
+
+        sb.Draw(texture, position, frame, Color.White * 0.4f, 0f, origin, scale, SpriteEffects.None, 0f);
+
+        return false;
     }
 }
