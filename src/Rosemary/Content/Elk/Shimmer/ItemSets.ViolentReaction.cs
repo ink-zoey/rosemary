@@ -186,7 +186,7 @@ public static partial class ElkShimmerItemSets
 
     private static void KillMe_DisableDrops_ViolentShimmerReaction(On_Player.orig_KillMe orig, Player self, PlayerDeathReason damageSource, double dmg, int hitDirection, bool pvp)
     {
-        var priorNewItem = Item.newItemDisabled;
+        using var _ = Item.newItemDisabled.Override(Item.newItemDisabled);
 
         if (damageSource.CustomReason._mode == NetworkText.Mode.LocalizationKey
          && death_keys_violent_shimmer_reaction.Contains(damageSource.CustomReason._text))
@@ -198,7 +198,6 @@ public static partial class ElkShimmerItemSets
         orig(self, damageSource, dmg, hitDirection, pvp);
 
         skipPlayerDrops = false;
-        Item.newItemDisabled = priorNewItem;
     }
 
     private const float increment_violent_shimmer_reaction = 0.006f;

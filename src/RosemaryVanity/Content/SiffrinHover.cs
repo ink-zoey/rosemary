@@ -171,14 +171,13 @@ file sealed class OutlineAfterImagesPlayer : ModPlayer
         {
             sb.Begin(ss with { TransformMatrix = Matrix.Identity, SamplerState = SamplerState.LinearClamp });
             {
-                var prior = Main.GameViewMatrix._transformationMatrix;
-                Main.GameViewMatrix._transformationMatrix = Matrix.Identity;
+                using var _ = Main.GameViewMatrix._transformationMatrix.Override(Matrix.Identity);
+
                 drawingAfterImage = true;
                 {
                     Main.PlayerRenderer.DrawPlayer(camera, Player, Player.position, 0f, Player.fullRotationOrigin, float.Epsilon);
                 }
                 drawingAfterImage = false;
-                Main.GameViewMatrix._transformationMatrix = prior;
             }
             sb.End();
         }

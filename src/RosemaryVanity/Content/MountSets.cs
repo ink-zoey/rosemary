@@ -98,10 +98,9 @@ public static class DevMountSets
             return;
         }
 
-        var prior = self.carpetFrame;
-        self.carpetFrame = 0;
+        using var _ = self.carpetFrame.Override(0);
+
         orig(self, fallThrough, ignorePlats);
-        self.carpetFrame = prior;
     }
 
     private static bool DoesHoverIgnoresFatigue_IgnoresHoverFatigue(On_Mount.orig_DoesHoverIgnoresFatigue orig, Mount self)

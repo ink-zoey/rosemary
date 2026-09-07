@@ -41,12 +41,9 @@ public sealed class SiffrinTransform : ModItem
             return;
         }
 
-        var prior = drawInfo.drawPlayer.hair;
-        drawInfo.drawPlayer.hair = ModContent.GetInstance<SiffrinHairstyle>().Type;
-        {
-            orig(ref drawInfo);
-        }
-        drawInfo.drawPlayer.hair = prior;
+        using var _ = drawInfo.drawPlayer.hair.Override(ModContent.GetInstance<SiffrinHairstyle>().Type);
+
+        orig(ref drawInfo);
     }
 
     private static void HeadOnlySetup_SkinColor(
@@ -68,18 +65,11 @@ public sealed class SiffrinTransform : ModItem
             return;
         }
 
-        var priorEye = player.eyeColor;
-        var priorSkin = player.skinColor;
-        var priorHair = player.hairColor;
-        player.eyeColor = Color.Black;
-        player.skinColor = new Color(210, 210, 210, byte.MaxValue);
-        player.hairColor = Color.White;
-        {
-            orig(ref self, player, drawData, dust, gore, x, y, alpha, scale);
-        }
-        player.hairColor = priorHair;
-        player.skinColor = priorSkin;
-        player.eyeColor = priorEye;
+        using var _ = player.eyeColor.Override(Color.Black);
+        using var __ = player.skinColor.Override(new Color(210, 210, 210, byte.MaxValue));
+        using var ___ = player.hairColor.Override(Color.White);
+
+        orig(ref self, player, drawData, dust, gore, x, y, alpha, scale);
 
         self.hairDyePacked = 0;
     }
@@ -103,18 +93,11 @@ public sealed class SiffrinTransform : ModItem
             return;
         }
 
-        var priorEye = player.eyeColor;
-        var priorSkin = player.skinColor;
-        var priorHair = player.hairColor;
-        player.eyeColor = Color.Black;
-        player.skinColor = new Color(210, 210, 210, byte.MaxValue);
-        player.hairColor = Color.White;
-        {
-            orig(ref self, player, drawData, dust, gore, drawPosition, shadowOpacity, rotation, rotationOrigin);
-        }
-        player.hairColor = priorHair;
-        player.skinColor = priorSkin;
-        player.eyeColor = priorEye;
+        using var _ = player.eyeColor.Override(Color.Black);
+        using var __ = player.skinColor.Override(new Color(210, 210, 210, byte.MaxValue));
+        using var ___ = player.hairColor.Override(Color.White);
+
+        orig(ref self, player, drawData, dust, gore, drawPosition, shadowOpacity, rotation, rotationOrigin);
 
         self.hairDyePacked = 0;
     }
@@ -342,12 +325,9 @@ public sealed class SiffrinTransform : ModItem
                 pos = Vector2.Zero;
             }
 
-            var prior = drawInfo.bodyVect;
-            drawInfo.bodyVect += pos;
-            {
-                orig(ref drawInfo);
-            }
-            drawInfo.bodyVect = prior;
+            using var _ = drawInfo.bodyVect.Override(drawInfo.bodyVect + pos);
+
+            orig(ref drawInfo);
         }
 
         public override bool GetDefaultVisibility(PlayerDrawSet drawInfo) => IsVisible(drawInfo);
