@@ -84,6 +84,8 @@ public sealed class FirstVial : ModItem, IViolentShimmerReactant
         {
             item.SetDefaults(ModContent.ItemType<CrystallizedNought>());
             item.stack = Rand.Next(2, 7);
+            item.shimmerWet = true;
+            item.wet = true;
 
             return false;
         }

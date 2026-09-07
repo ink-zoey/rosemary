@@ -72,7 +72,7 @@ public static partial class ElkShimmerItemSets
             return;
         }
 
-        Lighting.AddLight(self.Center, Color.White * interpolator);
+        Lighting.AddLight(self.Center, Color.White * interpolator * 0.3f);
     }
 
     private static void DrawItem_ShimmerRadiance(ILContext il)
@@ -150,7 +150,7 @@ public static partial class ElkShimmerItemSets
 
         var result = ItemID.Sets.SolidShimmerReaction[item.type];
 
-        interpolator = 1f;
+        interpolator = 0.4f;
         amplitude = 0f;
 
         if (ItemID.Sets.ViolentShimmerReaction[item.type] && data is not null)
