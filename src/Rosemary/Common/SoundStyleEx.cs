@@ -52,7 +52,7 @@ file static class ActiveSoundDataBehavior
     }
 }
 
-public static class SoundEngineExtensions
+public static class SoundExtensions
 {
     extension(SoundEngine)
     {
@@ -82,5 +82,10 @@ public static class SoundEngineExtensions
 
             return slot;
         }
+    }
+
+    extension(SoundStyle style)
+    {
+        public int FrameDuration => (int)(style.GetSoundEffect().Duration.TotalSeconds * 60f);
     }
 }

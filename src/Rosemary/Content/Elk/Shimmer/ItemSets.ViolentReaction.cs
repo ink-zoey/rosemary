@@ -471,6 +471,23 @@ public static partial class ElkShimmerItemSets
 
         data.SubSurfaceProgress += increment_smoke_result_shimmer_reaction;
 
+        var framesLeft = (1f - data.SubSurfaceProgress) / increment_smoke_result_shimmer_reaction;
+
+        if (subSurface
+         && !data.FormationSlot.IsValid
+         && Assets.Elk.Shimmer.Formation.Asset.FrameDuration >= framesLeft)
+        {
+            data.FormationSlot = SoundEngine.PlaySound(
+                Assets.Elk.Shimmer.Formation.Asset with
+                {
+                    PauseBehavior = PauseBehavior.PauseWithGame,
+                    MaxInstances = 5,
+                },
+                self.Center,
+                SoundCallback
+            );
+        }
+
         PassiveEffects();
         InteractWithPlayers();
 

@@ -5,6 +5,7 @@ using MonoMod.Cil;
 using Rosemary.Common;
 using Rosemary.Core;
 using System;
+using ReLogic.Utilities;
 using Terraria;
 using Terraria.GameContent.Liquid;
 using Terraria.ID;
@@ -22,6 +23,8 @@ public static partial class ElkShimmerItemSets
         public required float SubSurfaceProgress { get; set; }
 
         public required bool LoopingSound { get; set; }
+
+        public SlotId FormationSlot = SlotId.Invalid;
     }
 
     private static bool[] violentShimmerReaction = [];
